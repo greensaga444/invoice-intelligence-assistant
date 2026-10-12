@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Net.Http;
 using System.Windows;
 using InvoiceIntelligence.Core.Configuration;
 using InvoiceIntelligence.Core.Downloader;
@@ -16,6 +17,7 @@ public partial class MainWindow : Window
     private readonly ICustomerListImporter _customerListImporter;
     private readonly IMofAuthenticator _mofAuthenticator;
     private readonly IBatchInvoiceDownloader _batchInvoiceDownloader;
+    private readonly HttpClient? _officialApiHttpClient;
     private IReadOnlyList<CustomerRecord> _loadedCustomers = [];
     private string? _sessionToken;
     private DateTimeOffset? _sessionExpiresAt;
@@ -28,7 +30,15 @@ public partial class MainWindow : Window
         _solutionRootPath = solutionRootPath;
         _customerListImporter = new CustomerListExcelImporter();
         _mofAuthenticator = new LocalMofAuthenticator();
-        _batchInvoiceDownloader = new LocalBatchInvoiceDownloader();
+
+        if (_configuration is null)
+        {
+            _batchInvoiceDownloader = new LocalBatchInvoiceDownloader();
+        }
+        else
+        {
+            (_batchInvoiceDownloader, _officialApiHttpClient) = CreateBatchDownloader(_configuration);
+        }
 
         StartupStatusText.Text = statusMessage;
         StartBatchDownloadButton.IsEnabled = false;
@@ -43,6 +53,12 @@ public partial class MainWindow : Window
 
         MofAccountValueText.Text = _configuration.MofAccount;
         MofApiKeyValueText.Text = MaskApiKey(_configuration.MofCredentialKey);
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        _officialApiHttpClient?.Dispose();
+        base.OnClosed(e);
     }
 
     private void BrowseCustomerFileButton_Click(object sender, RoutedEventArgs e)
@@ -164,6 +180,7 @@ public partial class MainWindow : Window
 
             BatchDownloadResultText.Text =
                 $"批次下載完成：成功 {successCount} 筆，失敗 {failureCount} 筆。\n" +
+                $"模式: {GetDownloadModeLabel()}\n" +
                 $"資料夾 A: {folderAPath}\n" +
                 $"下載記錄: {result.LogFilePath}";
         }
@@ -203,5 +220,33 @@ public partial class MainWindow : Window
         }
 
         return Path.GetFullPath(Path.Combine(_solutionRootPath, configuredPath));
+    }
+
+    private static (IBatchInvoiceDownloader Downloader, HttpClient? OfficialApiHttpClient) CreateBatchDownloader(ModuleConfiguration configuration)
+    {
+        if (!string.Equals(configuration.InvoiceDownloadMode, "official", StringComparison.OrdinalIgnoreCase))
+        {
+            return (new LocalBatchInvoiceDownloader(), null);
+        }
+
+        if (string.IsNullOrWhiteSpace(configuration.OfficialApiBaseUrl))
+        {
+            throw new InvalidOperationException("官方下載模式缺少 officialApiBaseUrl 設定。請更新 INI 後重啟。");
+        }
+
+        var httpClient = new HttpClient();
+        var apiClient = new MofOfficialHttpInvoiceApiClient(httpClient, configuration.OfficialApiBaseUrl);
+        var officialDownloader = new OfficialInvoiceBatchDownloader(apiClient);
+        var exporter = new OfficialInvoiceCsvExporter();
+        var batchDownloader = new OfficialBatchInvoiceDownloader(officialDownloader, exporter);
+
+        return (batchDownloader, httpClient);
+    }
+
+    private string GetDownloadModeLabel()
+    {
+        return string.Equals(_configuration?.InvoiceDownloadMode, "official", StringComparison.OrdinalIgnoreCase)
+            ? "官方 API"
+            : "本地模擬";
     }
 }

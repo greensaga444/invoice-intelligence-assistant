@@ -38,6 +38,8 @@ public class IniModuleConfigurationLoaderTests
             Assert.Equal("sample-account", config.MofAccount);
             Assert.Equal("sample-secret", config.MofCredentialKey);
             Assert.Equal("data\\knowledge\\knowledge-cases.json", config.KnowledgeRepositoryPath);
+            Assert.Equal("local", config.InvoiceDownloadMode);
+            Assert.Null(config.OfficialApiBaseUrl);
         }
         finally
         {
@@ -130,6 +132,76 @@ public class IniModuleConfigurationLoaderTests
             [mof]
             account = sample-account
             credentialKey = sample-secret
+            """;
+
+        var iniPath = WriteTempIni(iniContent);
+        var loader = new IniModuleConfigurationLoader();
+
+        try
+        {
+            Assert.Throws<InvalidDataException>(() => loader.Load(iniPath));
+        }
+        finally
+        {
+            File.Delete(iniPath);
+        }
+    }
+
+    [Fact]
+    public void Load_OfficialMode_ParsesBaseUrl()
+    {
+        const string iniContent = """
+            [module]
+            name = Downloader
+
+            [paths]
+            folderA = C:\Data\FolderA
+            folderB = C:\Data\FolderB
+
+            [output]
+            fileNamingRule = {taxId}_{timestamp}.xlsx
+
+            [mof]
+            account = sample-account
+            credentialKey = sample-secret
+            invoiceDownloadMode = official
+            officialApiBaseUrl = https://service-mc.einvoice.nat.gov.tw/ptl/portal/api
+            """;
+
+        var iniPath = WriteTempIni(iniContent);
+        var loader = new IniModuleConfigurationLoader();
+
+        try
+        {
+            var config = loader.Load(iniPath);
+
+            Assert.Equal("official", config.InvoiceDownloadMode);
+            Assert.Equal("https://service-mc.einvoice.nat.gov.tw/ptl/portal/api", config.OfficialApiBaseUrl);
+        }
+        finally
+        {
+            File.Delete(iniPath);
+        }
+    }
+
+    [Fact]
+    public void Load_OfficialModeWithoutBaseUrl_ThrowsInvalidDataException()
+    {
+        const string iniContent = """
+            [module]
+            name = Downloader
+
+            [paths]
+            folderA = C:\Data\FolderA
+            folderB = C:\Data\FolderB
+
+            [output]
+            fileNamingRule = {taxId}_{timestamp}.xlsx
+
+            [mof]
+            account = sample-account
+            credentialKey = sample-secret
+            invoiceDownloadMode = official
             """;
 
         var iniPath = WriteTempIni(iniContent);

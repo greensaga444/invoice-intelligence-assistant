@@ -108,6 +108,7 @@ AI 與檢索：
 - 共用核心：src/InvoiceIntelligence.Core
 - 設定檔範本：config/downloader.ini、config/processor.ini
 - Downloader 已支援客戶清單 Excel 匯入、MOF 驗證，以及批次下載原始發票 Excel 至 Folder A 並輸出下載記錄。
+- AI Processor 已支援 Folder A 原始發票讀取與分階段 AI 決策流程（Rule Engine -> Case Cache -> RAG -> LLM）執行摘要。
 
 ### 本機驗證指令
 

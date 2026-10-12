@@ -13,9 +13,9 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: Batch invoice download to Folder A
+Work Item Name: AI decision pipeline core
 
-Description: Add batch invoice download flow to Invoice Downloader with Folder A raw Excel output, logging, and tests.
+Description: Processor executes Rule Engine, Case Cache, RAG, and local LLM in sequence and returns structured AI decisions for unresolved records.
 
 ---
 
@@ -250,10 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-Implemented roadmap item 3 with a local batch invoice downloader service and Folder A path resolution from downloader configuration.
-Added per-customer raw invoice Excel generation using configured naming rules, plus batch execution log output.
-Wired Downloader UI with authenticated-session checks and a one-click batch download action.
-Added unit tests for success, session validation, and filename collision handling; build/test/format verification completed.
+Implemented roadmap item 4 with a shared AI decision pipeline in core, enforcing Rule Engine -> Case Cache -> RAG -> LLM stage order.
+Added structured decision output models (deductible status, deduction reason, accounting category, confidence) and Folder A invoice reader support.
+Wired Invoice AI Processor startup to execute the pipeline on Folder A records and display stage-level summary with decision preview.
+Added unit tests for stage short-circuit behavior, execution order, and Folder A parsing validation; build/test/format verification completed.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 
@@ -261,7 +261,7 @@ Added unit tests for success, session validation, and filename collision handlin
 
 ## Next Action
 
-Work item 3 delivered; start roadmap item 4 (AI decision pipeline core) with `start feature/ai-decision-pipeline-core full`.
+Work item 4 delivered; start roadmap item 5 (enhanced Excel export to Folder B) with `start feature/enhanced-excel-export-folder-b full`.
 
 ---
 

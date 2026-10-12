@@ -99,10 +99,10 @@ public partial class MainWindow : Window
             ConfidenceScoreDisplay = sourceResult.Decision.ConfidenceScore.ToString("0.00");
             ResolvedByDisplay = sourceResult.ResolvedBy switch
             {
-                DecisionStage.RuleEngine => "Rule Engine",
-                DecisionStage.CaseCache => "Case Cache",
-                DecisionStage.Llm => "LLM",
-                _ => "Unknown"
+                DecisionStage.RuleEngine => "規則引擎",
+                DecisionStage.CaseCache => "案例快取",
+                DecisionStage.Llm => "本地 LLM",
+                _ => "未知來源"
             };
         }
 

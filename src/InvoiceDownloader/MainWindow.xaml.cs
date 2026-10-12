@@ -121,7 +121,7 @@ public partial class MainWindow : Window
         _sessionExpiresAt = authResult.ExpiresAt;
         StartBatchDownloadButton.IsEnabled = _loadedCustomers.Count > 0;
 
-        var expiresAtText = authResult.ExpiresAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A";
+        var expiresAtText = authResult.ExpiresAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") ?? "無";
         MofAuthResultText.Text = $"{authResult.Message} 工作階段有效至: {expiresAtText}";
 
         MofPasswordBox.Clear();
@@ -164,7 +164,7 @@ public partial class MainWindow : Window
 
             BatchDownloadResultText.Text =
                 $"批次下載完成：成功 {successCount} 筆，失敗 {failureCount} 筆。\n" +
-                $"Folder A: {folderAPath}\n" +
+                $"資料夾 A: {folderAPath}\n" +
                 $"下載記錄: {result.LogFilePath}";
         }
         catch (Exception ex)

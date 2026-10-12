@@ -19,24 +19,24 @@ public sealed class CustomerListExcelImporter : ICustomerListImporter
     {
         if (string.IsNullOrWhiteSpace(filePath))
         {
-            throw new ArgumentException("Customer list file path cannot be empty.", nameof(filePath));
+            throw new ArgumentException("客戶清單檔案路徑不可為空白。", nameof(filePath));
         }
 
         if (!File.Exists(filePath))
         {
-            throw new FileNotFoundException("Customer list file does not exist.", filePath);
+            throw new FileNotFoundException("找不到客戶清單檔案。", filePath);
         }
 
         if (!string.Equals(Path.GetExtension(filePath), ".xlsx", StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidDataException("Customer list must be an .xlsx Excel file.");
+            throw new InvalidDataException("客戶清單必須為 .xlsx Excel 檔案。");
         }
 
         using var workbook = new XLWorkbook(filePath);
         var worksheet = workbook.Worksheets.FirstOrDefault();
         if (worksheet is null)
         {
-            throw new InvalidDataException("Customer list Excel file does not contain any worksheet.");
+            throw new InvalidDataException("客戶清單 Excel 檔案不包含任何工作表。");
         }
 
         var headerIndex = ReadHeaderIndex(worksheet);
@@ -63,12 +63,12 @@ public sealed class CustomerListExcelImporter : ICustomerListImporter
 
             if (!TryParseDateRange(dateRangeRaw, out var dateFrom, out var dateTo))
             {
-                throw new InvalidDataException($"Row {rowNumber}: Date Range must contain two valid dates.");
+                throw new InvalidDataException($"第 {rowNumber} 列：日期區間需包含兩個有效日期。");
             }
 
             if (dateFrom > dateTo)
             {
-                throw new InvalidDataException($"Row {rowNumber}: Date Range start date must be earlier than end date.");
+                throw new InvalidDataException($"第 {rowNumber} 列：日期區間起日不可晚於迄日。");
             }
 
             records.Add(new CustomerRecord(taxId, companyName, dateFrom, dateTo));
@@ -76,7 +76,7 @@ public sealed class CustomerListExcelImporter : ICustomerListImporter
 
         if (records.Count == 0)
         {
-            throw new InvalidDataException("Customer list does not contain any valid data rows.");
+            throw new InvalidDataException("客戶清單不包含任何有效資料列。");
         }
 
         return new CustomerImportResult(records);
@@ -89,7 +89,7 @@ public sealed class CustomerListExcelImporter : ICustomerListImporter
 
         if (lastColumn == 0)
         {
-            throw new InvalidDataException("Customer list header row is empty.");
+            throw new InvalidDataException("客戶清單標題列為空白。");
         }
 
         var headerIndex = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -121,7 +121,7 @@ public sealed class CustomerListExcelImporter : ICustomerListImporter
             }
         }
 
-        throw new InvalidDataException($"Missing required column: {requiredFieldName}.");
+        throw new InvalidDataException($"缺少必要欄位：{requiredFieldName}。");
     }
 
     private static string NormalizeHeader(string header)
@@ -135,12 +135,12 @@ public sealed class CustomerListExcelImporter : ICustomerListImporter
     {
         if (taxId.Length == 0)
         {
-            throw new InvalidDataException($"Row {rowNumber}: Tax ID is required.");
+            throw new InvalidDataException($"第 {rowNumber} 列：統編不可為空白。");
         }
 
         if (!Regex.IsMatch(taxId, "^[0-9]{8}$"))
         {
-            throw new InvalidDataException($"Row {rowNumber}: Tax ID must be exactly 8 digits.");
+            throw new InvalidDataException($"第 {rowNumber} 列：統編必須為 8 位數字。");
         }
     }
 
@@ -148,7 +148,7 @@ public sealed class CustomerListExcelImporter : ICustomerListImporter
     {
         if (companyName.Length == 0)
         {
-            throw new InvalidDataException($"Row {rowNumber}: Company Name is required.");
+            throw new InvalidDataException($"第 {rowNumber} 列：公司名稱不可為空白。");
         }
     }
 

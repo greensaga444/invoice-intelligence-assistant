@@ -23,7 +23,7 @@ public sealed class LocalBatchInvoiceDownloader : IBatchInvoiceDownloader
 
         if (string.IsNullOrWhiteSpace(request.FolderAPath))
         {
-            throw new ArgumentException("Folder A 路徑不可為空白。", nameof(request));
+            throw new ArgumentException("資料夾 A 路徑不可為空白。", nameof(request));
         }
 
         NamingRuleValidator.Validate(request.OutputNamingRule);
@@ -108,7 +108,7 @@ public sealed class LocalBatchInvoiceDownloader : IBatchInvoiceDownloader
     private static void WriteInvoiceWorkbook(string outputPath, CustomerRecord customer)
     {
         using var workbook = new XLWorkbook();
-        var worksheet = workbook.Worksheets.Add("RawInvoices");
+        var worksheet = workbook.Worksheets.Add("原始發票");
 
         worksheet.Cell(1, 1).Value = "統編";
         worksheet.Cell(1, 2).Value = "公司名稱";
@@ -184,7 +184,7 @@ public sealed class LocalBatchInvoiceDownloader : IBatchInvoiceDownloader
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            return "unknown";
+            return "未提供";
         }
 
         var invalid = Path.GetInvalidFileNameChars();
@@ -214,22 +214,23 @@ public sealed class LocalBatchInvoiceDownloader : IBatchInvoiceDownloader
 
         var logLines = new List<string>
         {
-            "Invoice Downloader Batch Log",
-            $"GeneratedAtUtc: {batchTimestamp:O}",
-            $"Total: {itemResults.Count}",
-            $"Success: {successCount}",
-            $"Failure: {failureCount}",
+            "發票下載批次紀錄",
+            $"產生時間(UTC): {batchTimestamp:O}",
+            $"總數: {itemResults.Count}",
+            $"成功: {successCount}",
+            $"失敗: {failureCount}",
             "---"
         };
 
         foreach (var result in itemResults)
         {
             logLines.Add(
-                $"[{(result.IsSuccess ? "SUCCESS" : "FAIL")}]");
+                $"[{(result.IsSuccess ? "成功" : "失敗")}]"
+            );
             logLines.Add(
-                $"TaxId={result.Customer.TaxId}, Company={result.Customer.CompanyName}, From={result.Customer.DateFrom:yyyy-MM-dd}, To={result.Customer.DateTo:yyyy-MM-dd}");
-            logLines.Add($"Message={result.Message}");
-            logLines.Add($"Output={result.OutputFilePath ?? "N/A"}");
+                $"統編={result.Customer.TaxId}, 公司={result.Customer.CompanyName}, 起日={result.Customer.DateFrom:yyyy-MM-dd}, 迄日={result.Customer.DateTo:yyyy-MM-dd}");
+            logLines.Add($"訊息={result.Message}");
+            logLines.Add($"輸出={result.OutputFilePath ?? "無"}");
             logLines.Add(string.Empty);
         }
 

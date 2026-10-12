@@ -9,7 +9,7 @@ public sealed class FolderAInvoiceRecordReader
     {
         if (string.IsNullOrWhiteSpace(folderAPath))
         {
-            throw new ArgumentException("Folder A path cannot be empty.", nameof(folderAPath));
+            throw new ArgumentException("資料夾 A 路徑不可為空白。", nameof(folderAPath));
         }
 
         if (!Directory.Exists(folderAPath))
@@ -38,7 +38,7 @@ public sealed class FolderAInvoiceRecordReader
         var worksheet = workbook.Worksheets.FirstOrDefault();
         if (worksheet is null)
         {
-            throw new InvalidDataException($"Invoice workbook does not contain a worksheet: {filePath}");
+            throw new InvalidDataException($"發票活頁簿不包含任何工作表：{filePath}");
         }
 
         var headers = BuildHeaderIndex(worksheet);
@@ -122,7 +122,7 @@ public sealed class FolderAInvoiceRecordReader
     {
         if (!headers.TryGetValue(name, out var column))
         {
-            throw new InvalidDataException($"Invoice worksheet is missing required column: {name}");
+            throw new InvalidDataException($"發票工作表缺少必要欄位：{name}");
         }
 
         return column;
@@ -156,6 +156,6 @@ public sealed class FolderAInvoiceRecordReader
             return decimalValue;
         }
 
-        throw new InvalidDataException($"Invalid decimal value: {rawValue}");
+        throw new InvalidDataException($"數值格式無效：{rawValue}");
     }
 }

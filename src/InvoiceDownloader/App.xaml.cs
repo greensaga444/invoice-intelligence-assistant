@@ -24,8 +24,8 @@ public partial class App : Application
             config = loader.Load(configPath);
 
             message = $"載入成功: {config.ModuleName}\n" +
-                      $"Folder A: {config.FolderAPath}\n" +
-                      $"Folder B: {config.FolderBPath}\n" +
+                      $"資料夾 A: {config.FolderAPath}\n" +
+                      $"資料夾 B: {config.FolderBPath}\n" +
                       $"命名規則: {config.OutputNamingRule}\n" +
                       "請先匯入客戶清單，再進行 MOF 驗證與批次下載。";
 
@@ -63,7 +63,7 @@ public partial class App : Application
     private static string ResolveSolutionRootPath(string configPath)
     {
         var configDirectory = Path.GetDirectoryName(configPath)
-            ?? throw new InvalidOperationException("Cannot resolve config directory path.");
+            ?? throw new InvalidOperationException("無法解析設定檔目錄路徑。");
 
         var solutionRootDirectory = Directory.GetParent(configDirectory)?.FullName;
         return solutionRootDirectory ?? AppContext.BaseDirectory;

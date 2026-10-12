@@ -66,7 +66,7 @@ public class CustomerListExcelImporterTests
         try
         {
             var exception = Assert.Throws<InvalidDataException>(() => importer.Import(filePath));
-            Assert.Contains("Date Range", exception.Message);
+            Assert.Contains("日期區間", exception.Message);
         }
         finally
         {

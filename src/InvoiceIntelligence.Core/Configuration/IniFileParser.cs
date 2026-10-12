@@ -15,12 +15,12 @@ internal sealed class IniFileData
     {
         if (!_sections.TryGetValue(sectionName, out var section))
         {
-            throw new InvalidDataException($"Missing INI section [{sectionName}].");
+            throw new InvalidDataException($"缺少 INI 區段 [{sectionName}]。");
         }
 
         if (!section.TryGetValue(key, out var value) || string.IsNullOrWhiteSpace(value))
         {
-            throw new InvalidDataException($"Missing INI key '{key}' under section [{sectionName}].");
+            throw new InvalidDataException($"在區段 [{sectionName}] 缺少 INI 鍵值 '{key}'。");
         }
 
         return value;
@@ -62,7 +62,7 @@ internal static class IniFileParser
                 var sectionName = line[1..^1].Trim();
                 if (sectionName.Length == 0)
                 {
-                    throw new InvalidDataException("INI section name cannot be empty.");
+                    throw new InvalidDataException("INI 區段名稱不可為空白。");
                 }
 
                 if (!sections.TryGetValue(sectionName, out currentSection))
@@ -76,13 +76,13 @@ internal static class IniFileParser
 
             if (currentSection is null)
             {
-                throw new InvalidDataException("INI contains key-value data before any section header.");
+                throw new InvalidDataException("INI 在任何區段標頭之前出現鍵值資料。");
             }
 
             var separatorIndex = line.IndexOf('=');
             if (separatorIndex <= 0)
             {
-                throw new InvalidDataException($"Invalid INI line: '{line}'. Expected key=value format.");
+                throw new InvalidDataException($"INI 行格式無效: '{line}'。預期格式為 key=value。");
             }
 
             var key = line[..separatorIndex].Trim();
@@ -90,7 +90,7 @@ internal static class IniFileParser
 
             if (key.Length == 0)
             {
-                throw new InvalidDataException($"Invalid INI line: '{line}'. Key cannot be empty.");
+                throw new InvalidDataException($"INI 行格式無效: '{line}'。鍵值名稱不可為空白。");
             }
 
             currentSection[key] = value;

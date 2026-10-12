@@ -13,9 +13,9 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: Manual knowledge feedback workflow
+Work Item Name: Localization and quality gates
 
-Description: User-approved AI decision records are written into local knowledge storage and become retrievable by RAG, with no automatic learning unless explicitly approved.
+Description: Traditional Chinese UI/output, offline-only AI checks, performance targets, and acceptance test suite are validated.
 
 ---
 
@@ -243,17 +243,17 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 - [x] project.md progress updated (Roadmap/Milestones)
 - [x] Docs/README updated
-- [x] Delivery commit + push completed
+- [ ] Delivery commit + push completed
 - [x] PR opened/updated (if required)
 
 ---
 
 ## Current Task
 
-Implemented roadmap item 6 with a shared JSON knowledge repository and manual feedback service in core.
-Wired Invoice AI Processor UI to support explicit record approval and a manual "更新知識庫" action; no-selection path keeps repository unchanged.
-Loaded approved knowledge entries at startup and merged them into RAG retrieval cases so approved records are reusable in later analysis.
-Added configuration and tests for repository path loading, approved write-back, duplicate handling, no-auto-learning guard, and retrieval reuse.
+Completed roadmap item 7 localization and quality gates implementation.
+Localized remaining user-facing messages in downloader/processor and core surfaced errors/logs to Traditional Chinese.
+Added acceptance/performance quality-gate tests for offline-only AI path, worksheet/localized outputs, 30,000-record pipeline scale, and 150-customer batch success rate.
+Verification passed via build, test, and format checks.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 
@@ -261,7 +261,7 @@ Added configuration and tests for repository path loading, approved write-back, 
 
 ## Next Action
 
-Work item 6 delivered; start roadmap item 7 (localization and quality gates) with `start feature/localization-and-quality-gates full`.
+Create delivery commit and push (policy: direct landing without PR), then run finish branch cleanup.
 
 ---
 

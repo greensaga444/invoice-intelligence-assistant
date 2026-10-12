@@ -15,12 +15,12 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
     {
         if (string.IsNullOrWhiteSpace(iniPath))
         {
-            throw new ArgumentException("INI path cannot be empty.", nameof(iniPath));
+            throw new ArgumentException("INI 路徑不可為空白。", nameof(iniPath));
         }
 
         if (!File.Exists(iniPath))
         {
-            throw new FileNotFoundException("INI file does not exist.", iniPath);
+            throw new FileNotFoundException("找不到 INI 設定檔。", iniPath);
         }
 
         var iniData = IniFileParser.Parse(File.ReadLines(iniPath));

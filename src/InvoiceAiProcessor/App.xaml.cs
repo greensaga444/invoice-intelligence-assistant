@@ -33,8 +33,8 @@ public partial class App : Application
                 knowledgeRepositoryPath);
 
             var message = $"載入成功: {config.ModuleName}\n" +
-                          $"Folder A: {folderAPath}\n" +
-                          $"Folder B: {folderBPath}\n" +
+                          $"資料夾 A: {folderAPath}\n" +
+                          $"資料夾 B: {folderBPath}\n" +
                           $"命名規則: {config.OutputNamingRule}\n" +
                           $"知識庫檔案: {knowledgeRepositoryPath}\n" +
                           pipelineState.StatusMessage;
@@ -70,7 +70,7 @@ public partial class App : Application
         if (records.Count == 0)
         {
             return new ProcessorStartupState(
-                StatusMessage: "AI 決策流程：Folder A 尚無可分析檔案。",
+                StatusMessage: "AI 決策流程：資料夾 A 尚無可分析檔案。",
                 DecisionResults: [],
                 FeedbackService: feedbackService);
         }
@@ -94,7 +94,7 @@ public partial class App : Application
         var previewLines = pipelineResult.Items
             .Take(3)
             .Select(item =>
-                $"- {item.Record.InvoiceNumber}: {item.Decision.DeductibleStatus}/{item.Decision.AccountingCategory} ({item.Decision.ConfidenceScore:0.00}) via {ToStageDisplayName(item.ResolvedBy)}")
+                $"- {item.Record.InvoiceNumber}: {item.Decision.DeductibleStatus}/{item.Decision.AccountingCategory} ({item.Decision.ConfidenceScore:0.00})（來源：{ToStageDisplayName(item.ResolvedBy)}）")
             .ToArray();
 
         var exportedFilesPreview = exportResult.Files
@@ -104,7 +104,7 @@ public partial class App : Application
             .ToArray();
 
         var exportSummary =
-            $"Folder B 匯出完成：檔案 {exportResult.ExportedFileCount}，筆數 {exportResult.ExportedRecordCount}。";
+            $"資料夾 B 匯出完成：檔案 {exportResult.ExportedFileCount}，筆數 {exportResult.ExportedRecordCount}。";
 
         if (exportedFilesPreview.Length > 0)
         {
@@ -144,7 +144,7 @@ public partial class App : Application
     private static string ResolveSolutionRootPath(string configPath)
     {
         var configDirectory = Path.GetDirectoryName(configPath)
-            ?? throw new InvalidOperationException("Cannot resolve config directory path.");
+            ?? throw new InvalidOperationException("無法解析設定檔目錄路徑。");
 
         var solutionRootDirectory = Directory.GetParent(configDirectory)?.FullName;
         return solutionRootDirectory ?? AppContext.BaseDirectory;
@@ -214,10 +214,10 @@ public partial class App : Application
     {
         return stage switch
         {
-            DecisionStage.RuleEngine => "Rule Engine",
-            DecisionStage.CaseCache => "Case Cache",
-            DecisionStage.Llm => "LLM",
-            _ => "Unknown"
+            DecisionStage.RuleEngine => "規則引擎",
+            DecisionStage.CaseCache => "案例快取",
+            DecisionStage.Llm => "本地 LLM",
+            _ => "未知來源"
         };
     }
 

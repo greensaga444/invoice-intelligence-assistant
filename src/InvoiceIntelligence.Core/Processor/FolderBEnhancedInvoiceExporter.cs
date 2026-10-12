@@ -17,7 +17,7 @@ public sealed class FolderBEnhancedInvoiceExporter
 
         if (string.IsNullOrWhiteSpace(folderBPath))
         {
-            throw new ArgumentException("Folder B path cannot be empty.", nameof(folderBPath));
+            throw new ArgumentException("資料夾 B 路徑不可為空白。", nameof(folderBPath));
         }
 
         NamingRuleValidator.Validate(outputNamingRule);
@@ -100,7 +100,7 @@ public sealed class FolderBEnhancedInvoiceExporter
         }
 
         var directory = Path.GetDirectoryName(filePath)
-            ?? throw new InvalidOperationException("Folder B output path does not include a directory.");
+            ?? throw new InvalidOperationException("資料夾 B 輸出路徑缺少目錄資訊。");
         var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
         var extension = Path.GetExtension(filePath);
 
@@ -113,14 +113,14 @@ public sealed class FolderBEnhancedInvoiceExporter
             }
         }
 
-        throw new IOException("Cannot generate a unique Folder B output filename.");
+        throw new IOException("無法產生唯一的資料夾 B 輸出檔名。");
     }
 
     private static string SanitizeSegment(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            return "unknown";
+            return "未提供";
         }
 
         var invalidCharacters = Path.GetInvalidFileNameChars();
@@ -143,7 +143,7 @@ public sealed class FolderBEnhancedInvoiceExporter
     private static void WriteWorkbook(string outputPath, IReadOnlyList<InvoiceDecisionResult> items)
     {
         using var workbook = new XLWorkbook();
-        var worksheet = workbook.Worksheets.Add("EnhancedInvoices");
+        var worksheet = workbook.Worksheets.Add("增強發票");
 
         worksheet.Cell(1, 1).Value = "統編";
         worksheet.Cell(1, 2).Value = "公司名稱";

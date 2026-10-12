@@ -36,7 +36,7 @@ public sealed class JsonKnowledgeCaseRepository : IKnowledgeCaseRepository
     {
         if (string.IsNullOrWhiteSpace(repositoryFilePath))
         {
-            throw new ArgumentException("Repository file path cannot be empty.", nameof(repositoryFilePath));
+            throw new ArgumentException("知識庫檔案路徑不可為空白。", nameof(repositoryFilePath));
         }
 
         RepositoryFilePath = repositoryFilePath;
@@ -61,7 +61,7 @@ public sealed class JsonKnowledgeCaseRepository : IKnowledgeCaseRepository
 
         if (string.IsNullOrWhiteSpace(approvedBy))
         {
-            throw new ArgumentException("Approved by value cannot be empty.", nameof(approvedBy));
+            throw new ArgumentException("核准者不可為空白。", nameof(approvedBy));
         }
 
         if (approvedResults.Count == 0)
@@ -135,7 +135,7 @@ public sealed class JsonKnowledgeCaseRepository : IKnowledgeCaseRepository
         }
         catch (JsonException ex)
         {
-            throw new InvalidDataException("Knowledge repository JSON format is invalid.", ex);
+            throw new InvalidDataException("知識庫 JSON 格式無效。", ex);
         }
     }
 
@@ -187,7 +187,7 @@ public sealed class JsonKnowledgeCaseRepository : IKnowledgeCaseRepository
             AddKeyword(keywords, seen, token);
         }
 
-        return keywords.Count == 0 ? ["invoice"] : keywords;
+        return keywords.Count == 0 ? ["發票"] : keywords;
     }
 
     private static void AddKeyword(List<string> keywords, HashSet<string> seen, string value)

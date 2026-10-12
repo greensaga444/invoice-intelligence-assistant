@@ -19,13 +19,13 @@ public static class NamingRuleValidator
     {
         if (string.IsNullOrWhiteSpace(namingRule))
         {
-            throw new FormatException("Output naming rule cannot be empty.");
+            throw new FormatException("輸出命名規則不可為空白。");
         }
 
         var matches = Regex.Matches(namingRule, "\\{(?<name>[A-Za-z][A-Za-z0-9]*)\\}");
         if (matches.Count == 0)
         {
-            throw new FormatException("Output naming rule must include at least one placeholder.");
+            throw new FormatException("輸出命名規則至少需包含一個 placeholder。");
         }
 
         var unknownNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -41,7 +41,7 @@ public static class NamingRuleValidator
 
         if (unknownNames.Count > 0)
         {
-            throw new FormatException($"Unknown placeholder(s): {string.Join(", ", unknownNames)}.");
+            throw new FormatException($"未知的 placeholder: {string.Join(", ", unknownNames)}。");
         }
     }
 }

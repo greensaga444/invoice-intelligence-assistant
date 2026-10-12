@@ -243,7 +243,7 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 - [x] project.md progress updated (Roadmap/Milestones)
 - [x] Docs/README updated
-- [ ] Delivery commit + push completed
+- [x] Delivery commit + push completed
 - [x] PR opened/updated (if required)
 
 ---
@@ -261,7 +261,7 @@ Verification passed via build, test, and format checks.
 
 ## Next Action
 
-Create delivery commit and push (policy: direct landing without PR), then run finish branch cleanup.
+Work item 7 delivered and landed to main by direct push policy; branch cleanup completed.
 
 ---
 

@@ -14,7 +14,7 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        string message;
+        ProcessorStartupState startupState;
 
         try
         {
@@ -24,38 +24,67 @@ public partial class App : Application
             var config = loader.Load(configPath);
             var folderAPath = ResolveConfiguredPath(solutionRootPath, config.FolderAPath);
             var folderBPath = ResolveConfiguredPath(solutionRootPath, config.FolderBPath);
+            var knowledgeRepositoryPath = ResolveConfiguredPath(solutionRootPath, config.KnowledgeRepositoryPath);
 
-            var pipelineStatus = BuildPipelineStatus(folderAPath, folderBPath, config.OutputNamingRule);
+            var pipelineState = BuildPipelineState(
+                folderAPath,
+                folderBPath,
+                config.OutputNamingRule,
+                knowledgeRepositoryPath);
 
-            message = $"載入成功: {config.ModuleName}\n" +
-                      $"Folder A: {folderAPath}\n" +
-                      $"Folder B: {folderBPath}\n" +
-                      $"命名規則: {config.OutputNamingRule}\n" +
-                      pipelineStatus;
+            var message = $"載入成功: {config.ModuleName}\n" +
+                          $"Folder A: {folderAPath}\n" +
+                          $"Folder B: {folderBPath}\n" +
+                          $"命名規則: {config.OutputNamingRule}\n" +
+                          $"知識庫檔案: {knowledgeRepositoryPath}\n" +
+                          pipelineState.StatusMessage;
+
+            startupState = pipelineState with { StatusMessage = message };
         }
         catch (Exception ex)
         {
-            message = $"設定載入失敗: {ex.Message}";
+            startupState = new ProcessorStartupState(
+                StatusMessage: $"設定載入失敗: {ex.Message}",
+                DecisionResults: [],
+                FeedbackService: null);
         }
 
-        var mainWindow = new MainWindow(message);
+        var mainWindow = new MainWindow(
+            startupState.StatusMessage,
+            startupState.DecisionResults,
+            startupState.FeedbackService);
         mainWindow.Show();
     }
 
-    private static string BuildPipelineStatus(string folderAPath, string folderBPath, string outputNamingRule)
+    private static ProcessorStartupState BuildPipelineState(
+        string folderAPath,
+        string folderBPath,
+        string outputNamingRule,
+        string knowledgeRepositoryPath)
     {
         var reader = new FolderAInvoiceRecordReader();
         var records = reader.ReadFromFolder(folderAPath);
+        var knowledgeRepository = new JsonKnowledgeCaseRepository(knowledgeRepositoryPath);
+        var feedbackService = new ManualKnowledgeFeedbackService(knowledgeRepository);
 
         if (records.Count == 0)
         {
-            return "AI 決策流程：Folder A 尚無可分析檔案。";
+            return new ProcessorStartupState(
+                StatusMessage: "AI 決策流程：Folder A 尚無可分析檔案。",
+                DecisionResults: [],
+                FeedbackService: feedbackService);
         }
+
+        var defaultKnowledgeCases = CreateDefaultKnowledgeCases();
+        var approvedKnowledgeCases = knowledgeRepository.LoadCases();
+        var ragKnowledgeCases = defaultKnowledgeCases
+            .Concat(approvedKnowledgeCases)
+            .ToArray();
 
         var pipeline = new InvoiceDecisionPipeline(
             new KeywordRuleEngine(),
             new InMemoryCaseCache(CreateDefaultCases()),
-            new KeywordRagRetriever(CreateDefaultKnowledgeCases()),
+            new KeywordRagRetriever(ragKnowledgeCases),
             new LocalHeuristicLlmAnalyzer());
 
         var pipelineResult = pipeline.Process(records);
@@ -82,10 +111,16 @@ public partial class App : Application
             exportSummary += $"\n輸出預覽:\n{string.Join("\n", exportedFilesPreview)}";
         }
 
-        return
+        var statusMessage =
             $"AI 決策流程完成：總筆數 {pipelineResult.Summary.TotalRecords}，規則 {pipelineResult.Summary.ResolvedByRuleEngine}，快取 {pipelineResult.Summary.ResolvedByCaseCache}，LLM {pipelineResult.Summary.ResolvedByLlm}。\n" +
+            $"知識案例：內建 {defaultKnowledgeCases.Count} 筆，已核准 {approvedKnowledgeCases.Count} 筆。\n" +
             $"判定預覽:\n{string.Join("\n", previewLines)}\n" +
             exportSummary;
+
+        return new ProcessorStartupState(
+            statusMessage,
+            pipelineResult.Items,
+            feedbackService);
     }
 
     private static string ResolveConfigPath(string fileName)
@@ -185,5 +220,10 @@ public partial class App : Application
             _ => "Unknown"
         };
     }
+
+    private sealed record ProcessorStartupState(
+        string StatusMessage,
+        IReadOnlyList<InvoiceDecisionResult> DecisionResults,
+        ManualKnowledgeFeedbackService? FeedbackService);
 }
 

@@ -5,9 +5,17 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:InvoiceAiProcessor"
         mc:Ignorable="d"
-        Title="發票 AI 處理器" Height="300" Width="700">
-    <Grid>
-        <Border Margin="16" Padding="16" BorderThickness="1" CornerRadius="8" BorderBrush="#FFBFBFBF">
+        Title="發票 AI 處理器" Height="640" Width="1080">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="12" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="12" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Padding="16" BorderThickness="1" CornerRadius="8" BorderBrush="#FFBFBFBF">
             <StackPanel>
                 <TextBlock Text="模組狀態" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,12" />
                 <TextBlock x:Name="StatusText"
@@ -16,5 +24,52 @@
                            LineHeight="24" />
             </StackPanel>
         </Border>
+
+        <Border Grid.Row="2" Padding="16" BorderThickness="1" CornerRadius="8" BorderBrush="#FFBFBFBF">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <TextBlock Text="手動知識回饋" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" />
+
+                <DataGrid x:Name="FeedbackGrid"
+                          Grid.Row="1"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          HeadersVisibility="Column"
+                          IsReadOnly="False"
+                          SelectionUnit="FullRow"
+                          RowHeight="32">
+                    <DataGrid.Columns>
+                        <DataGridCheckBoxColumn Header="核准" Width="70"
+                                                Binding="{Binding IsApproved, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <DataGridTextColumn Header="發票號碼" Width="120" Binding="{Binding InvoiceNumber}" IsReadOnly="True" />
+                        <DataGridTextColumn Header="公司名稱" Width="160" Binding="{Binding CompanyName}" IsReadOnly="True" />
+                        <DataGridTextColumn Header="品名" Width="220" Binding="{Binding ItemName}" IsReadOnly="True" />
+                        <DataGridTextColumn Header="AI_可抵稅" Width="100" Binding="{Binding DeductibleStatus}" IsReadOnly="True" />
+                        <DataGridTextColumn Header="AI_建議科目" Width="120" Binding="{Binding AccountingCategory}" IsReadOnly="True" />
+                        <DataGridTextColumn Header="AI_信心度" Width="90" Binding="{Binding ConfidenceScoreDisplay}" IsReadOnly="True" />
+                        <DataGridTextColumn Header="判定來源" Width="110" Binding="{Binding ResolvedByDisplay}" IsReadOnly="True" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+
+        <StackPanel Grid.Row="4" Orientation="Vertical">
+            <Button x:Name="UpdateKnowledgeButton"
+                    Width="160"
+                    Height="36"
+                    HorizontalAlignment="Left"
+                    Margin="0,0,0,8"
+                    Click="UpdateKnowledgeButton_Click"
+                    Content="更新知識庫" />
+            <TextBlock x:Name="FeedbackStatusText"
+                       TextWrapping="Wrap"
+                       FontSize="14"
+                       LineHeight="22" />
+        </StackPanel>
     </Grid>
 </Window>

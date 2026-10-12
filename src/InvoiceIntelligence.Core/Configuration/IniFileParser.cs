@@ -25,6 +25,21 @@ internal sealed class IniFileData
 
         return value;
     }
+
+    public string? GetOptional(string sectionName, string key)
+    {
+        if (!_sections.TryGetValue(sectionName, out var section))
+        {
+            return null;
+        }
+
+        if (!section.TryGetValue(key, out var value) || string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return value;
+    }
 }
 
 internal static class IniFileParser

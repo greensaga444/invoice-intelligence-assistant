@@ -37,6 +37,44 @@ public class IniModuleConfigurationLoaderTests
             Assert.Equal("{taxId}_{companyName}_{timestamp}.xlsx", config.OutputNamingRule);
             Assert.Equal("sample-account", config.MofAccount);
             Assert.Equal("sample-secret", config.MofCredentialKey);
+            Assert.Equal("data\\knowledge\\knowledge-cases.json", config.KnowledgeRepositoryPath);
+        }
+        finally
+        {
+            File.Delete(iniPath);
+        }
+    }
+
+    [Fact]
+    public void Load_KnowledgeRepositoryPathProvided_UsesConfiguredPath()
+    {
+        const string iniContent = """
+            [module]
+            name = Processor
+
+            [paths]
+            folderA = C:\Data\FolderA
+            folderB = C:\Data\FolderB
+
+            [output]
+            fileNamingRule = {taxId}_{companyName}_{timestamp}.xlsx
+
+            [knowledge]
+            repositoryFile = D:\Knowledge\cases.json
+
+            [mof]
+            account = sample-account
+            credentialKey = sample-secret
+            """;
+
+        var iniPath = WriteTempIni(iniContent);
+        var loader = new IniModuleConfigurationLoader();
+
+        try
+        {
+            var config = loader.Load(iniPath);
+
+            Assert.Equal("D:\\Knowledge\\cases.json", config.KnowledgeRepositoryPath);
         }
         finally
         {

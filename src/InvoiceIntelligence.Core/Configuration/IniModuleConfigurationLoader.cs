@@ -9,6 +9,8 @@ public interface IModuleConfigurationLoader
 
 public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
 {
+    private const string DefaultKnowledgeRepositoryPath = "data\\knowledge\\knowledge-cases.json";
+
     public ModuleConfiguration Load(string iniPath)
     {
         if (string.IsNullOrWhiteSpace(iniPath))
@@ -29,6 +31,8 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
         var outputNamingRule = iniData.GetRequired("output", "fileNamingRule");
         var mofAccount = iniData.GetRequired("mof", "account");
         var mofCredentialKey = iniData.GetRequired("mof", "credentialKey");
+        var knowledgeRepositoryPath = iniData.GetOptional("knowledge", "repositoryFile")
+            ?? DefaultKnowledgeRepositoryPath;
 
         NamingRuleValidator.Validate(outputNamingRule);
 
@@ -38,6 +42,7 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
             folderBPath,
             outputNamingRule,
             mofAccount,
-            mofCredentialKey);
+            mofCredentialKey,
+            knowledgeRepositoryPath);
     }
 }

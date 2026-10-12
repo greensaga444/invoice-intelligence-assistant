@@ -6,4 +6,5 @@ public sealed record ModuleConfiguration(
     string FolderBPath,
     string OutputNamingRule,
     string MofAccount,
-    string MofCredentialKey);
+    string MofCredentialKey,
+    string KnowledgeRepositoryPath);

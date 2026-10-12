@@ -13,9 +13,9 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: Enhanced Excel export to Folder B
+Work Item Name: Manual knowledge feedback workflow
 
-Description: Processor preserves source invoice columns, appends required Traditional Chinese AI columns, and exports enhanced workbooks to Folder B using configured naming rules.
+Description: User-approved AI decision records are written into local knowledge storage and become retrievable by RAG, with no automatic learning unless explicitly approved.
 
 ---
 
@@ -250,10 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-Implemented roadmap item 5 with a shared Folder B enhanced Excel exporter in core and integrated naming-rule based file generation.
-Preserved source invoice columns and appended required Traditional Chinese AI columns: AI_可抵稅, AI_判定原因, AI_建議科目, AI_信心度, AI_參考案例.
-Wired Invoice AI Processor startup to run export after pipeline processing and display export summary with output preview.
-Added unit tests for Folder B generation, naming-rule execution, and duplicate filename handling; build/test/format verification completed.
+Implemented roadmap item 6 with a shared JSON knowledge repository and manual feedback service in core.
+Wired Invoice AI Processor UI to support explicit record approval and a manual "更新知識庫" action; no-selection path keeps repository unchanged.
+Loaded approved knowledge entries at startup and merged them into RAG retrieval cases so approved records are reusable in later analysis.
+Added configuration and tests for repository path loading, approved write-back, duplicate handling, no-auto-learning guard, and retrieval reuse.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 
@@ -261,7 +261,7 @@ Added unit tests for Folder B generation, naming-rule execution, and duplicate f
 
 ## Next Action
 
-Work item 5 delivered; start roadmap item 6 (manual knowledge feedback workflow) with `start feature/manual-knowledge-feedback-workflow full`.
+Work item 6 delivered; start roadmap item 7 (localization and quality gates) with `start feature/localization-and-quality-gates full`.
 
 ---
 

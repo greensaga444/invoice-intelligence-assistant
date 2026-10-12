@@ -13,9 +13,9 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: Project skeleton and configuration foundation
+Work Item Name: Customer import and MOF authentication flow
 
-Description: Create a buildable .NET 8 solution skeleton with Downloader and AI Processor WPF apps, a shared INI configuration foundation, and baseline tests.
+Description: Add customer Excel import and MOF authentication flow to Invoice Downloader with validation, error handling, and tests.
 
 ---
 
@@ -250,10 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-Implemented item 1 from roadmap with a new solution scaffold and project structure.
-Added shared INI configuration loading and naming-rule placeholder validation in core library.
-Ran build, test, and formatter verification successfully; CI workflow files are not present in this repository.
-Delivered directly to main by policy (main branch protected: no), then completed branch cleanup.
+Implemented roadmap item 2 with customer list Excel import, required-column validation, and date-range validation.
+Added MOF authentication flow with clear success/failure messages and session state output in Downloader UI.
+Added unit tests for importer and authenticator; ran build, test, and formatter successfully.
+CI workflow files are not present in this repository; delivery follows direct push to main by policy.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 
@@ -261,7 +261,7 @@ Delivered directly to main by policy (main branch protected: no), then completed
 
 ## Next Action
 
-Start the next roadmap item with `start feature/<name> full`.
+Start roadmap item 3 (batch invoice download to Folder A) with `start feature/batch-invoice-download-folder-a full`.
 
 ---
 

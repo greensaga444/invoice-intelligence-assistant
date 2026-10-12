@@ -14,24 +14,26 @@ public partial class App : Application
         base.OnStartup(e);
 
         string message;
+        ModuleConfiguration? config = null;
 
         try
         {
             var loader = new IniModuleConfigurationLoader();
             var configPath = ResolveConfigPath("downloader.ini");
-            var config = loader.Load(configPath);
+            config = loader.Load(configPath);
 
             message = $"載入成功: {config.ModuleName}\n" +
                       $"Folder A: {config.FolderAPath}\n" +
                       $"Folder B: {config.FolderBPath}\n" +
-                      $"命名規則: {config.OutputNamingRule}";
+                      $"命名規則: {config.OutputNamingRule}\n" +
+                      "請先匯入客戶清單，再進行 MOF 驗證。";
         }
         catch (Exception ex)
         {
             message = $"設定載入失敗: {ex.Message}";
         }
 
-        var mainWindow = new MainWindow(message);
+        var mainWindow = new MainWindow(config, message);
         mainWindow.Show();
     }
 

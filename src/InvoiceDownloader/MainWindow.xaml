@@ -5,16 +5,166 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:InvoiceDownloader"
         mc:Ignorable="d"
-        Title="發票下載器" Height="300" Width="700">
-    <Grid>
-        <Border Margin="16" Padding="16" BorderThickness="1" CornerRadius="8" BorderBrush="#FFBFBFBF">
+        Title="發票下載器" Height="720" Width="1024">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0"
+                Padding="12"
+                Margin="0,0,0,12"
+                BorderThickness="1"
+                CornerRadius="8"
+                BorderBrush="#FFBFBFBF"
+                Background="#FFF9F9F9">
             <StackPanel>
-                <TextBlock Text="模組狀態" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,12" />
-                <TextBlock x:Name="StatusText"
+                <TextBlock Text="模組狀態" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,8" />
+                <TextBlock x:Name="StartupStatusText"
                            TextWrapping="Wrap"
-                           FontSize="14"
-                           LineHeight="24" />
+                           FontSize="13"
+                           LineHeight="22" />
             </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1"
+                Padding="12"
+                Margin="0,0,0,12"
+                BorderThickness="1"
+                CornerRadius="8"
+                BorderBrush="#FFBFBFBF">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           Text="客戶清單匯入"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,10" />
+
+                <Grid Grid.Row="1" Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox x:Name="CustomerFilePathTextBox"
+                             Grid.Column="0"
+                             Height="34"
+                             Padding="8"
+                             VerticalContentAlignment="Center" />
+
+                    <Button x:Name="BrowseCustomerFileButton"
+                            Grid.Column="1"
+                            Content="瀏覽"
+                            Margin="8,0,0,0"
+                            Padding="14,6"
+                            Click="BrowseCustomerFileButton_Click" />
+
+                    <Button x:Name="ImportCustomerFileButton"
+                            Grid.Column="2"
+                            Content="匯入客戶"
+                            Margin="8,0,0,0"
+                            Padding="14,6"
+                            Click="ImportCustomerFileButton_Click" />
+                </Grid>
+
+                <DataGrid x:Name="CustomerDataGrid"
+                          Grid.Row="2"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          HeadersVisibility="Column"
+                          Margin="0,0,0,10">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="統編" Binding="{Binding TaxId}" Width="2*" />
+                        <DataGridTextColumn Header="公司名稱" Binding="{Binding CompanyName}" Width="3*" />
+                        <DataGridTextColumn Header="起始日期" Binding="{Binding DateFrom}" Width="2*" />
+                        <DataGridTextColumn Header="結束日期" Binding="{Binding DateTo}" Width="2*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <TextBlock x:Name="ImportResultText"
+                           Grid.Row="3"
+                           TextWrapping="Wrap"
+                           FontSize="13"
+                           Foreground="#FF333333" />
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="2"
+                Padding="12"
+                BorderThickness="1"
+                CornerRadius="8"
+                BorderBrush="#FFBFBFBF"
+                Background="#FFF9F9F9">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="160" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           Grid.ColumnSpan="3"
+                           Text="MOF 驗證"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,10" />
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="帳號" VerticalAlignment="Center" />
+                <TextBlock x:Name="MofAccountValueText"
+                           Grid.Row="1"
+                           Grid.Column="1"
+                           VerticalAlignment="Center"
+                           Margin="0,0,12,0" />
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="API 金鑰" VerticalAlignment="Center" />
+                <TextBlock x:Name="MofApiKeyValueText"
+                           Grid.Row="2"
+                           Grid.Column="1"
+                           VerticalAlignment="Center"
+                           Margin="0,0,12,0" />
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="密碼" VerticalAlignment="Center" />
+                <PasswordBox x:Name="MofPasswordBox"
+                             Grid.Row="3"
+                             Grid.Column="1"
+                             Height="32"
+                             Padding="8"
+                             VerticalContentAlignment="Center"
+                             Margin="0,0,12,0" />
+
+                <Button x:Name="AuthenticateButton"
+                        Grid.Row="3"
+                        Grid.Column="2"
+                        Content="驗證"
+                        Padding="16,6"
+                        Click="AuthenticateButton_Click" />
+
+                <TextBlock x:Name="MofAuthResultText"
+                           Grid.Row="4"
+                           Grid.ColumnSpan="3"
+                           Margin="0,10,0,0"
+                           TextWrapping="Wrap"
+                           FontSize="13" />
+            </Grid>
         </Border>
     </Grid>
 </Window>

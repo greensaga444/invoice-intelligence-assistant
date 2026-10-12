@@ -107,6 +107,7 @@ AI 與檢索：
 - 應用程式：src/InvoiceDownloader、src/InvoiceAiProcessor
 - 共用核心：src/InvoiceIntelligence.Core
 - 設定檔範本：config/downloader.ini、config/processor.ini
+- Downloader 已支援客戶清單 Excel 匯入（Tax ID、Company Name、Date Range）與 MOF 驗證流程。
 
 ### 本機驗證指令
 

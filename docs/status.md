@@ -243,8 +243,8 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 - [x] project.md progress updated (Roadmap/Milestones)
 - [x] Docs/README updated
-- [ ] Delivery commit + push completed
-- [ ] PR opened/updated (if required)
+- [x] Delivery commit + push completed
+- [x] PR opened/updated (if required)
 
 ---
 
@@ -253,7 +253,7 @@ Delivery done definition: delivery updates are committed and landed per policy (
 Implemented item 1 from roadmap with a new solution scaffold and project structure.
 Added shared INI configuration loading and naming-rule placeholder validation in core library.
 Ran build, test, and formatter verification successfully; CI workflow files are not present in this repository.
-Preparing delivery commit and push per policy (main branch protected: no).
+Delivered directly to main by policy (main branch protected: no), then completed branch cleanup.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 
@@ -261,7 +261,7 @@ Preparing delivery commit and push per policy (main branch protected: no).
 
 ## Next Action
 
-Create delivery commit, push branch, merge/land to main by policy, then run finish cleanup.
+Start the next roadmap item with `start feature/<name> full`.
 
 ---
 

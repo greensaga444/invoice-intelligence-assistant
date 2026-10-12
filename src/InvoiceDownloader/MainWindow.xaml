@@ -114,6 +114,8 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="160" />
@@ -164,6 +166,22 @@
                            Margin="0,10,0,0"
                            TextWrapping="Wrap"
                            FontSize="13" />
+
+                <Button x:Name="StartBatchDownloadButton"
+                        Grid.Row="5"
+                        Grid.Column="2"
+                        Margin="0,10,0,0"
+                        Content="開始批次下載"
+                        Padding="16,6"
+                        Click="StartBatchDownloadButton_Click" />
+
+                <TextBlock x:Name="BatchDownloadResultText"
+                           Grid.Row="6"
+                           Grid.ColumnSpan="3"
+                           Margin="0,10,0,0"
+                           TextWrapping="Wrap"
+                           FontSize="13"
+                           Foreground="#FF1A4D8F" />
             </Grid>
         </Border>
     </Grid>

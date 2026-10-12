@@ -13,9 +13,9 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: Customer import and MOF authentication flow
+Work Item Name: Batch invoice download to Folder A
 
-Description: Add customer Excel import and MOF authentication flow to Invoice Downloader with validation, error handling, and tests.
+Description: Add batch invoice download flow to Invoice Downloader with Folder A raw Excel output, logging, and tests.
 
 ---
 
@@ -243,17 +243,17 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 - [x] project.md progress updated (Roadmap/Milestones)
 - [x] Docs/README updated
-- [x] Delivery commit + push completed
-- [x] PR opened/updated (if required)
+- [ ] Delivery commit + push completed
+- [ ] PR opened/updated (if required)
 
 ---
 
 ## Current Task
 
-Implemented roadmap item 2 with customer list Excel import, required-column validation, and date-range validation.
-Added MOF authentication flow with clear success/failure messages and session state output in Downloader UI.
-Added unit tests for importer and authenticator; ran build, test, and formatter successfully.
-CI workflow files are not present in this repository; delivery follows direct push to main by policy.
+Implemented roadmap item 3 with a local batch invoice downloader service and Folder A path resolution from downloader configuration.
+Added per-customer raw invoice Excel generation using configured naming rules, plus batch execution log output.
+Wired Downloader UI with authenticated-session checks and a one-click batch download action.
+Added unit tests for success, session validation, and filename collision handling; build/test/format verification completed.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 
@@ -261,7 +261,7 @@ CI workflow files are not present in this repository; delivery follows direct pu
 
 ## Next Action
 
-Start roadmap item 3 (batch invoice download to Folder A) with `start feature/batch-invoice-download-folder-a full`.
+Create delivery commit for roadmap item 3 and proceed to roadmap item 4 (AI decision pipeline core).
 
 ---
 

@@ -187,7 +187,7 @@ Constraints / Non-Functional Requirements:
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Project skeleton and configuration foundation | A buildable .NET 8 solution with separate Downloader and AI Processor apps plus INI configuration loading is available. | P0 | FULL | - | DONE |
 | 2 | Customer import and MOF authentication flow | Users can import customer Excel data and complete MOF authentication with clear validation and error handling. | P0 | FULL | 1 | DONE |
-| 3 | Batch invoice download to Folder A | System downloads invoices in batch for imported customers and writes raw Excel outputs into Folder A with logs. | P0 | FULL | 2 | TODO |
+| 3 | Batch invoice download to Folder A | System downloads invoices in batch for imported customers and writes raw Excel outputs into Folder A with logs. | P0 | FULL | 2 | DONE |
 | 4 | AI decision pipeline core | Processor executes Rule Engine, Case Cache, RAG, and LLM in order and produces structured AI decisions per unresolved record. | P0 | FULL | 1 | TODO |
 | 5 | Enhanced Excel export to Folder B | Processor preserves source columns, appends all required AI columns in Traditional Chinese, and exports files to Folder B using naming rules. | P0 | FULL | 4 | TODO |
 | 6 | Manual knowledge feedback workflow | User-approved records can be written back to knowledge storage and become retrievable by RAG without automatic learning. | P1 | FULL | 4 | TODO |
@@ -203,7 +203,7 @@ Status values: TODO / IN PROGRESS / DONE / BLOCKED
 
 > Defined here on `init` (from the PRD/Final Target). Each finished milestone triggers a README refresh.
 
-- [ ] M1: Downloader MVP complete (customer import, authentication, batch download, Folder A export)
+- [x] M1: Downloader MVP complete (customer import, authentication, batch download, Folder A export)
 - [ ] M2: AI Processor MVP complete (decision pipeline and Folder B enhanced export)
 - [ ] M3: Production readiness complete (knowledge feedback, localization, performance/security validation)
 

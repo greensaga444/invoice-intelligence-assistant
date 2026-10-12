@@ -100,3 +100,20 @@ AI 與檢索：
 - 專案定義與路線圖：docs/project.md
 - 分支執行流程：docs/status.md
 - 程式風格基線與語言附錄：docs/style/
+
+## 目前可執行骨架
+
+- 解決方案檔：InvoiceIntelligenceAssistant.slnx
+- 應用程式：src/InvoiceDownloader、src/InvoiceAiProcessor
+- 共用核心：src/InvoiceIntelligence.Core
+- 設定檔範本：config/downloader.ini、config/processor.ini
+
+### 本機驗證指令
+
+```powershell
+dotnet build InvoiceIntelligenceAssistant.slnx -v minimal
+dotnet test InvoiceIntelligenceAssistant.slnx -v minimal
+dotnet format InvoiceIntelligenceAssistant.slnx --verify-no-changes
+```
+
+兩個桌面模組會在啟動時讀取對應 INI 設定並驗證命名規則占位符。

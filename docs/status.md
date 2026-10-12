@@ -13,15 +13,15 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: TBD
+Work Item Name: Project skeleton and configuration foundation
 
-Description: TBD
+Description: Create a buildable .NET 8 solution skeleton with Downloader and AI Processor WPF apps, a shared INI configuration foundation, and baseline tests.
 
 ---
 
 ## Track
 
-LIGHT
+FULL
 
 Tracks:
 
@@ -40,7 +40,7 @@ Optional check (only if unsure): use FULL when any of these is true:
 
 ## Current Stage
 
-INIT
+VERIFICATION
 
 Available Stages (depends on Track):
 
@@ -216,33 +216,33 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ### INIT
 
-- [ ] Branch Created
-- [ ] Work Item Name + Description
-- [ ] Tech Stack Confirmed
-- [ ] Scope + Definition of Done Confirmed
+- [x] Branch Created
+- [x] Work Item Name + Description
+- [x] Tech Stack Confirmed
+- [x] Scope + Definition of Done Confirmed
 
 ### PLAN
 
-- [ ] Goal + MVP Defined
-- [ ] Scope + Acceptance Criteria
-- [ ] Task Breakdown Ready
+- [x] Goal + MVP Defined
+- [x] Scope + Acceptance Criteria
+- [x] Task Breakdown Ready
 
 ### IMPLEMENTATION
 
-- [ ] Code Implemented
-- [ ] Tests Added/Updated
+- [x] Code Implemented
+- [x] Tests Added/Updated
 
 ### VERIFICATION
 
-- [ ] Work Item Tested
-- [ ] Definition of Done Verified
-- [ ] Format / Lint Checked (if the project defines a formatter or linter)
-- [ ] CI Passed — run locally if a CI config exists (required if project.md Delivery Policy sets CI Required = yes)
+- [x] Work Item Tested
+- [x] Definition of Done Verified
+- [x] Format / Lint Checked (if the project defines a formatter or linter)
+- [x] CI Passed — run locally if a CI config exists (required if project.md Delivery Policy sets CI Required = yes)
 
 ### DELIVERY
 
-- [ ] project.md progress updated (Roadmap/Milestones)
-- [ ] Docs/README updated
+- [x] project.md progress updated (Roadmap/Milestones)
+- [x] Docs/README updated
 - [ ] Delivery commit + push completed
 - [ ] PR opened/updated (if required)
 
@@ -250,7 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-TBD
+Implemented item 1 from roadmap with a new solution scaffold and project structure.
+Added shared INI configuration loading and naming-rule placeholder validation in core library.
+Ran build, test, and formatter verification successfully; CI workflow files are not present in this repository.
+Preparing delivery commit and push per policy (main branch protected: no).
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 
@@ -258,7 +261,7 @@ TBD
 
 ## Next Action
 
-TBD
+Create delivery commit, push branch, merge/land to main by policy, then run finish cleanup.
 
 ---
 

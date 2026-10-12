@@ -185,7 +185,7 @@ Constraints / Non-Functional Requirements:
 
 | # | Work Item | Definition of Done | Priority | Track | Depends On | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Project skeleton and configuration foundation | A buildable .NET 8 solution with separate Downloader and AI Processor apps plus INI configuration loading is available. | P0 | FULL | - | TODO |
+| 1 | Project skeleton and configuration foundation | A buildable .NET 8 solution with separate Downloader and AI Processor apps plus INI configuration loading is available. | P0 | FULL | - | DONE |
 | 2 | Customer import and MOF authentication flow | Users can import customer Excel data and complete MOF authentication with clear validation and error handling. | P0 | FULL | 1 | TODO |
 | 3 | Batch invoice download to Folder A | System downloads invoices in batch for imported customers and writes raw Excel outputs into Folder A with logs. | P0 | FULL | 2 | TODO |
 | 4 | AI decision pipeline core | Processor executes Rule Engine, Case Cache, RAG, and LLM in order and produces structured AI decisions per unresolved record. | P0 | FULL | 1 | TODO |

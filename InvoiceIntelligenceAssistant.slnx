@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/InvoiceAiProcessor/InvoiceAiProcessor.csproj" />
+    <Project Path="src/InvoiceDownloader/InvoiceDownloader.csproj" />
+    <Project Path="src/InvoiceIntelligence.Core/InvoiceIntelligence.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/InvoiceIntelligence.Core.Tests/InvoiceIntelligence.Core.Tests.csproj" />
+  </Folder>
+</Solution>

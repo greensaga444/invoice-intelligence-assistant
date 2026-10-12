@@ -1,0 +1,20 @@
+﻿<Window x:Class="InvoiceAiProcessor.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:InvoiceAiProcessor"
+        mc:Ignorable="d"
+        Title="發票 AI 處理器" Height="300" Width="700">
+    <Grid>
+        <Border Margin="16" Padding="16" BorderThickness="1" CornerRadius="8" BorderBrush="#FFBFBFBF">
+            <StackPanel>
+                <TextBlock Text="模組狀態" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,12" />
+                <TextBlock x:Name="StatusText"
+                           TextWrapping="Wrap"
+                           FontSize="14"
+                           LineHeight="24" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

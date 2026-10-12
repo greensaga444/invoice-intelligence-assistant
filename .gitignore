@@ -1,2 +1,10 @@
 # Top-level build artifacts
 build/
+
+# .NET build outputs
+**/bin/
+**/obj/
+
+# IDE user files
+*.user
+*.suo

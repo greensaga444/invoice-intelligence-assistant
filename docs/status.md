@@ -13,9 +13,9 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: AI decision pipeline core
+Work Item Name: Enhanced Excel export to Folder B
 
-Description: Processor executes Rule Engine, Case Cache, RAG, and local LLM in sequence and returns structured AI decisions for unresolved records.
+Description: Processor preserves source invoice columns, appends required Traditional Chinese AI columns, and exports enhanced workbooks to Folder B using configured naming rules.
 
 ---
 
@@ -250,10 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-Implemented roadmap item 4 with a shared AI decision pipeline in core, enforcing Rule Engine -> Case Cache -> RAG -> LLM stage order.
-Added structured decision output models (deductible status, deduction reason, accounting category, confidence) and Folder A invoice reader support.
-Wired Invoice AI Processor startup to execute the pipeline on Folder A records and display stage-level summary with decision preview.
-Added unit tests for stage short-circuit behavior, execution order, and Folder A parsing validation; build/test/format verification completed.
+Implemented roadmap item 5 with a shared Folder B enhanced Excel exporter in core and integrated naming-rule based file generation.
+Preserved source invoice columns and appended required Traditional Chinese AI columns: AI_可抵稅, AI_判定原因, AI_建議科目, AI_信心度, AI_參考案例.
+Wired Invoice AI Processor startup to run export after pipeline processing and display export summary with output preview.
+Added unit tests for Folder B generation, naming-rule execution, and duplicate filename handling; build/test/format verification completed.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 
@@ -261,7 +261,7 @@ Added unit tests for stage short-circuit behavior, execution order, and Folder A
 
 ## Next Action
 
-Work item 4 delivered; start roadmap item 5 (enhanced Excel export to Folder B) with `start feature/enhanced-excel-export-folder-b full`.
+Work item 5 delivered; start roadmap item 6 (manual knowledge feedback workflow) with `start feature/manual-knowledge-feedback-workflow full`.
 
 ---
 

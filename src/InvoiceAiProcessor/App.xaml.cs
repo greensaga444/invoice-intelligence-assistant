@@ -23,12 +23,13 @@ public partial class App : Application
             var solutionRootPath = ResolveSolutionRootPath(configPath);
             var config = loader.Load(configPath);
             var folderAPath = ResolveConfiguredPath(solutionRootPath, config.FolderAPath);
+            var folderBPath = ResolveConfiguredPath(solutionRootPath, config.FolderBPath);
 
-            var pipelineStatus = BuildPipelineStatus(folderAPath);
+            var pipelineStatus = BuildPipelineStatus(folderAPath, folderBPath, config.OutputNamingRule);
 
             message = $"載入成功: {config.ModuleName}\n" +
                       $"Folder A: {folderAPath}\n" +
-                      $"Folder B: {config.FolderBPath}\n" +
+                      $"Folder B: {folderBPath}\n" +
                       $"命名規則: {config.OutputNamingRule}\n" +
                       pipelineStatus;
         }
@@ -41,7 +42,7 @@ public partial class App : Application
         mainWindow.Show();
     }
 
-    private static string BuildPipelineStatus(string folderAPath)
+    private static string BuildPipelineStatus(string folderAPath, string folderBPath, string outputNamingRule)
     {
         var reader = new FolderAInvoiceRecordReader();
         var records = reader.ReadFromFolder(folderAPath);
@@ -58,15 +59,33 @@ public partial class App : Application
             new LocalHeuristicLlmAnalyzer());
 
         var pipelineResult = pipeline.Process(records);
+        var exporter = new FolderBEnhancedInvoiceExporter();
+        var exportResult = exporter.Export(pipelineResult.Items, folderBPath, outputNamingRule);
+
         var previewLines = pipelineResult.Items
             .Take(3)
             .Select(item =>
                 $"- {item.Record.InvoiceNumber}: {item.Decision.DeductibleStatus}/{item.Decision.AccountingCategory} ({item.Decision.ConfidenceScore:0.00}) via {ToStageDisplayName(item.ResolvedBy)}")
             .ToArray();
 
+        var exportedFilesPreview = exportResult.Files
+            .Take(3)
+            .Select(file =>
+                $"- {Path.GetFileName(file.OutputFilePath)} ({file.RecordCount} 筆)")
+            .ToArray();
+
+        var exportSummary =
+            $"Folder B 匯出完成：檔案 {exportResult.ExportedFileCount}，筆數 {exportResult.ExportedRecordCount}。";
+
+        if (exportedFilesPreview.Length > 0)
+        {
+            exportSummary += $"\n輸出預覽:\n{string.Join("\n", exportedFilesPreview)}";
+        }
+
         return
             $"AI 決策流程完成：總筆數 {pipelineResult.Summary.TotalRecords}，規則 {pipelineResult.Summary.ResolvedByRuleEngine}，快取 {pipelineResult.Summary.ResolvedByCaseCache}，LLM {pipelineResult.Summary.ResolvedByLlm}。\n" +
-            $"判定預覽:\n{string.Join("\n", previewLines)}";
+            $"判定預覽:\n{string.Join("\n", previewLines)}\n" +
+            exportSummary;
     }
 
     private static string ResolveConfigPath(string fileName)

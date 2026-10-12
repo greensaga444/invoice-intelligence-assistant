@@ -68,7 +68,10 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
                     SessionToken: request.SessionToken,
                     IncludeSalesInvoices: _includeSalesInvoices,
                     IncludePurchaseInvoices: _includePurchaseInvoices,
-                    Options: _options);
+                    Options: _options,
+                    OfficialApiAppId: request.OfficialApiAppId,
+                    OfficialApiAccount: request.OfficialApiAccount,
+                    OfficialApiPassword: request.OfficialApiPassword);
 
                 var queryResult = _officialDownloader.DownloadAsync(queryRequest).GetAwaiter().GetResult();
 

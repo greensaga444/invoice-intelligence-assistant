@@ -7,4 +7,7 @@ public sealed record OfficialInvoicePageRequest(
     DateOnly DateTo,
     InvoiceDirection Direction,
     int PageNumber,
-    int PageSize);
+    int PageSize,
+    string? OfficialApiAppId = null,
+    string? OfficialApiAccount = null,
+    string? OfficialApiPassword = null);

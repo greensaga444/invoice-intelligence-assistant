@@ -7,4 +7,7 @@ public sealed record OfficialInvoiceBatchDownloadRequest(
     string SessionToken,
     bool IncludeSalesInvoices,
     bool IncludePurchaseInvoices,
-    OfficialInvoiceDownloadOptions? Options = null);
+    OfficialInvoiceDownloadOptions? Options = null,
+    string? OfficialApiAppId = null,
+    string? OfficialApiAccount = null,
+    string? OfficialApiPassword = null);

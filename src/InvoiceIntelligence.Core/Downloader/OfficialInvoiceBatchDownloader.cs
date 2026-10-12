@@ -49,7 +49,10 @@ public sealed class OfficialInvoiceBatchDownloader
                     DateTo: request.DateTo,
                     Direction: direction,
                     PageNumber: pageNumber,
-                    PageSize: options.PageSize);
+                    PageSize: options.PageSize,
+                    OfficialApiAppId: request.OfficialApiAppId,
+                    OfficialApiAccount: request.OfficialApiAccount,
+                    OfficialApiPassword: request.OfficialApiPassword);
 
                 var (pageResult, retryCount) = await QueryPageWithRetryAsync(pageRequest, options, cancellationToken);
                 totalRetryCount += retryCount;

@@ -5,8 +5,14 @@ using System.Text.Json;
 
 namespace InvoiceIntelligence.Core.Downloader;
 
+/// <summary>
+/// Official MOF merchant API client aligned to:
+/// 電子發票營業人應用 API 規格(V1.9), method 5
+/// (營業人個別化主題-營業人電子發票統計查詢).
+/// </summary>
 public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClient
 {
+    private const string ApiVersion = "1.0";
     private readonly HttpClient _httpClient;
     private readonly Uri _baseUri;
 
@@ -28,15 +34,36 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (string.IsNullOrWhiteSpace(request.SessionToken))
+        if (request.Direction == InvoiceDirection.Purchase)
         {
-            throw new InvalidOperationException("MOF 工作階段無效，請重新驗證後再查詢。");
+            throw new InvalidOperationException(
+                "目前官方模式依 V1.9 規格對齊『營業人電子發票統計查詢』(ODS374I)，僅支援銷項資料。請關閉進項下載。"
+            );
         }
 
-        using var httpRequest = new HttpRequestMessage(HttpMethod.Get, BuildQueryUri(request));
-        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", request.SessionToken);
+        if (string.IsNullOrWhiteSpace(request.OfficialApiAppId)
+            || string.IsNullOrWhiteSpace(request.OfficialApiAccount)
+            || string.IsNullOrWhiteSpace(request.OfficialApiPassword))
+        {
+            throw new InvalidOperationException(
+                "官方 API 呼叫缺少必要認證參數。請確認 appId/account/password 均有設定。"
+            );
+        }
+
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, BuildQueryUri());
         httpRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        httpRequest.Headers.TryAddWithoutValidation("X-Session-Token", request.SessionToken);
+
+        // Spec requires application/x-www-form-urlencoded payload.
+        httpRequest.Content = new FormUrlEncodedContent(
+        [
+            KeyValuePair.Create("version", ApiVersion),
+            KeyValuePair.Create("appID", request.OfficialApiAppId),
+            KeyValuePair.Create("ban", request.TaxId),
+            KeyValuePair.Create("account", request.OfficialApiAccount),
+            KeyValuePair.Create("password", request.OfficialApiPassword),
+            KeyValuePair.Create("invoiceDateS", request.DateFrom.ToString("yyyyMMdd", CultureInfo.InvariantCulture)),
+            KeyValuePair.Create("invoiceDateE", request.DateTo.ToString("yyyyMMdd", CultureInfo.InvariantCulture))
+        ]);
 
         HttpResponseMessage response;
         try
@@ -77,12 +104,22 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
         {
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
-
             var root = document.RootElement;
-            var items = ParseItems(root, request.Direction);
-            var hasMore = ResolveHasMore(root, request.PageSize, items.Count);
 
-            return new OfficialInvoicePageResult(items, hasMore);
+            var code = ReadString(root, "code") ?? string.Empty;
+            var msg = ReadString(root, "msg") ?? "官方 API 未提供訊息。";
+            if (!string.Equals(code, "200", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new MofOfficialInvoiceApiException(
+                    message: $"官方 API 業務錯誤: code={code}, msg={msg}",
+                    statusCode: (int)response.StatusCode,
+                    isTransient: false);
+            }
+
+            var items = ParseItems(root, request.TaxId, request.Direction);
+
+            // ODS374I is not paged by page/pageSize; always return a single page.
+            return new OfficialInvoicePageResult(items, HasMore: false);
         }
         catch (JsonException ex)
         {
@@ -94,129 +131,45 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
         }
     }
 
-    private Uri BuildQueryUri(OfficialInvoicePageRequest request)
+    private Uri BuildQueryUri()
     {
-        var directionText = request.Direction == InvoiceDirection.Sales ? "sales" : "purchase";
-
-        var query = string.Join(
-            "&",
-            $"taxId={Uri.EscapeDataString(request.TaxId)}",
-            $"dateFrom={request.DateFrom:yyyy-MM-dd}",
-            $"dateTo={request.DateTo:yyyy-MM-dd}",
-            $"direction={directionText}",
-            $"page={request.PageNumber}",
-            $"pageSize={request.PageSize}");
-
         var path = _baseUri.AbsoluteUri.TrimEnd('/');
-        return new Uri($"{path}/v1/invoices?{query}", UriKind.Absolute);
+        return new Uri($"{path}/ods-main/ODS374I/query", UriKind.Absolute);
     }
 
-    private static IReadOnlyList<OfficialInvoiceRecord> ParseItems(JsonElement root, InvoiceDirection defaultDirection)
+    private static IReadOnlyList<OfficialInvoiceRecord> ParseItems(
+        JsonElement root,
+        string taxId,
+        InvoiceDirection direction)
     {
-        var itemsElement = TryGetProperty(root, "items")
-            ?? TryGetProperty(root, "data")
-            ?? TryGetProperty(root, "invoices")
-            ?? TryGetProperty(root, "records");
-
-        if (itemsElement is null || itemsElement.Value.ValueKind != JsonValueKind.Array)
+        var detailsElement = TryGetProperty(root, "details");
+        if (detailsElement is null || detailsElement.Value.ValueKind != JsonValueKind.Array)
         {
             return [];
         }
 
-        var result = new List<OfficialInvoiceRecord>();
+        var records = new List<OfficialInvoiceRecord>();
 
-        foreach (var item in itemsElement.Value.EnumerateArray())
+        foreach (var item in detailsElement.Value.EnumerateArray())
         {
-            result.Add(ParseInvoice(item, defaultDirection));
+            var invoiceDate = ReadRequiredDate(item, "invoiceDate");
+            var b2bAmount = ReadDecimal(item, "b2bCrtAvgAmount") ?? 0m;
+            var b2cAmount = ReadDecimal(item, "b2cCrtAvgAmount") ?? 0m;
+            var totalAmount = b2bAmount + b2cAmount;
+
+            records.Add(new OfficialInvoiceRecord(
+                InvoiceNumber: $"STAT-{invoiceDate:yyyyMMdd}",
+                InvoiceDate: invoiceDate,
+                SellerTaxId: taxId,
+                BuyerTaxId: string.Empty,
+                NetAmount: totalAmount,
+                TaxAmount: 0m,
+                TotalAmount: totalAmount,
+                Direction: direction,
+                Currency: "TWD"));
         }
 
-        return result;
-    }
-
-    private static OfficialInvoiceRecord ParseInvoice(JsonElement item, InvoiceDirection defaultDirection)
-    {
-        var invoiceNumber = ReadRequiredString(item, "invoiceNumber", "invoiceNo", "invNum", "number");
-        var invoiceDate = ReadRequiredDate(item, "invoiceDate", "invoiceDt", "date", "issueDate");
-        var sellerTaxId = ReadString(item, "sellerTaxId", "sellerBan", "sellerId") ?? string.Empty;
-        var buyerTaxId = ReadString(item, "buyerTaxId", "buyerBan", "buyerId") ?? string.Empty;
-        var netAmount = ReadDecimal(item, "netAmount", "amount", "salesAmount") ?? 0m;
-        var taxAmount = ReadDecimal(item, "taxAmount", "tax") ?? 0m;
-        var totalAmount = ReadDecimal(item, "totalAmount", "grandTotal", "amountWithTax") ?? netAmount + taxAmount;
-        var currency = ReadString(item, "currency", "currencyCode") ?? "TWD";
-        var direction = ParseDirection(ReadString(item, "direction", "invoiceDirection"), defaultDirection);
-
-        return new OfficialInvoiceRecord(
-            InvoiceNumber: invoiceNumber,
-            InvoiceDate: invoiceDate,
-            SellerTaxId: sellerTaxId,
-            BuyerTaxId: buyerTaxId,
-            NetAmount: netAmount,
-            TaxAmount: taxAmount,
-            TotalAmount: totalAmount,
-            Direction: direction,
-            Currency: currency);
-    }
-
-    private static InvoiceDirection ParseDirection(string? value, InvoiceDirection fallback)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return fallback;
-        }
-
-        return value.Trim().ToLowerInvariant() switch
-        {
-            "sales" or "sale" or "output" => InvoiceDirection.Sales,
-            "purchase" or "input" => InvoiceDirection.Purchase,
-            _ => fallback
-        };
-    }
-
-    private static bool ResolveHasMore(JsonElement root, int pageSize, int itemCount)
-    {
-        var hasMore = ReadBoolean(root, "hasMore", "hasNext", "nextPage");
-        if (hasMore is not null)
-        {
-            return hasMore.Value;
-        }
-
-        return itemCount >= pageSize;
-    }
-
-    private static bool? ReadBoolean(JsonElement element, params string[] names)
-    {
-        foreach (var name in names)
-        {
-            var property = TryGetProperty(element, name);
-            if (property is null)
-            {
-                continue;
-            }
-
-            if (property.Value.ValueKind == JsonValueKind.True)
-            {
-                return true;
-            }
-
-            if (property.Value.ValueKind == JsonValueKind.False)
-            {
-                return false;
-            }
-
-            if (property.Value.ValueKind == JsonValueKind.String
-                && bool.TryParse(property.Value.GetString(), out var parsedBoolean))
-            {
-                return parsedBoolean;
-            }
-        }
-
-        return null;
-    }
-
-    private static string ReadRequiredString(JsonElement element, params string[] names)
-    {
-        return ReadString(element, names)
-            ?? throw new JsonException($"缺少必要欄位: {string.Join("/", names)}");
+        return records;
     }
 
     private static string? ReadString(JsonElement element, params string[] names)

@@ -21,6 +21,7 @@ public partial class MainWindow : Window
     private IReadOnlyList<CustomerRecord> _loadedCustomers = [];
     private string? _sessionToken;
     private DateTimeOffset? _sessionExpiresAt;
+    private string? _authenticatedPassword;
 
     public MainWindow(ModuleConfiguration? configuration, string statusMessage, string solutionRootPath)
     {
@@ -128,6 +129,7 @@ public partial class MainWindow : Window
         {
             _sessionToken = null;
             _sessionExpiresAt = null;
+            _authenticatedPassword = null;
             StartBatchDownloadButton.IsEnabled = false;
             MofAuthResultText.Text = $"驗證失敗: {authResult.Message}";
             return;
@@ -135,6 +137,7 @@ public partial class MainWindow : Window
 
         _sessionToken = authResult.SessionToken;
         _sessionExpiresAt = authResult.ExpiresAt;
+        _authenticatedPassword = credential.Password;
         StartBatchDownloadButton.IsEnabled = _loadedCustomers.Count > 0;
 
         var expiresAtText = authResult.ExpiresAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") ?? "無";
@@ -171,7 +174,10 @@ public partial class MainWindow : Window
                 Customers: _loadedCustomers,
                 FolderAPath: folderAPath,
                 OutputNamingRule: _configuration.OutputNamingRule,
-                SessionToken: _sessionToken!);
+                SessionToken: _sessionToken!,
+                OfficialApiAppId: _configuration.MofCredentialKey,
+                OfficialApiAccount: _configuration.MofAccount,
+                OfficialApiPassword: _authenticatedPassword);
 
             var result = _batchInvoiceDownloader.Download(request);
 
@@ -238,7 +244,11 @@ public partial class MainWindow : Window
         var apiClient = new MofOfficialHttpInvoiceApiClient(httpClient, configuration.OfficialApiBaseUrl);
         var officialDownloader = new OfficialInvoiceBatchDownloader(apiClient);
         var exporter = new OfficialInvoiceCsvExporter();
-        var batchDownloader = new OfficialBatchInvoiceDownloader(officialDownloader, exporter);
+        var batchDownloader = new OfficialBatchInvoiceDownloader(
+            officialDownloader,
+            exporter,
+            includeSalesInvoices: true,
+            includePurchaseInvoices: false);
 
         return (batchDownloader, httpClient);
     }

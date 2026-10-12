@@ -8,3 +8,4 @@ build/
 # IDE user files
 *.user
 *.suo
+.vscode/

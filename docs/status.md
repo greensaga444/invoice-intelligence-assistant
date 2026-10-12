@@ -243,8 +243,8 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 - [x] project.md progress updated (Roadmap/Milestones)
 - [x] Docs/README updated
-- [ ] Delivery commit + push completed
-- [ ] PR opened/updated (if required)
+- [x] Delivery commit + push completed
+- [x] PR opened/updated (if required)
 
 ---
 
@@ -261,7 +261,7 @@ Added unit tests for success, session validation, and filename collision handlin
 
 ## Next Action
 
-Create delivery commit for roadmap item 3 and proceed to roadmap item 4 (AI decision pipeline core).
+Work item 3 delivered; start roadmap item 4 (AI decision pipeline core) with `start feature/ai-decision-pipeline-core full`.
 
 ---
 

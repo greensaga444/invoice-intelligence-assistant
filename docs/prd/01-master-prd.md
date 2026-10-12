@@ -1,32 +1,172 @@
-# Master PRD
+# Master Product Requirements Document
 
-This file is the executive summary of the product requirements.
+## Product Name
 
-## Product Summary
+Invoice Intelligence Assistant
 
-- Product Name: TBD
-- Problem Statement: TBD
-- Primary Users: TBD
-- Value Proposition: TBD
+---
 
-## Scope Snapshot
+## Background
 
-- In Scope: See [Scope and Goals](10-scope-and-goals.md)
-- Out of Scope: See [Scope and Goals](10-scope-and-goals.md)
+Accounting firms currently perform invoice downloading, invoice review, tax deduction determination, and accounting classification manually.
 
-## Requirement Summary
+Main challenges:
 
-- Functional requirements: See [Functional Requirements](20-requirements-functional.md)
-- Non-functional requirements: See [Non-Functional Requirements](30-requirements-nonfunctional.md)
-- User journeys: See [User Flows](40-user-flows.md)
+- 80 to 150 customer companies
+- Large invoice volume
+- Inconsistent classification decisions
+- Time-consuming manual review
+- Limited scalability
 
-## Release Criteria Snapshot
+The objective is to automate the process while maintaining decision quality.
 
-- Acceptance criteria map: See [Acceptance Criteria](50-acceptance-criteria.md)
-- Open issues and unresolved decisions: See [Open Questions](90-open-questions.md)
+---
 
-## Revision Metadata
+## Business Objectives
 
-- Version: v0.1
-- Last Updated: YYYY-MM-DD
-- Owner: TBD
+1. Automate electronic invoice downloading.
+2. Automate invoice analysis.
+3. Reduce manual review effort.
+4. Improve consistency.
+5. Support future knowledge accumulation.
+6. Operate within a local environment.
+
+---
+
+## Target Users
+
+### Primary Users
+
+- Accounting Firms
+- Bookkeeping Service Providers
+- Finance Departments
+
+### Secondary Users
+
+- Tax Consultants
+- Accounting Supervisors
+
+---
+
+## Product Scope
+
+### Included
+
+- Customer list import
+- MOF API configuration
+- Invoice downloading
+- Folder-based processing
+- Rule engine
+- Knowledge retrieval
+- AI analysis
+- Excel output
+- Naming rule configuration
+- Manual knowledge feedback
+
+### Excluded
+
+- ERP Integration
+- Mobile Applications
+- Public Cloud Deployment
+- Automatic AI Learning
+- Multi-Tenant SaaS
+
+---
+
+## Solution Overview
+
+The system consists of two independent executable modules.
+
+### Module A
+
+Invoice Downloader
+
+Responsibilities:
+
+- Read customer list
+- Authenticate with MOF services
+- Download invoices
+- Export raw invoice files to Folder A
+
+### Module B
+
+Invoice AI Processor
+
+Responsibilities:
+
+- Read invoice files from Folder A
+- Apply Rule Engine
+- Apply RAG search
+- Execute LLM analysis
+- Generate enhanced Excel files
+- Export to Folder B
+
+---
+
+## AI Strategy
+
+The system shall use:
+
+Rule Engine
+
+↓
+
+Case Cache
+
+↓
+
+RAG Search
+
+↓
+
+LLM Reasoning
+
+This approach minimizes unnecessary AI calls and improves consistency.
+
+---
+
+## Local AI Stack
+
+### Runtime
+
+Ollama
+
+### LLM
+
+Qwen3 8B
+
+### Embedding Model
+
+BGE-M3
+
+### Vector Database
+
+Qdrant
+
+---
+
+## User Language Requirements
+
+Version 1 shall use Traditional Chinese as the only user-facing language.
+
+This includes:
+
+- Menus
+- Buttons
+- Dialogs
+- Notifications
+- Error Messages
+- Processing Results
+- AI Outputs
+
+---
+
+## Documentation Language
+
+Technical documents:
+
+- English
+
+End-user documentation:
+
+- Traditional Chinese

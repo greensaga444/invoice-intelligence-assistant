@@ -6,7 +6,7 @@
 
 ## Init Status
 
-Status: TEMPLATE
+Status: DEFINED
 
 > TEMPLATE = not yet defined; DEFINED = initialization complete.
 > Set to DEFINED only after Final Target, Architecture, and Roadmap are filled in.
@@ -16,24 +16,24 @@ Status: TEMPLATE
 
 ## Project
 
-Project Name: TBD
+Project Name: Invoice Intelligence Assistant
 
-Repository: TBD  (optional — leave empty for local-only; if using GitHub, create an empty repo and `git clone` before copying this template in)
+Repository: https://github.com/greensaga444/invoice-intelligence-assistant.git
 
-Owner: TBD
+Owner: Davis Chen
 
-Project Type: TBD  (e.g. Web App / Desktop App (Windows/macOS/Linux) / Mobile App (Android/iOS) / CLI Tool / Library/SDK / Backend Service / Embedded)
+Project Type: Windows Desktop Application
 
-Target Platforms: TBD
+Target Platforms: Windows 10 and Windows 11
 
 Tech Stack:
 
-- Language(s): TBD
-- Framework / UI: TBD
-- Data / Storage: TBD
-- Backend / Services: TBD
-- Build / Packaging: TBD
-- Infrastructure / Distribution: TBD  (optional — CI/CD only if publishing to GitHub or similar)
+- Language(s): C# (.NET 8)
+- Framework / UI: WPF desktop application
+- Data / Storage: Excel files, INI configuration, local file system, Qdrant vector store
+- Backend / Services: Local invoice download integration, local AI pipeline via Ollama
+- Build / Packaging: .NET SDK 8, solution-based build pipeline
+- Infrastructure / Distribution: Local deployment within customer environment (offline-first)
 
 ---
 
@@ -41,10 +41,10 @@ Tech Stack:
 
 > Decided once, after this file is defined. Governs how work branches land.
 
-- Main Branch Protected: TBD  (yes / no)
+- Main Branch Protected: no  (yes / no)
 - Pull Request Required: same as Main Branch Protected
 - CI Required: same as Pull Request Required (must pass before merge)
-- Merge Method: TBD  (e.g. squash / merge / rebase)
+- Merge Method: squash  (e.g. squash / merge / rebase)
 - One PR per Branch: yes  (if a PR already exists for the branch, update it)
 
 If Main Branch Protected is **no** (therefore Pull Request Required is **no**) (local-only), delivery may push directly to `main` and CI is optional.
@@ -100,19 +100,27 @@ Build output convention: write all generated build artifacts to `build/`.
 
 Vision:
 
-TBD
+Build a local-first invoice intelligence desktop system that reduces accounting teams' manual workload by automating invoice download, AI-assisted analysis, and standardized Excel output.
 
 Problem Statement:
 
-TBD
+Accounting teams handling 80 to 150 customer companies process high invoice volumes with manual, inconsistent decisions, creating bottlenecks and quality variance. The project addresses this by combining deterministic rules, reusable historical decisions, retrieval-based context, and local LLM reasoning.
 
 Success Definition (Done means):
 
-- TBD
+- End-to-end batch flow completes from customer import to Folder B export.
+- System supports 150 customer companies and 15,000 to 30,000 invoice records per run.
+- File generation success rate is above 99% and failures are logged.
+- All AI inference runs locally with no external AI calls.
+- User-facing interface and generated business outputs are in Traditional Chinese.
 
 Out of Scope:
 
-- TBD
+- ERP integration
+- Mobile applications
+- Public cloud deployment
+- Automatic learning without user approval
+- Multi-tenant SaaS workflow
 
 ---
 
@@ -120,27 +128,45 @@ Out of Scope:
 
 High-Level Overview:
 
-TBD
+The product is composed of two independent executables: Invoice Downloader and Invoice AI Processor. Downloader imports customer metadata and fetches invoice files into Folder A. AI Processor reads Folder A and applies a staged decision pipeline (Rule Engine -> Case Cache -> RAG -> LLM) before exporting enhanced Excel files to Folder B and accepting approved knowledge feedback.
 
 Components:
 
 | Component | Responsibility | Tech |
 | --- | --- | --- |
-| TBD | TBD | TBD |
+| Invoice Downloader | Import customer list, authenticate, batch download invoices, output raw files to Folder A | C#, .NET 8, WPF, MOF integration |
+| Invoice AI Processor | Read Folder A invoices, apply staged AI decision pipeline, generate enhanced outputs to Folder B | C#, .NET 8, WPF |
+| Rule Engine | Resolve deterministic tax/accounting rules before AI calls | Configurable local rule set |
+| Case Cache | Reuse prior exact decisions to reduce repeated analysis | Local cache storage |
+| RAG Engine | Retrieve similar historical records for model context | BGE-M3 embeddings, Qdrant |
+| LLM Runtime | Generate deductible status, reasons, category, confidence | Ollama, Qwen3 8B |
+| Knowledge Feedback Module | Accept user-approved corrections and update searchable knowledge | Manual approval flow + vector index update |
+| Configuration Module | Manage MOF, AI, folder, and naming rule settings | INI configuration |
 
 Data Flow:
 
-TBD
+1. Customer list import provides Tax ID, company name, and date range.
+2. Invoice Downloader authenticates and fetches customer invoices.
+3. Raw invoice files are exported to Folder A.
+4. AI Processor loads records and executes Rule Engine first.
+5. Unresolved records go through Case Cache, then RAG retrieval, then LLM reasoning.
+6. Enhanced files preserve source columns and append AI columns.
+7. Processed files are exported to Folder B.
+8. Approved manual feedback updates knowledge storage and retrieval index.
 
 Key Decisions:
 
-- TBD
+- Use a two-module executable architecture to separate download and analysis responsibilities.
+- Enforce local-only AI execution for security and compliance.
+- Use staged decision routing (Rule Engine -> Cache -> RAG -> LLM) to optimize consistency and cost.
+- Keep configuration externalized in INI files for maintainability and operations.
+- Preserve source data immutability and emit enriched outputs as new files.
 
 Constraints / Non-Functional Requirements:
 
-- Performance: TBD
-- Security: TBD
-- Scalability: TBD
+- Performance: startup under 5 seconds; support 15,000 to 30,000 records and 150 companies per batch.
+- Security: all data and AI inference stay local; credentials stored securely; no external AI APIs.
+- Scalability: handle growing historical knowledge while preserving export reliability above 99%.
 
 ---
 
@@ -159,9 +185,13 @@ Constraints / Non-Functional Requirements:
 
 | # | Work Item | Definition of Done | Priority | Track | Depends On | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | TBD | TBD | TBD | FULL | - | TODO |
-| 2 | TBD | TBD | TBD | LIGHT | 1 | TODO |
-| 3 | TBD | TBD | TBD | LIGHT | - | TODO |
+| 1 | Project skeleton and configuration foundation | A buildable .NET 8 solution with separate Downloader and AI Processor apps plus INI configuration loading is available. | P0 | FULL | - | TODO |
+| 2 | Customer import and MOF authentication flow | Users can import customer Excel data and complete MOF authentication with clear validation and error handling. | P0 | FULL | 1 | TODO |
+| 3 | Batch invoice download to Folder A | System downloads invoices in batch for imported customers and writes raw Excel outputs into Folder A with logs. | P0 | FULL | 2 | TODO |
+| 4 | AI decision pipeline core | Processor executes Rule Engine, Case Cache, RAG, and LLM in order and produces structured AI decisions per unresolved record. | P0 | FULL | 1 | TODO |
+| 5 | Enhanced Excel export to Folder B | Processor preserves source columns, appends all required AI columns in Traditional Chinese, and exports files to Folder B using naming rules. | P0 | FULL | 4 | TODO |
+| 6 | Manual knowledge feedback workflow | User-approved records can be written back to knowledge storage and become retrievable by RAG without automatic learning. | P1 | FULL | 4 | TODO |
+| 7 | Localization and quality gates | Traditional Chinese UI/output, offline-only AI checks, performance targets, and acceptance test suite are all validated. | P1 | FULL | 3,5,6 | TODO |
 
 Definition of Done: one line describing a distinct user-visible outcome; no two rows should share it.
 Track values: FULL (full pipeline) / LIGHT (skip PLAN)
@@ -173,9 +203,9 @@ Status values: TODO / IN PROGRESS / DONE / BLOCKED
 
 > Defined here on `init` (from the PRD/Final Target). Each finished milestone triggers a README refresh.
 
-- [ ] M1: TBD
-- [ ] M2: TBD
-- [ ] M3: TBD
+- [ ] M1: Downloader MVP complete (customer import, authentication, batch download, Folder A export)
+- [ ] M2: AI Processor MVP complete (decision pipeline and Folder B enhanced export)
+- [ ] M3: Production readiness complete (knowledge feedback, localization, performance/security validation)
 
 ---
 

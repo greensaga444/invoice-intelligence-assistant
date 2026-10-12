@@ -1,80 +1,237 @@
 # User Flows
 
-Use this file as a project-ready template for user journey definitions.
+## Overview
 
-## Completion Rules
+This document describes the primary user and system workflows for Invoice Intelligence Assistant.
 
-- Each High-priority functional requirement must be covered by at least one flow.
-- Each flow must map to acceptance criteria.
-- Each flow must include at least one main path and one alternate or error path.
-- Remove all `TBD` placeholders before implementation starts.
+The product consists of two independent executable modules:
 
-## Flow List
+1. Invoice Downloader
+2. Invoice AI Processor
 
-| ID | Flow Name | Primary Actor | Trigger | Outcome | FR Links | AC Links |
-| --- | --- | --- | --- | --- | --- | --- |
-| UF-001 | TBD | TBD | TBD | TBD | FR-001 | AC-FR-001 |
+Both modules can be executed independently.
 
-## Detailed Flow Template
+---
 
-### UF-001: TBD
+# UF-001 Customer List Import
 
-#### Traceability
+## Preconditions
 
-- Related functional requirements: FR-001
-- Related acceptance criteria: AC-FR-001
+- Customer List Excel exists.
+- Required columns exist.
 
-#### Preconditions
+Required columns:
 
-- TBD
+- Tax ID
+- Company Name
+- Date Range
 
-#### Main Path
+## Main Flow
 
-1. User action: TBD
-   - System response: TBD
-   - Observable result (for tests): TBD
-2. User action: TBD
-   - System response: TBD
-   - Observable result (for tests): TBD
-3. User action: TBD
-   - System response: TBD
-   - Observable result (for tests): TBD
+1. User launches Invoice Downloader.
+2. User selects Customer List Excel file.
+3. System validates required columns.
+4. System loads customer records.
+5. System prepares download queue.
 
-#### Alternate Paths
+## Alternate Flow
 
-- A1: Name
-  - Condition: TBD
-  - Behavior: TBD
-  - Observable result (for tests): TBD
+### UF-001-A1 Missing Required Columns
 
-#### Error Paths
+1. System detects missing column.
+2. System displays validation error.
+3. Import process stops.
 
-- E1: Name
-  - Condition: TBD
-  - Error behavior: TBD
-  - Observable result (for tests): TBD
+## Postconditions
 
-#### Postconditions
+- Customer records loaded successfully.
 
-- Success state: TBD
-- Failure state: TBD
+---
 
-#### Test-First Hooks
+# UF-002 MOF Authentication
 
-- Happy path test intent: TBD
-- Validation/error test intent: TBD
-- Boundary test intent: TBD
-- Idempotency test intent (if relevant): TBD
+## Preconditions
 
-#### Notes
+- Customer records loaded.
+- MOF credentials configured.
 
-- Dependencies/assumptions: TBD
-- Open questions: TBD
+## Main Flow
 
-## Flow Readiness Checklist
+1. System loads MOF configuration.
+2. System authenticates using:
+   - Username
+   - Password
+   - API Key
+3. Authentication succeeds.
+4. Download session established.
 
-- [ ] Flow IDs are unique and stable (`UF-XXX`).
-- [ ] Every flow has FR and AC traceability.
-- [ ] Every main-path step has an observable result.
-- [ ] Alternate/error paths are explicit and testable.
-- [ ] No unresolved blockers remain for this flow.
+## Alternate Flow
+
+### UF-002-A1 Authentication Failure
+
+1. Authentication fails.
+2. Error logged.
+3. User notified.
+
+## Postconditions
+
+- Authenticated session established.
+
+---
+
+# UF-003 Batch Invoice Download
+
+## Preconditions
+
+- Authentication successful.
+
+## Main Flow
+
+1. System processes customer queue.
+2. System downloads invoice data.
+3. System generates raw invoice Excel.
+4. System saves files into Folder A.
+
+## Output
+
+Example:
+
+```text
+Folder A
+
+12345678_ABC_2026-01~2026-03.xlsx
+```
+
+## Postconditions
+
+- Invoice files available in Folder A.
+
+---
+
+# UF-004 AI Processing
+
+## Preconditions
+
+- Invoice files exist in Folder A.
+
+## Main Flow
+
+1. User launches Invoice AI Processor.
+2. System scans Folder A.
+3. System loads invoice files.
+4. System prepares invoice records.
+
+## Postconditions
+
+- Records ready for analysis.
+
+---
+
+# UF-005 Rule Engine Processing
+
+## Main Flow
+
+1. System evaluates configured rules.
+2. Matching records are classified immediately.
+3. Results stored.
+
+## Postconditions
+
+- Matching records resolved without AI.
+
+---
+
+# UF-006 Case Cache Lookup
+
+## Main Flow
+
+1. System searches historical cache.
+2. Exact matches identified.
+3. Existing decisions reused.
+
+## Postconditions
+
+- Duplicate analysis avoided.
+
+---
+
+# UF-007 RAG Retrieval
+
+## Main Flow
+
+1. System creates embeddings.
+2. System queries Qdrant.
+3. Similar historical examples retrieved.
+4. Retrieved examples attached to context.
+
+## Postconditions
+
+- Context prepared for LLM.
+
+---
+
+# UF-008 LLM Analysis
+
+## Main Flow
+
+1. System sends context to Qwen.
+2. Qwen determines:
+   - Deductible status
+   - Reason
+   - Accounting category
+   - Confidence score
+3. Structured result returned.
+
+## Postconditions
+
+- AI decision generated.
+
+---
+
+# UF-009 Export Processed Excel
+
+## Main Flow
+
+1. Original invoice data preserved.
+2. AI columns appended.
+3. Naming rule applied.
+4. Excel exported to Folder B.
+
+## Added Columns
+
+- AI_可抵稅
+- AI_判定原因
+- AI_建議科目
+- AI_信心度
+- AI_參考案例
+
+## Output
+
+```text
+Folder B
+
+12345678_ABC_2026-01~2026-03.xlsx
+```
+
+---
+
+# UF-010 Manual Knowledge Feedback
+
+## Preconditions
+
+- User has reviewed results.
+
+## Main Flow
+
+1. User selects approved records.
+2. User clicks Update Knowledge Base.
+3. Records added to knowledge repository.
+4. Vector index updated.
+
+## Important Rule
+
+System shall never automatically learn without explicit user approval.
+
+## Postconditions
+
+- Knowledge base updated.

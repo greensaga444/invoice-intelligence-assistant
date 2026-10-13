@@ -1,5 +1,6 @@
 # Top-level build artifacts
 build/
+deploy/
 
 # .NET build outputs
 **/bin/

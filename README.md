@@ -114,6 +114,104 @@ AI 與檢索：
 - AI Processor 已支援手動知識回饋：可勾選人工核准紀錄並更新本地知識庫，且後續執行會將已核准案例載入 RAG 檢索。
 - 目前版本已完成在地化與品質閘道：使用者可見訊息與輸出欄位維持繁體中文，且已加入離線 AI 驗證與目標規模效能測試。
 
+## 模組化部署指南（可只交付單一模組）
+
+### 一鍵打包腳本
+
+```powershell
+.\scripts\publish-downloader.ps1
+.\scripts\publish-processor.ps1
+.\scripts\publish-all.ps1
+```
+
+可選參數：
+
+```powershell
+.\scripts\publish-downloader.ps1 -Runtime win-x64 -Configuration Release
+.\scripts\publish-processor.ps1 -Runtime win-x64 -Configuration Release
+.\scripts\publish-all.ps1 -Runtime win-x64 -Configuration Release
+```
+
+參數說明：
+
+- `-Runtime`
+  指定目標 Windows Runtime Identifier（RID）。
+- `win-x64`：64 位元 Windows（建議正式交付使用）。
+- `win-x86`：32 位元 Windows。
+- `win-arm64`：ARM64 Windows。
+- `-Configuration`
+  指定建置組態。
+- `Release`：正式版，最佳化輸出，建議交付客戶。
+- `Debug`：除錯版，供內部測試與開發調查。
+
+其他常用參數（選用）：
+
+- `-FrameworkDependent`
+  改為 framework-dependent 打包，不內含 .NET Runtime（客戶端需先安裝對應 Runtime）。
+- `-OutputPath`（publish-downloader / publish-processor）
+  指定單一模組輸出路徑。
+- `-DeployRoot`（publish-all）
+  指定雙模組輸出根路徑（預設為 `deploy`）。
+- `-SkipZip`（publish-all）
+  僅產出資料夾，不建立 zip 檔。
+
+- 預設輸出路徑（Downloader）：`deploy/downloader`
+- 預設輸出路徑（Processor）：`deploy/processor`
+- 預設為 self-contained 打包（客戶端可不先安裝 .NET Runtime）。
+- 如需 framework-dependent 打包，可加上 `-FrameworkDependent`。
+- 若遇到 PowerShell 執行政策封鎖，可先執行：`Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`（僅作用於當前視窗）。
+
+### 部署流程 A：只部署 Downloader（模組 A）
+
+步驟：
+
+1. 執行 `scripts/publish-downloader.ps1`。
+2. 交付 `deploy/downloader` 整個資料夾給客戶端。
+3. 確認 `config/downloader.ini` 參數（folderA、folderB、mof.account、mof.appId、mof.appKey）。
+4. 若採官方 API，設定 `mof.invoiceDownloadMode=official` 與 `mof.officialApiBaseUrl`。
+5. 客戶端執行 `InvoiceDownloader.exe`。
+6. 驗證是否成功輸出檔案到 Folder A，並產生下載紀錄 `.log`。
+
+流程：
+
+```mermaid
+flowchart LR
+		A[客戶清單 Excel] --> B[InvoiceDownloader.exe]
+		B --> C[Folder A 原始檔]
+		B --> D[下載紀錄 log]
+```
+
+### 部署流程 B：只部署 AI Processor（模組 B）
+
+步驟：
+
+1. 執行 `scripts/publish-processor.ps1`。
+2. 交付 `deploy/processor` 整個資料夾給客戶端。
+3. 確認 `config/processor.ini` 參數（folderA、folderB、output.fileNamingRule、knowledge.repositoryFile）。
+4. 將待分析原始檔放入 Folder A。
+5. 客戶端執行 `InvoiceAiProcessor.exe`。
+6. 驗證 Folder B 是否產生強化 Excel，並可選擇執行人工回饋更新知識庫。
+
+流程：
+
+```mermaid
+flowchart LR
+		A[Folder A 原始檔] --> B[InvoiceAiProcessor.exe]
+		B --> C[Rule Engine]
+		C --> D[Case Cache]
+		D --> E[RAG]
+		E --> F[LLM]
+		F --> G[Folder B 強化 Excel]
+		G --> H[人工核准回饋]
+		H --> I[knowledge-cases.json]
+```
+
+### 模組相依與格式注意事項
+
+- Processor 目前只會讀取 Folder A 下的 `.xlsx` 檔案。
+- Downloader 在 local 模式輸出 `.xlsx`；official 模式輸出 `.csv`。
+- 若要將 Downloader 輸出直接餵給 Processor，請確保 Folder A 內容符合 Processor 期望的 `.xlsx` 欄位格式。
+
 ### 本機驗證指令
 
 ```powershell

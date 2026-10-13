@@ -20,7 +20,7 @@ $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent $scriptRoot
 
 if ([string]::IsNullOrWhiteSpace($DeployRoot)) {
-    $DeployRoot = Join-Path $repoRoot "deploy"
+    $DeployRoot = Join-Path $repoRoot "build\deploy"
 }
 
 $downloaderScript = Join-Path $scriptRoot "publish-downloader.ps1"

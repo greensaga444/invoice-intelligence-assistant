@@ -1,6 +1,11 @@
-# Top-level build artifacts
+# Top-level build artifacts (current default output root)
 build/
+
+# Legacy publish root (kept ignored for backward compatibility)
 deploy/
+
+# Test artifacts
+TestResults/
 
 # .NET build outputs
 **/bin/

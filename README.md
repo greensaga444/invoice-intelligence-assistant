@@ -159,15 +159,15 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 - `-FrameworkDependent`
   改為 framework-dependent 打包，不內含 .NET Runtime（客戶端需先安裝對應 Runtime）。
 - `-OutputPath`（publish-downloader / publish-processor）
-	指定輸出根路徑（預設皆為 `deploy/InvoiceIntelligence`）。
+	指定輸出根路徑（預設皆為 `build/deploy/InvoiceIntelligence`）。
 - `-DeployRoot`（publish-all）
-	指定輸出根路徑（預設為 `deploy`，實際整包輸出到 `deploy/InvoiceIntelligence`）。
+	指定輸出根路徑（預設為 `build/deploy`，實際整包輸出到 `build/deploy/InvoiceIntelligence`）。
 - `-SkipZip`（publish-all）
   僅產出資料夾，不建立 zip 檔。
 
-- `publish-all` 預設輸出（推薦交付客戶）：`deploy/InvoiceIntelligence`
-- `publish-downloader` 預設輸出：`deploy/InvoiceIntelligence`
-- `publish-processor` 預設輸出：`deploy/InvoiceIntelligence`
+- `publish-all` 預設輸出（推薦交付客戶）：`build/deploy/InvoiceIntelligence`
+- `publish-downloader` 預設輸出：`build/deploy/InvoiceIntelligence`
+- `publish-processor` 預設輸出：`build/deploy/InvoiceIntelligence`
 - 預設為 self-contained 打包（客戶端可不先安裝 .NET Runtime）。
 - 如需 framework-dependent 打包，可加上 `-FrameworkDependent`。
 - 若遇到 PowerShell 執行政策封鎖，可先執行：`Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force`（僅作用於當前視窗）。
@@ -209,12 +209,12 @@ InvoiceIntelligence/
 步驟：
 
 1. 執行 `scripts/publish-all.ps1`。
-2. 交付 `deploy/InvoiceIntelligence` 整個資料夾給客戶端。
-3. 客戶端直接執行 `deploy/InvoiceIntelligence/InvoiceLauncher.exe`。
+2. 交付 `build/deploy/InvoiceIntelligence` 整個資料夾給客戶端。
+3. 客戶端直接執行 `build/deploy/InvoiceIntelligence/InvoiceLauncher.exe`。
 4. 在主控台使用「設定」集中管理 `config/downloader.ini` 與 `config/processor.ini`。
 5. 如需執行完整流程，在主控台按「執行完整流程」（先啟動 Downloader，關閉後可接續啟動 Processor）。
 6. 如需獨立執行單一模組，請進入對應子資料夾：
-   `deploy/InvoiceIntelligence/downloader/InvoiceDownloader.exe` 或 `deploy/InvoiceIntelligence/processor/InvoiceAiProcessor.exe`。
+	`build/deploy/InvoiceIntelligence/downloader/InvoiceDownloader.exe` 或 `build/deploy/InvoiceIntelligence/processor/InvoiceAiProcessor.exe`。
 7. 子模組獨立執行時不提供設定 UI。
 
 流程：
@@ -232,7 +232,7 @@ flowchart LR
 步驟：
 
 1. 執行 `scripts/publish-downloader.ps1`。
-2. 交付 `deploy/InvoiceIntelligence` 整個資料夾給客戶端（包含 `downloader` 與 `config`）。
+2. 交付 `build/deploy/InvoiceIntelligence` 整個資料夾給客戶端（包含 `downloader` 與 `config`）。
 3. 確認 `config/downloader.ini` 參數（folderA、folderB、mof.account、mof.appId、mof.appKey）。
 4. 若採官方 API，設定 `mof.invoiceDownloadMode=official` 與 `mof.officialApiBaseUrl`。
 5. 客戶端執行 `downloader/InvoiceDownloader.exe`。
@@ -253,7 +253,7 @@ flowchart LR
 步驟：
 
 1. 執行 `scripts/publish-processor.ps1`。
-2. 交付 `deploy/InvoiceIntelligence` 整個資料夾給客戶端（包含 `processor` 與 `config`）。
+2. 交付 `build/deploy/InvoiceIntelligence` 整個資料夾給客戶端（包含 `processor` 與 `config`）。
 3. 確認 `config/processor.ini` 參數（folderA、folderB、output.fileNamingRule、knowledge.repositoryFile）。
 4. 將待分析原始檔放入 Folder A。
 5. 客戶端執行 `processor/InvoiceAiProcessor.exe`。

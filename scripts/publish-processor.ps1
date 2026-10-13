@@ -18,7 +18,7 @@ $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent $scriptRoot
 
 if ([string]::IsNullOrWhiteSpace($OutputPath)) {
-    $OutputPath = Join-Path $repoRoot "deploy\InvoiceIntelligence"
+    $OutputPath = Join-Path $repoRoot "build\deploy\InvoiceIntelligence"
 }
 
 $moduleOutput = Join-Path $OutputPath "processor"

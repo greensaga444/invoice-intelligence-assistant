@@ -40,6 +40,17 @@ if (-not (Test-Path $projectPath)) {
     throw "Project file not found: $projectPath"
 }
 
+$readinessScriptSource = Join-Path $scriptRoot "check-customer-environment.ps1"
+if (-not (Test-Path $readinessScriptSource)) {
+    throw "Script not found: $readinessScriptSource"
+}
+
+$readinessScriptTarget = Join-Path $OutputPath "check-customer-environment.ps1"
+$powershellPath = Join-Path $PSHOME "powershell.exe"
+if (-not (Test-Path $powershellPath)) {
+    $powershellPath = "powershell.exe"
+}
+
 $selfContained = if ($FrameworkDependent) { "false" } else { "true" }
 
 Write-Host "Publishing InvoiceAiProcessor..." -ForegroundColor Cyan
@@ -53,10 +64,18 @@ $configDir = Join-Path $OutputPath "config"
 $null = New-Item -ItemType Directory -Path $configDir -Force
 
 Copy-Item (Join-Path $repoRoot "config\processor.ini") (Join-Path $configDir "processor.ini") -Force
+Copy-Item $readinessScriptSource $readinessScriptTarget -Force
+
+Write-Host "Running customer environment readiness check..." -ForegroundColor Cyan
+& $powershellPath -NoProfile -ExecutionPolicy Bypass -File $readinessScriptTarget -PackageRoot $OutputPath -Profile processor
+if ($LASTEXITCODE -ne 0) {
+    throw "Customer environment readiness check failed for processor package."
+}
 
 Write-Host "Packaging complete." -ForegroundColor Green
 Write-Host "Package Root: $OutputPath"
 Write-Host "Processor:    $moduleOutput"
 Write-Host "Config:       $configDir"
+Write-Host "Env Check:    $readinessScriptTarget"
 Write-Host "Entry:        $([System.IO.Path]::Combine($moduleOutput, 'InvoiceAiProcessor.exe'))"
 Write-Host "Note:         Put source invoice files into the Folder A path defined in config/processor.ini before running the processor."

@@ -40,6 +40,17 @@ if (-not (Test-Path $projectPath)) {
     throw "Project file not found: $projectPath"
 }
 
+$readinessScriptSource = Join-Path $scriptRoot "check-customer-environment.ps1"
+if (-not (Test-Path $readinessScriptSource)) {
+    throw "Script not found: $readinessScriptSource"
+}
+
+$readinessScriptTarget = Join-Path $OutputPath "check-customer-environment.ps1"
+$powershellPath = Join-Path $PSHOME "powershell.exe"
+if (-not (Test-Path $powershellPath)) {
+    $powershellPath = "powershell.exe"
+}
+
 $selfContained = if ($FrameworkDependent) { "false" } else { "true" }
 
 Write-Host "Publishing InvoiceDownloader..." -ForegroundColor Cyan
@@ -53,9 +64,17 @@ $configDir = Join-Path $OutputPath "config"
 $null = New-Item -ItemType Directory -Path $configDir -Force
 
 Copy-Item (Join-Path $repoRoot "config\downloader.ini") (Join-Path $configDir "downloader.ini") -Force
+Copy-Item $readinessScriptSource $readinessScriptTarget -Force
+
+Write-Host "Running customer environment readiness check..." -ForegroundColor Cyan
+& $powershellPath -NoProfile -ExecutionPolicy Bypass -File $readinessScriptTarget -PackageRoot $OutputPath -Profile downloader
+if ($LASTEXITCODE -ne 0) {
+    throw "Customer environment readiness check failed for downloader package."
+}
 
 Write-Host "Packaging complete." -ForegroundColor Green
 Write-Host "Package Root: $OutputPath"
 Write-Host "Downloader:   $moduleOutput"
 Write-Host "Config:       $configDir"
+Write-Host "Env Check:    $readinessScriptTarget"
 Write-Host "Entry:        $([System.IO.Path]::Combine($moduleOutput, 'InvoiceDownloader.exe'))"

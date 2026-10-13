@@ -25,6 +25,7 @@ if ([string]::IsNullOrWhiteSpace($DeployRoot)) {
 
 $downloaderScript = Join-Path $scriptRoot "publish-downloader.ps1"
 $processorScript = Join-Path $scriptRoot "publish-processor.ps1"
+$readinessScriptSource = Join-Path $scriptRoot "check-customer-environment.ps1"
 
 if (-not (Test-Path $downloaderScript)) {
     throw "Script not found: $downloaderScript"
@@ -32,6 +33,10 @@ if (-not (Test-Path $downloaderScript)) {
 
 if (-not (Test-Path $processorScript)) {
     throw "Script not found: $processorScript"
+}
+
+if (-not (Test-Path $readinessScriptSource)) {
+    throw "Script not found: $readinessScriptSource"
 }
 
 $dotnetPath = (Get-Command dotnet -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue)
@@ -55,6 +60,11 @@ $packageRoot = Join-Path $DeployRoot "InvoiceIntelligence"
 $downloaderOutput = Join-Path $packageRoot "downloader"
 $processorOutput = Join-Path $packageRoot "processor"
 $configOutput = Join-Path $packageRoot "config"
+$readinessScriptTarget = Join-Path $packageRoot "check-customer-environment.ps1"
+$powershellPath = Join-Path $PSHOME "powershell.exe"
+if (-not (Test-Path $powershellPath)) {
+    $powershellPath = "powershell.exe"
+}
 
 $selfContained = if ($FrameworkDependent) { "false" } else { "true" }
 
@@ -76,6 +86,7 @@ if ($LASTEXITCODE -ne 0) {
 $null = New-Item -ItemType Directory -Path $configOutput -Force
 Copy-Item (Join-Path $repoRoot "config\downloader.ini") (Join-Path $configOutput "downloader.ini") -Force
 Copy-Item (Join-Path $repoRoot "config\processor.ini") (Join-Path $configOutput "processor.ini") -Force
+Copy-Item $readinessScriptSource $readinessScriptTarget -Force
 
 Write-Host "Publishing Downloader package..." -ForegroundColor Cyan
 & $downloaderScript @commonParams -OutputPath $packageRoot
@@ -89,12 +100,19 @@ if ($LASTEXITCODE -ne 0) {
     throw "Processor publish failed."
 }
 
+Write-Host "Running integrated customer environment readiness check..." -ForegroundColor Cyan
+& $powershellPath -NoProfile -ExecutionPolicy Bypass -File $readinessScriptTarget -PackageRoot $packageRoot -Profile all
+if ($LASTEXITCODE -ne 0) {
+    throw "Customer environment readiness check failed for integrated package."
+}
+
 if ($SkipZip) {
     Write-Host "Done. Zip packaging skipped." -ForegroundColor Yellow
     Write-Host "Package:    $packageRoot"
     Write-Host "Downloader: $downloaderOutput"
     Write-Host "Processor:  $processorOutput"
     Write-Host "Config:     $configOutput"
+    Write-Host "Env Check:  $readinessScriptTarget"
     return
 }
 
@@ -114,4 +132,5 @@ Write-Host "Package:    $packageRoot"
 Write-Host "Downloader: $downloaderOutput"
 Write-Host "Processor:  $processorOutput"
 Write-Host "Config:     $configOutput"
+Write-Host "Env Check:  $readinessScriptTarget"
 Write-Host "Zip:        $packageZip"

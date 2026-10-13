@@ -5,6 +5,9 @@ using ClosedXML.Excel;
 
 namespace InvoiceIntelligence.Core.Downloader;
 
+/// <summary>
+/// Imports customer query rows from Excel and validates required schema/content.
+/// </summary>
 public sealed class CustomerListExcelImporter : ICustomerListImporter
 {
     private const string TaxIdField = "Tax ID";
@@ -47,6 +50,7 @@ public sealed class CustomerListExcelImporter : ICustomerListImporter
             throw new InvalidDataException("客戶清單 Excel 檔案不包含任何工作表。");
         }
 
+        // Resolve required columns through aliases so users can keep Chinese/English headers.
         var headerIndex = ReadHeaderIndex(worksheet);
         var taxIdColumn = GetRequiredColumn(headerIndex, TaxIdAliases, TaxIdField);
         var companyColumn = GetRequiredColumn(headerIndex, CompanyNameAliases, CompanyNameField);
@@ -176,6 +180,7 @@ public sealed class CustomerListExcelImporter : ICustomerListImporter
             return TryParseDate(parts[0], out dateFrom) && TryParseDate(parts[1], out dateTo);
         }
 
+        // Fallback: extract two date-like tokens from free-form text (for example: 2026/01/01 to 2026/01/31).
         var dateMatches = DateRegex.Matches(rawValue);
         if (dateMatches.Count >= 2)
         {

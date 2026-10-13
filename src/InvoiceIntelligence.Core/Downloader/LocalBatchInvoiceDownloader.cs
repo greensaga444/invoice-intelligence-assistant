@@ -4,6 +4,9 @@ using InvoiceIntelligence.Core.Configuration;
 
 namespace InvoiceIntelligence.Core.Downloader;
 
+/// <summary>
+/// Local-mode downloader that generates deterministic sample invoice workbooks.
+/// </summary>
 public sealed class LocalBatchInvoiceDownloader : IBatchInvoiceDownloader
 {
     public Task<BatchInvoiceDownloadResult> DownloadAsync(
@@ -41,6 +44,7 @@ public sealed class LocalBatchInvoiceDownloader : IBatchInvoiceDownloader
         var batchTimestamp = DateTimeOffset.UtcNow;
         var itemResults = new List<BatchInvoiceDownloadItemResult>(request.Customers.Count);
 
+        // Generate one workbook per customer so downstream files mimic real batch output shape.
         foreach (var customer in request.Customers)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -129,6 +133,7 @@ public sealed class LocalBatchInvoiceDownloader : IBatchInvoiceDownloader
 
         for (var index = 0; index < rowCount; index++)
         {
+            // Spread sample invoices across the requested date range with stable pseudo amounts.
             var dayOffset = Math.Min(totalDays - 1, index * step);
             var invoiceDate = customer.DateFrom.AddDays(dayOffset);
             var netAmount = 1000m + seed + (index * 250m);

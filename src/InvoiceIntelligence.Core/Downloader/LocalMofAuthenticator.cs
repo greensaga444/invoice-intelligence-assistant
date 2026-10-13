@@ -1,5 +1,8 @@
 namespace InvoiceIntelligence.Core.Downloader;
 
+/// <summary>
+/// Local authenticator that validates placeholders and issues a mock session token.
+/// </summary>
 public sealed class LocalMofAuthenticator : IMofAuthenticator
 {
     public MofAuthenticationResult Authenticate(MofCredential credential)

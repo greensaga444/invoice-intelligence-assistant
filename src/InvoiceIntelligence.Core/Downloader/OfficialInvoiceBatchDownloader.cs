@@ -1,5 +1,8 @@
 namespace InvoiceIntelligence.Core.Downloader;
 
+/// <summary>
+/// Executes official API query flow with paging, retry, and deduplication.
+/// </summary>
 public sealed class OfficialInvoiceBatchDownloader
 {
     private readonly IMofOfficialInvoiceApiClient _apiClient;
@@ -28,52 +31,32 @@ public sealed class OfficialInvoiceBatchDownloader
         var totalRetryCount = 0;
         var rawInvoiceCount = 0;
 
+        // Spec reference: 電子發票營業人應用 API 規格 V1.9 (PDF fileId=5161), method 5 ODS374I.
+        // ODS374I currently behaves as a statistics query, but this loop keeps paging-compatible flow.
+        // Query sales/purchase directions separately, then merge into one final result set.
         foreach (var direction in ResolveDirections(request))
         {
-            var pageNumber = 1;
+            var hasMorePages = true;
 
-            while (true)
+            for (var pageNumber = 1; hasMorePages && pageNumber <= options.MaxPagesPerDirection; pageNumber++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                if (pageNumber > options.MaxPagesPerDirection)
-                {
-                    throw new InvalidOperationException(
-                        $"{direction} 查詢超過單向最大頁數 {options.MaxPagesPerDirection}，請縮小區間或調整設定。");
-                }
-
-                var pageRequest = new OfficialInvoicePageRequest(
-                    SessionToken: request.SessionToken,
-                    TaxId: request.TaxId,
-                    DateFrom: request.DateFrom,
-                    DateTo: request.DateTo,
-                    Direction: direction,
-                    PageNumber: pageNumber,
-                    PageSize: options.PageSize,
-                    OfficialApiAppId: request.OfficialApiAppId,
-                    OfficialApiAccount: request.OfficialApiAccount,
-                    OfficialApiPassword: request.OfficialApiPassword);
+                var pageRequest = BuildPageRequest(request, direction, pageNumber, options.PageSize);
 
                 var (pageResult, retryCount) = await QueryPageWithRetryAsync(pageRequest, options, cancellationToken);
                 totalRetryCount += retryCount;
                 totalApiCalls++;
 
-                foreach (var invoice in pageResult.Items)
-                {
-                    rawInvoiceCount++;
-                    var key = BuildDedupKey(invoice);
-                    if (dedupKeys.Add(key))
-                    {
-                        invoices.Add(invoice);
-                    }
-                }
+                rawInvoiceCount += MergeUniqueInvoices(pageResult.Items, dedupKeys, invoices);
 
-                if (!pageResult.HasMore || pageResult.Items.Count == 0)
-                {
-                    break;
-                }
+                hasMorePages = pageResult.HasMore && pageResult.Items.Count > 0;
+            }
 
-                pageNumber++;
+            if (hasMorePages)
+            {
+                throw new InvalidOperationException(
+                    $"{direction} 查詢超過單向最大頁數 {options.MaxPagesPerDirection}，請縮小區間或調整設定。");
             }
         }
 
@@ -102,6 +85,7 @@ public sealed class OfficialInvoiceBatchDownloader
             }
             catch (MofOfficialInvoiceApiException ex) when (ex.IsTransient && attempt < options.MaxRetryAttempts)
             {
+                // Exponential backoff reduces pressure on the API during temporary failures.
                 retryCount++;
                 var delay = CalculateBackoffDelay(attempt, options.RetryBaseDelay);
                 await _delayAsync(delay, cancellationToken);
@@ -181,6 +165,45 @@ public sealed class OfficialInvoiceBatchDownloader
         var delayMilliseconds = baseDelay.TotalMilliseconds * factor;
 
         return TimeSpan.FromMilliseconds(delayMilliseconds);
+    }
+
+    private static OfficialInvoicePageRequest BuildPageRequest(
+        OfficialInvoiceBatchDownloadRequest request,
+        InvoiceDirection direction,
+        int pageNumber,
+        int pageSize)
+    {
+        return new OfficialInvoicePageRequest(
+            SessionToken: request.SessionToken,
+            TaxId: request.TaxId,
+            DateFrom: request.DateFrom,
+            DateTo: request.DateTo,
+            Direction: direction,
+            PageNumber: pageNumber,
+            PageSize: pageSize,
+            OfficialApiAppId: request.OfficialApiAppId,
+            OfficialApiAccount: request.OfficialApiAccount,
+            OfficialApiPassword: request.OfficialApiPassword);
+    }
+
+    private static int MergeUniqueInvoices(
+        IReadOnlyList<OfficialInvoiceRecord> pageItems,
+        HashSet<string> dedupKeys,
+        ICollection<OfficialInvoiceRecord> invoices)
+    {
+        var rawCount = 0;
+
+        // Use a stable key to avoid duplicate rows when retries or upstream data overlap occur.
+        foreach (var invoice in pageItems)
+        {
+            rawCount++;
+            if (dedupKeys.Add(BuildDedupKey(invoice)))
+            {
+                invoices.Add(invoice);
+            }
+        }
+
+        return rawCount;
     }
 
     private static string BuildDedupKey(OfficialInvoiceRecord invoice)

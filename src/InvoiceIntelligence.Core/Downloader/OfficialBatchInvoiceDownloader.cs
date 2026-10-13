@@ -2,6 +2,9 @@ using InvoiceIntelligence.Core.Configuration;
 
 namespace InvoiceIntelligence.Core.Downloader;
 
+/// <summary>
+/// Orchestrates official per-customer downloads plus CSV export and batch logging.
+/// </summary>
 public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
 {
     private readonly OfficialInvoiceBatchDownloader _officialDownloader;
@@ -57,56 +60,13 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
         var batchTimestamp = DateTimeOffset.UtcNow;
         var itemResults = new List<BatchInvoiceDownloadItemResult>(request.Customers.Count);
 
+        // Process each customer independently so one failure does not abort the whole batch.
         foreach (var customer in request.Customers)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            try
-            {
-                var queryRequest = new OfficialInvoiceBatchDownloadRequest(
-                    TaxId: customer.TaxId,
-                    DateFrom: customer.DateFrom,
-                    DateTo: customer.DateTo,
-                    SessionToken: request.SessionToken,
-                    IncludeSalesInvoices: _includeSalesInvoices,
-                    IncludePurchaseInvoices: _includePurchaseInvoices,
-                    Options: _options,
-                    OfficialApiAppId: request.OfficialApiAppId,
-                    OfficialApiAccount: request.OfficialApiAccount,
-                    OfficialApiPassword: request.OfficialApiPassword);
-
-                var queryResult = await _officialDownloader.DownloadAsync(queryRequest, cancellationToken);
-
-                var fileName = OutputFileNameHelper.BuildFileName(
-                    namingRule: request.OutputNamingRule,
-                    taxId: customer.TaxId,
-                    companyName: customer.CompanyName,
-                    dateFrom: customer.DateFrom,
-                    dateTo: customer.DateTo,
-                    timestamp: batchTimestamp,
-                    extension: ".csv");
-                var outputPath = OutputFileNameHelper.EnsureUniquePath(Path.Combine(request.FolderAPath, fileName));
-
-                await _exporter.ExportCsvAsync(queryResult.Invoices, outputPath, cancellationToken);
-
-                itemResults.Add(new BatchInvoiceDownloadItemResult(
-                    Customer: customer,
-                    IsSuccess: true,
-                    Message: $"下載成功，筆數={queryResult.Invoices.Count}，API 呼叫={queryResult.TotalApiCalls}，重試={queryResult.TotalRetryCount}。",
-                    OutputFilePath: outputPath));
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                itemResults.Add(new BatchInvoiceDownloadItemResult(
-                    Customer: customer,
-                    IsSuccess: false,
-                    Message: ex.Message,
-                    OutputFilePath: null));
-            }
+            var itemResult = await DownloadCustomerAsync(request, customer, batchTimestamp, cancellationToken);
+            itemResults.Add(itemResult);
         }
 
         var logPath = Path.Combine(request.FolderAPath, $"download-log-{batchTimestamp:yyyyMMdd-HHmmss}.log");
@@ -115,11 +75,96 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
         return new BatchInvoiceDownloadResult(itemResults, logPath);
     }
 
+    private async Task<BatchInvoiceDownloadItemResult> DownloadCustomerAsync(
+        BatchInvoiceDownloadRequest batchRequest,
+        CustomerRecord customer,
+        DateTimeOffset batchTimestamp,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var queryRequest = BuildQueryRequest(batchRequest, customer);
+            var queryResult = await _officialDownloader.DownloadAsync(queryRequest, cancellationToken);
+
+            var outputPath = BuildOutputPath(batchRequest, customer, batchTimestamp);
+
+            // Persist one CSV per customer to Folder A for downstream processing.
+            await _exporter.ExportCsvAsync(queryResult.Invoices, outputPath, cancellationToken);
+
+            return CreateSuccessResult(customer, queryResult, outputPath);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            return CreateFailureResult(customer, ex.Message);
+        }
+    }
+
+    private OfficialInvoiceBatchDownloadRequest BuildQueryRequest(
+        BatchInvoiceDownloadRequest batchRequest,
+        CustomerRecord customer)
+    {
+        // Combine per-customer date range with shared API credentials/options for one query run.
+        return new OfficialInvoiceBatchDownloadRequest(
+            TaxId: customer.TaxId,
+            DateFrom: customer.DateFrom,
+            DateTo: customer.DateTo,
+            SessionToken: batchRequest.SessionToken,
+            IncludeSalesInvoices: _includeSalesInvoices,
+            IncludePurchaseInvoices: _includePurchaseInvoices,
+            Options: _options,
+            OfficialApiAppId: batchRequest.OfficialApiAppId,
+            OfficialApiAccount: batchRequest.OfficialApiAccount,
+            OfficialApiPassword: batchRequest.OfficialApiPassword);
+    }
+
+    private static string BuildOutputPath(
+        BatchInvoiceDownloadRequest batchRequest,
+        CustomerRecord customer,
+        DateTimeOffset batchTimestamp)
+    {
+        var fileName = OutputFileNameHelper.BuildFileName(
+            namingRule: batchRequest.OutputNamingRule,
+            taxId: customer.TaxId,
+            companyName: customer.CompanyName,
+            dateFrom: customer.DateFrom,
+            dateTo: customer.DateTo,
+            timestamp: batchTimestamp,
+            extension: ".csv");
+
+        return OutputFileNameHelper.EnsureUniquePath(Path.Combine(batchRequest.FolderAPath, fileName));
+    }
+
+    private static BatchInvoiceDownloadItemResult CreateSuccessResult(
+        CustomerRecord customer,
+        OfficialInvoiceBatchDownloadResult queryResult,
+        string outputPath)
+    {
+        return new BatchInvoiceDownloadItemResult(
+            Customer: customer,
+            IsSuccess: true,
+            Message: $"下載成功，筆數={queryResult.Invoices.Count}，API 呼叫={queryResult.TotalApiCalls}，重試={queryResult.TotalRetryCount}。",
+            OutputFilePath: outputPath);
+    }
+
+    private static BatchInvoiceDownloadItemResult CreateFailureResult(CustomerRecord customer, string message)
+    {
+        return new BatchInvoiceDownloadItemResult(
+            Customer: customer,
+            IsSuccess: false,
+            Message: message,
+            OutputFilePath: null);
+    }
+
     private static void WriteLogFile(
         string logPath,
         IReadOnlyCollection<BatchInvoiceDownloadItemResult> itemResults,
         DateTimeOffset batchTimestamp)
     {
+        // This log is intentionally human-readable so operators can trace each customer outcome quickly.
         var successCount = itemResults.Count(result => result.IsSuccess);
         var failureCount = itemResults.Count - successCount;
 

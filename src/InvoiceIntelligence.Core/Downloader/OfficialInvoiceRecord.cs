@@ -1,5 +1,8 @@
 namespace InvoiceIntelligence.Core.Downloader;
 
+/// <summary>
+/// Normalized invoice/statistical record used across downloader workflows.
+/// </summary>
 public sealed record OfficialInvoiceRecord(
     string InvoiceNumber,
     DateOnly InvoiceDate,

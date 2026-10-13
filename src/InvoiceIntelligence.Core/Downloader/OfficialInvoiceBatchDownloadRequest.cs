@@ -1,5 +1,8 @@
 namespace InvoiceIntelligence.Core.Downloader;
 
+/// <summary>
+/// Input parameters for one official API batch query.
+/// </summary>
 public sealed record OfficialInvoiceBatchDownloadRequest(
     string TaxId,
     DateOnly DateFrom,

@@ -1,5 +1,8 @@
 namespace InvoiceIntelligence.Core.Downloader;
 
+/// <summary>
+/// Low-level request model for one official API page query.
+/// </summary>
 public sealed record OfficialInvoicePageRequest(
     string SessionToken,
     string TaxId,

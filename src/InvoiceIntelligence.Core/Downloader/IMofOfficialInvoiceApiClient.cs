@@ -5,6 +5,9 @@ namespace InvoiceIntelligence.Core.Downloader;
 /// </summary>
 public interface IMofOfficialInvoiceApiClient
 {
+    /// <summary>
+    /// Queries one logical page of official invoice/statistical data.
+    /// </summary>
     Task<OfficialInvoicePageResult> QueryInvoicesAsync(
         OfficialInvoicePageRequest request,
         CancellationToken cancellationToken = default);

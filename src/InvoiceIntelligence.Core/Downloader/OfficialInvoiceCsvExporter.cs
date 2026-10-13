@@ -3,6 +3,9 @@ using System.Text;
 
 namespace InvoiceIntelligence.Core.Downloader;
 
+/// <summary>
+/// Writes official invoice records into UTF-8 BOM CSV for spreadsheet compatibility.
+/// </summary>
 public sealed class OfficialInvoiceCsvExporter : IOfficialInvoiceExporter
 {
     public async Task ExportCsvAsync(
@@ -58,6 +61,7 @@ public sealed class OfficialInvoiceCsvExporter : IOfficialInvoiceExporter
 
     private static string EscapeCsv(string value)
     {
+        // Quote fields only when required by RFC-style CSV escaping rules.
         if (!value.Contains(',')
             && !value.Contains('"')
             && !value.Contains('\n')

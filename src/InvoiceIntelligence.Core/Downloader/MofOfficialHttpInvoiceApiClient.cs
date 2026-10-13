@@ -54,6 +54,8 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
         using var httpRequest = new HttpRequestMessage(HttpMethod.Post, _queryUri);
         httpRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
+        // Spec reference: V1.9 PDF (fileId=5161), method 5 request table.
+        // Parameter names must match the document exactly: version/appID/ban/account/password/invoiceDateS/invoiceDateE.
         // Spec requires application/x-www-form-urlencoded payload.
         httpRequest.Content = new FormUrlEncodedContent(
         [
@@ -119,6 +121,7 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
 
             var items = ParseItems(root, request.TaxId, request.Direction);
 
+            // Spec/PDF method 5 response does not define multi-page controls; treat result as single page.
             // ODS374I is not paged by page/pageSize; always return a single page.
             return new OfficialInvoicePageResult(items, HasMore: false);
         }
@@ -152,6 +155,7 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
             var b2cAmount = ReadDecimal(item, "b2cCrtAvgAmount") ?? 0m;
             var totalAmount = b2bAmount + b2cAmount;
 
+            // ODS374I returns daily statistics only, so we synthesize a stable key-like invoice number.
             records.Add(new OfficialInvoiceRecord(
                 InvoiceNumber: $"STAT-{invoiceDate:yyyyMMdd}",
                 InvoiceDate: invoiceDate,

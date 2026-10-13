@@ -107,6 +107,8 @@ AI 與檢索：
 - 應用程式：src/InvoiceDownloader、src/InvoiceAiProcessor
 - 共用核心：src/InvoiceIntelligence.Core
 - 設定檔範本：config/downloader.ini、config/processor.ini
+- Downloader 已支援統一設定視窗：可編輯 downloader.ini，並同步更新 processor.ini 的共享欄位（folderA、folderB、mof.account、mof.appId、mof.appKey）。
+- 統一設定視窗可直接編輯 Processor 專用欄位（output.fileNamingRule、knowledge.repositoryFile）。
 - Downloader 已支援客戶清單 Excel 匯入、MOF 驗證，以及批次下載原始發票 Excel 至 Folder A 並輸出下載記錄。
 - AI Processor 已支援 Folder A 原始發票讀取、分階段 AI 決策流程（Rule Engine -> Case Cache -> RAG -> LLM），並可將保留原始欄位且附加 AI 欄位的強化 Excel 匯出至 Folder B。
 - AI Processor 已支援手動知識回饋：可勾選人工核准紀錄並更新本地知識庫，且後續執行會將已核准案例載入 RAG 檢索。
@@ -120,4 +122,4 @@ dotnet test InvoiceIntelligenceAssistant.slnx -v minimal
 dotnet format InvoiceIntelligenceAssistant.slnx --verify-no-changes
 ```
 
-兩個桌面模組會在啟動時讀取對應 INI 設定並驗證命名規則占位符。
+兩個桌面模組會在啟動時讀取對應 INI 設定並驗證命名規則占位符；官方 API 憑證欄位採 appId/appKey。

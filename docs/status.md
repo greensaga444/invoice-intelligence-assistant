@@ -13,9 +13,9 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: Localization and quality gates
+Work Item Name: Unified INI settings UI
 
-Description: Traditional Chinese UI/output, offline-only AI checks, performance targets, and acceptance test suite are validated.
+Description: Downloader offers one settings UI to maintain downloader.ini and processor.ini (except module.name), including shared folder paths and App credential mapping.
 
 ---
 
@@ -250,10 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-Completed roadmap item 7 localization and quality gates implementation.
-Localized remaining user-facing messages in downloader/processor and core surfaced errors/logs to Traditional Chinese.
-Added acceptance/performance quality-gate tests for offline-only AI path, worksheet/localized outputs, 30,000-record pipeline scale, and 150-customer batch success rate.
-Verification passed via build, test, and format checks.
+Completed unified INI settings UI implementation in Downloader.
+Added a single settings flow that writes downloader.ini and processor.ini together, with folder picker bindings for folderA/folderB.
+Aligned MOF credential fields to appId/appKey and persisted one shared UI credential into both keys.
+Verification passed via solution build and core tests before landing to main.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 
@@ -261,7 +261,7 @@ Verification passed via build, test, and format checks.
 
 ## Next Action
 
-Work item 7 delivered and landed to main by direct push policy; branch cleanup completed.
+Unified INI settings UI delivered and landed to main by direct push policy; branch cleanup completed.
 
 ---
 

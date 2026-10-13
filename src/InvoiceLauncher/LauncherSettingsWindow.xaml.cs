@@ -20,9 +20,12 @@ public partial class LauncherSettingsWindow : Window
         MofAccountTextBox.Text = settings.MofAccount;
         InvoiceDownloadModeTextBox.Text = settings.InvoiceDownloadMode;
         OfficialApiBaseUrlTextBox.Text = settings.OfficialApiBaseUrl;
-        OfficialApiAppCredentialTextBox.Text = string.IsNullOrWhiteSpace(settings.OfficialApiAppId)
+        OfficialApiAppIdTextBox.Text = string.IsNullOrWhiteSpace(settings.OfficialApiAppId)
             ? settings.OfficialApiAppKey
             : settings.OfficialApiAppId;
+        OfficialApiAppKeyTextBox.Text = string.IsNullOrWhiteSpace(settings.OfficialApiAppKey)
+            ? settings.OfficialApiAppId
+            : settings.OfficialApiAppKey;
     }
 
     public LauncherIniSettings? SavedSettings { get; private set; }
@@ -48,7 +51,8 @@ public partial class LauncherSettingsWindow : Window
         var mofAccount = MofAccountTextBox.Text.Trim();
         var invoiceDownloadMode = InvoiceDownloadModeTextBox.Text.Trim();
         var officialApiBaseUrl = OfficialApiBaseUrlTextBox.Text.Trim();
-        var officialApiAppCredential = OfficialApiAppCredentialTextBox.Text.Trim();
+        var officialApiAppId = OfficialApiAppIdTextBox.Text.Trim();
+        var officialApiAppKey = OfficialApiAppKeyTextBox.Text.Trim();
 
         if (string.IsNullOrWhiteSpace(moduleName)
             || string.IsNullOrWhiteSpace(folderAPath)
@@ -58,7 +62,8 @@ public partial class LauncherSettingsWindow : Window
             || string.IsNullOrWhiteSpace(processorKnowledgeRepositoryFile)
             || string.IsNullOrWhiteSpace(mofAccount)
             || string.IsNullOrWhiteSpace(invoiceDownloadMode)
-            || string.IsNullOrWhiteSpace(officialApiAppCredential))
+            || string.IsNullOrWhiteSpace(officialApiAppId)
+            || string.IsNullOrWhiteSpace(officialApiAppKey))
         {
             MessageBox.Show(this, "請完整填寫所有欄位。", "設定驗證", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
@@ -81,8 +86,8 @@ public partial class LauncherSettingsWindow : Window
             mofAccount,
             invoiceDownloadMode,
             officialApiBaseUrl,
-            officialApiAppCredential,
-            officialApiAppCredential);
+            officialApiAppId,
+            officialApiAppKey);
 
         DialogResult = true;
         Close();

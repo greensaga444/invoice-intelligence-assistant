@@ -13,7 +13,8 @@ internal static class ProcessorIniFileWriter
         string processorFileNamingRule,
         string processorKnowledgeRepositoryFile,
         string processorMofAccount,
-        string sharedOfficialAppCredential)
+        string officialApiAppId,
+        string officialApiAppKey)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(iniPath);
         ArgumentNullException.ThrowIfNull(existingConfig);
@@ -22,7 +23,8 @@ internal static class ProcessorIniFileWriter
         ArgumentException.ThrowIfNullOrWhiteSpace(processorFileNamingRule);
         ArgumentException.ThrowIfNullOrWhiteSpace(processorKnowledgeRepositoryFile);
         ArgumentException.ThrowIfNullOrWhiteSpace(processorMofAccount);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sharedOfficialAppCredential);
+        ArgumentException.ThrowIfNullOrWhiteSpace(officialApiAppId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(officialApiAppKey);
 
         var directoryPath = Path.GetDirectoryName(iniPath)
             ?? throw new InvalidOperationException("無法解析設定檔路徑。");
@@ -39,8 +41,8 @@ internal static class ProcessorIniFileWriter
             fileNamingRule: processorFileNamingRule,
             knowledgeRepositoryFile: processorKnowledgeRepositoryFile,
             mofAccount: processorMofAccount,
-            officialApiAppId: sharedOfficialAppCredential,
-            officialApiAppKey: sharedOfficialAppCredential);
+            officialApiAppId: officialApiAppId,
+            officialApiAppKey: officialApiAppKey);
 
         File.WriteAllText(iniPath, content, System.Text.Encoding.UTF8);
     }

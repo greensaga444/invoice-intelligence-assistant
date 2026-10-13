@@ -15,7 +15,8 @@ public static class IniFileContentBuilder
         string officialApiAppId,
         string officialApiAppKey)
     {
-        var sharedOfficialAppCredential = ResolveSharedOfficialAppCredential(officialApiAppId, officialApiAppKey);
+        var resolvedOfficialApiAppId = ResolveOfficialApiAppId(officialApiAppId, officialApiAppKey);
+        var resolvedOfficialApiAppKey = ResolveOfficialApiAppKey(officialApiAppId, officialApiAppKey);
         var lineBreak = Environment.NewLine;
         var builder = new StringBuilder();
 
@@ -33,8 +34,8 @@ public static class IniFileContentBuilder
         builder.Append("account = ").Append(mofAccount).Append(lineBreak);
         builder.Append("invoiceDownloadMode = ").Append(invoiceDownloadMode).Append(lineBreak);
         builder.Append("officialApiBaseUrl = ").Append(officialApiBaseUrl).Append(lineBreak);
-        builder.Append("appId = ").Append(sharedOfficialAppCredential).Append(lineBreak);
-        builder.Append("appKey = ").Append(sharedOfficialAppCredential).Append(lineBreak);
+        builder.Append("appId = ").Append(resolvedOfficialApiAppId).Append(lineBreak);
+        builder.Append("appKey = ").Append(resolvedOfficialApiAppKey).Append(lineBreak);
 
         return builder.ToString();
     }
@@ -49,7 +50,8 @@ public static class IniFileContentBuilder
         string officialApiAppId,
         string officialApiAppKey)
     {
-        var sharedOfficialAppCredential = ResolveSharedOfficialAppCredential(officialApiAppId, officialApiAppKey);
+        var resolvedOfficialApiAppId = ResolveOfficialApiAppId(officialApiAppId, officialApiAppKey);
+        var resolvedOfficialApiAppKey = ResolveOfficialApiAppKey(officialApiAppId, officialApiAppKey);
         var lineBreak = Environment.NewLine;
         var builder = new StringBuilder();
 
@@ -68,16 +70,23 @@ public static class IniFileContentBuilder
         builder.Append(lineBreak);
         builder.Append("[mof]").Append(lineBreak);
         builder.Append("account = ").Append(mofAccount).Append(lineBreak);
-        builder.Append("appId = ").Append(sharedOfficialAppCredential).Append(lineBreak);
-        builder.Append("appKey = ").Append(sharedOfficialAppCredential).Append(lineBreak);
+        builder.Append("appId = ").Append(resolvedOfficialApiAppId).Append(lineBreak);
+        builder.Append("appKey = ").Append(resolvedOfficialApiAppKey).Append(lineBreak);
 
         return builder.ToString();
     }
 
-    private static string ResolveSharedOfficialAppCredential(string officialApiAppId, string officialApiAppKey)
+    private static string ResolveOfficialApiAppId(string officialApiAppId, string officialApiAppKey)
     {
         return string.IsNullOrWhiteSpace(officialApiAppId)
             ? officialApiAppKey
             : officialApiAppId;
+    }
+
+    private static string ResolveOfficialApiAppKey(string officialApiAppId, string officialApiAppKey)
+    {
+        return string.IsNullOrWhiteSpace(officialApiAppKey)
+            ? officialApiAppId
+            : officialApiAppKey;
     }
 }

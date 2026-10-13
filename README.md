@@ -132,6 +132,15 @@ AI 與檢索：
 .\scripts\publish-all.ps1 -Runtime win-x64 -Configuration Release
 ```
 
+若遇到「因為這個系統上已停用指令碼執行，所以無法載入 .ps1 檔案」錯誤，請先在同一個 PowerShell 視窗執行：
+例如:
+.\scripts\publish-all.ps1 : 無法辨識 '.\scripts\publish-all.ps1' 詞彙是否為 Cmdlet、函數、指令檔或可執行程式的名稱。請檢查名稱拼字是否正確，如果包含路徑的話，請確認路徑是否正確，然後再試一次。
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+.\scripts\publish-all.ps1 -Runtime win-x64 -Configuration Release
+```
+
 參數說明：
 
 - `-Runtime`
@@ -159,7 +168,7 @@ AI 與檢索：
 - 預設輸出路徑（Processor）：`deploy/processor`
 - 預設為 self-contained 打包（客戶端可不先安裝 .NET Runtime）。
 - 如需 framework-dependent 打包，可加上 `-FrameworkDependent`。
-- 若遇到 PowerShell 執行政策封鎖，可先執行：`Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`（僅作用於當前視窗）。
+- 若遇到 PowerShell 執行政策封鎖，可先執行：`Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force`（僅作用於當前視窗）。
 
 ### 部署流程 A：只部署 Downloader（模組 A）
 

@@ -115,6 +115,19 @@ AI 與檢索：
 - AI Processor 已支援手動知識回饋：可勾選人工核准紀錄並更新本地知識庫，且後續執行會將已核准案例載入 RAG 檢索。
 - 目前版本已完成在地化與品質閘道：使用者可見訊息與輸出欄位維持繁體中文，且已加入離線 AI 驗證與目標規模效能測試。
 
+## 開發環境自檢（Git Clone 後建議先執行）
+
+使用下列腳本可一次檢查是否具備可建置條件（含 .NET SDK 檢查 + restore/build）。
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+.\scripts\check-developer-environment.ps1
+```
+
+常用參數：
+
+- `-Configuration Release|Debug`
+
 ## 模組化部署指南（可只交付單一模組）
 
 ### 一鍵打包腳本

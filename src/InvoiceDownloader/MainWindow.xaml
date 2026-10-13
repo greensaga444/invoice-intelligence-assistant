@@ -21,17 +21,10 @@
                 BorderBrush="#FFBFBFBF"
                 Background="#FFF9F9F9">
             <StackPanel>
-                <DockPanel Margin="0,0,0,8" LastChildFill="False">
-                    <TextBlock DockPanel.Dock="Left"
-                               Text="模組狀態"
-                               FontSize="18"
-                               FontWeight="SemiBold" />
-                    <Button x:Name="OpenSettingsButton"
-                            DockPanel.Dock="Right"
-                            Content="設定"
-                            Padding="14,6"
-                            Click="OpenSettingsButton_Click" />
-                </DockPanel>
+                <TextBlock Text="模組狀態"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,8" />
                 <TextBlock x:Name="StartupStatusText"
                            TextWrapping="Wrap"
                            FontSize="13"

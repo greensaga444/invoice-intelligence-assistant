@@ -18,8 +18,10 @@ $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent $scriptRoot
 
 if ([string]::IsNullOrWhiteSpace($OutputPath)) {
-    $OutputPath = Join-Path $repoRoot "deploy\processor"
+    $OutputPath = Join-Path $repoRoot "deploy\InvoiceIntelligence"
 }
+
+$moduleOutput = Join-Path $OutputPath "processor"
 
 $dotnetPath = (Get-Command dotnet -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue)
 if (-not $dotnetPath) {
@@ -41,24 +43,20 @@ if (-not (Test-Path $projectPath)) {
 $selfContained = if ($FrameworkDependent) { "false" } else { "true" }
 
 Write-Host "Publishing InvoiceAiProcessor..." -ForegroundColor Cyan
-& $dotnetPath publish $projectPath -c $Configuration -r $Runtime --self-contained $selfContained -o $OutputPath
+& $dotnetPath publish $projectPath -c $Configuration -r $Runtime --self-contained $selfContained -o $moduleOutput
 if ($LASTEXITCODE -ne 0) {
     throw "dotnet publish failed for InvoiceAiProcessor."
 }
 
 $configDir = Join-Path $OutputPath "config"
-$dataFolderA = Join-Path $OutputPath "data\folder-a"
-$dataFolderB = Join-Path $OutputPath "data\folder-b"
-$dataKnowledge = Join-Path $OutputPath "data\knowledge"
 
 $null = New-Item -ItemType Directory -Path $configDir -Force
-$null = New-Item -ItemType Directory -Path $dataFolderA -Force
-$null = New-Item -ItemType Directory -Path $dataFolderB -Force
-$null = New-Item -ItemType Directory -Path $dataKnowledge -Force
 
 Copy-Item (Join-Path $repoRoot "config\processor.ini") (Join-Path $configDir "processor.ini") -Force
 
 Write-Host "Packaging complete." -ForegroundColor Green
-Write-Host "Output: $OutputPath"
-Write-Host "Entry:  $([System.IO.Path]::Combine($OutputPath, 'InvoiceAiProcessor.exe'))"
-Write-Host "Note:   Put source invoice files into data/folder-a before running the processor."
+Write-Host "Package Root: $OutputPath"
+Write-Host "Processor:    $moduleOutput"
+Write-Host "Config:       $configDir"
+Write-Host "Entry:        $([System.IO.Path]::Combine($moduleOutput, 'InvoiceAiProcessor.exe'))"
+Write-Host "Note:         Put source invoice files into the Folder A path defined in config/processor.ini before running the processor."

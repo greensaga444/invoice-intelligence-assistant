@@ -104,11 +104,11 @@ AI 與檢索：
 ## 目前可執行骨架
 
 - 解決方案檔：InvoiceIntelligenceAssistant.slnx
-- 應用程式：src/InvoiceDownloader、src/InvoiceAiProcessor
+- 應用程式：src/InvoiceLauncher、src/InvoiceDownloader、src/InvoiceAiProcessor
 - 共用核心：src/InvoiceIntelligence.Core
 - 設定檔範本：config/downloader.ini、config/processor.ini
-- Downloader 已支援統一設定視窗：可編輯 downloader.ini，並同步更新 processor.ini 的共享欄位（folderA、folderB、mof.account、mof.appId、mof.appKey）。
-- 統一設定視窗可直接編輯 Processor 專用欄位（output.fileNamingRule、knowledge.repositoryFile）。
+- 主控台（InvoiceLauncher）提供統一設定視窗：可集中編輯根目錄 config 下的 downloader.ini 與 processor.ini。
+- 子模組（Downloader / Processor）獨立執行時不提供設定 UI。
 - Downloader 已支援客戶清單 Excel 匯入、MOF 驗證，以及批次下載原始發票 Excel 至 Folder A 並輸出下載記錄。
 - AI Processor 已支援 Folder A 原始發票讀取、分階段 AI 決策流程（Rule Engine -> Case Cache -> RAG -> LLM），並可將保留原始欄位且附加 AI 欄位的強化 Excel 匯出至 Folder B。
 - AI Processor 已支援手動知識回饋：可勾選人工核准紀錄並更新本地知識庫，且後續執行會將已核准案例載入 RAG 檢索。
@@ -158,28 +158,85 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 - `-FrameworkDependent`
   改為 framework-dependent 打包，不內含 .NET Runtime（客戶端需先安裝對應 Runtime）。
 - `-OutputPath`（publish-downloader / publish-processor）
-  指定單一模組輸出路徑。
+	指定輸出根路徑（預設皆為 `deploy/InvoiceIntelligence`）。
 - `-DeployRoot`（publish-all）
-  指定雙模組輸出根路徑（預設為 `deploy`）。
+	指定輸出根路徑（預設為 `deploy`，實際整包輸出到 `deploy/InvoiceIntelligence`）。
 - `-SkipZip`（publish-all）
   僅產出資料夾，不建立 zip 檔。
 
-- 預設輸出路徑（Downloader）：`deploy/downloader`
-- 預設輸出路徑（Processor）：`deploy/processor`
+- `publish-all` 預設輸出（推薦交付客戶）：`deploy/InvoiceIntelligence`
+- `publish-downloader` 預設輸出：`deploy/InvoiceIntelligence`
+- `publish-processor` 預設輸出：`deploy/InvoiceIntelligence`
 - 預設為 self-contained 打包（客戶端可不先安裝 .NET Runtime）。
 - 如需 framework-dependent 打包，可加上 `-FrameworkDependent`。
 - 若遇到 PowerShell 執行政策封鎖，可先執行：`Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force`（僅作用於當前視窗）。
+
+### 部署資料夾結構
+
+整合部署（Downloader + Processor + 主控台）：
+
+```text
+InvoiceIntelligence/
+|-- InvoiceLauncher.exe
+|-- downloader/
+|-- processor/
+`-- config/
+    |-- downloader.ini
+    `-- processor.ini
+```
+
+只部署 Downloader：
+
+```text
+InvoiceIntelligence/
+|-- downloader/
+`-- config/
+    `-- downloader.ini
+```
+
+只部署 Processor：
+
+```text
+InvoiceIntelligence/
+|-- processor/
+`-- config/
+    `-- processor.ini
+```
+
+### 部署流程 0：主控台整合部署（推薦）
+
+步驟：
+
+1. 執行 `scripts/publish-all.ps1`。
+2. 交付 `deploy/InvoiceIntelligence` 整個資料夾給客戶端。
+3. 客戶端直接執行 `deploy/InvoiceIntelligence/InvoiceLauncher.exe`。
+4. 在主控台使用「設定」集中管理 `config/downloader.ini` 與 `config/processor.ini`。
+5. 如需執行完整流程，在主控台按「執行完整流程」（先啟動 Downloader，關閉後可接續啟動 Processor）。
+6. 如需獨立執行單一模組，請進入對應子資料夾：
+   `deploy/InvoiceIntelligence/downloader/InvoiceDownloader.exe` 或 `deploy/InvoiceIntelligence/processor/InvoiceAiProcessor.exe`。
+7. 子模組獨立執行時不提供設定 UI。
+
+流程：
+
+```mermaid
+flowchart LR
+		A[InvoiceLauncher.exe] --> B[downloader 子資料夾]
+		A --> C[processor 子資料夾]
+		B --> D[InvoiceDownloader.exe]
+		C --> E[InvoiceAiProcessor.exe]
+```
 
 ### 部署流程 A：只部署 Downloader（模組 A）
 
 步驟：
 
 1. 執行 `scripts/publish-downloader.ps1`。
-2. 交付 `deploy/downloader` 整個資料夾給客戶端。
+2. 交付 `deploy/InvoiceIntelligence` 整個資料夾給客戶端（包含 `downloader` 與 `config`）。
 3. 確認 `config/downloader.ini` 參數（folderA、folderB、mof.account、mof.appId、mof.appKey）。
 4. 若採官方 API，設定 `mof.invoiceDownloadMode=official` 與 `mof.officialApiBaseUrl`。
-5. 客戶端執行 `InvoiceDownloader.exe`。
+5. 客戶端執行 `downloader/InvoiceDownloader.exe`。
 6. 驗證是否成功輸出檔案到 Folder A，並產生下載紀錄 `.log`。
+7. 此模式不提供設定 UI，請直接編輯 `config/downloader.ini`。
 
 流程：
 
@@ -195,11 +252,12 @@ flowchart LR
 步驟：
 
 1. 執行 `scripts/publish-processor.ps1`。
-2. 交付 `deploy/processor` 整個資料夾給客戶端。
+2. 交付 `deploy/InvoiceIntelligence` 整個資料夾給客戶端（包含 `processor` 與 `config`）。
 3. 確認 `config/processor.ini` 參數（folderA、folderB、output.fileNamingRule、knowledge.repositoryFile）。
 4. 將待分析原始檔放入 Folder A。
-5. 客戶端執行 `InvoiceAiProcessor.exe`。
+5. 客戶端執行 `processor/InvoiceAiProcessor.exe`。
 6. 驗證 Folder B 是否產生強化 Excel，並可選擇執行人工回饋更新知識庫。
+7. 此模式不提供設定 UI，請直接編輯 `config/processor.ini`。
 
 流程：
 

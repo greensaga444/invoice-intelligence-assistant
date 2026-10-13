@@ -16,7 +16,6 @@ public partial class App : Application
         string message;
         ModuleConfiguration? config = null;
         var configPath = ResolveConfigPath("downloader.ini");
-        var processorConfigPath = ResolveConfigPath("processor.ini");
         var solutionRootPath = ResolveSolutionRootPath(configPath);
 
         try
@@ -35,7 +34,7 @@ public partial class App : Application
                       $"下載模式: {modeText}\n" +
                       "請先匯入客戶清單，再進行 MOF 驗證與批次下載。";
 
-            var startupWindow = new MainWindow(config, message, solutionRootPath, configPath, processorConfigPath);
+            var startupWindow = new MainWindow(config, message, solutionRootPath);
             startupWindow.Show();
             return;
         }
@@ -44,7 +43,7 @@ public partial class App : Application
             message = $"設定載入失敗: {ex.Message}";
         }
 
-        var fallbackWindow = new MainWindow(config, message, solutionRootPath, configPath, processorConfigPath);
+        var fallbackWindow = new MainWindow(config, message, solutionRootPath);
         fallbackWindow.Show();
     }
 

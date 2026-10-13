@@ -34,8 +34,29 @@ if (-not (Test-Path $processorScript)) {
     throw "Script not found: $processorScript"
 }
 
-$downloaderOutput = Join-Path $DeployRoot "downloader"
-$processorOutput = Join-Path $DeployRoot "processor"
+$dotnetPath = (Get-Command dotnet -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue)
+if (-not $dotnetPath) {
+    $fallbackDotnetPath = "C:\PROGRA~1\dotnet\dotnet.exe"
+    if (Test-Path $fallbackDotnetPath) {
+        $dotnetPath = $fallbackDotnetPath
+    }
+}
+
+if (-not $dotnetPath) {
+    throw "Cannot find dotnet executable. Install .NET SDK 8 or add dotnet to PATH."
+}
+
+$launcherProjectPath = Join-Path $repoRoot "src\InvoiceLauncher\InvoiceLauncher.csproj"
+if (-not (Test-Path $launcherProjectPath)) {
+    throw "Project file not found: $launcherProjectPath"
+}
+
+$packageRoot = Join-Path $DeployRoot "InvoiceIntelligence"
+$downloaderOutput = Join-Path $packageRoot "downloader"
+$processorOutput = Join-Path $packageRoot "processor"
+$configOutput = Join-Path $packageRoot "config"
+
+$selfContained = if ($FrameworkDependent) { "false" } else { "true" }
 
 $commonParams = @{
     Configuration = $Configuration
@@ -46,44 +67,51 @@ if ($FrameworkDependent) {
     $commonParams.FrameworkDependent = $true
 }
 
+Write-Host "Publishing Main UI package..." -ForegroundColor Cyan
+& $dotnetPath publish $launcherProjectPath -c $Configuration -r $Runtime --self-contained $selfContained -o $packageRoot
+if ($LASTEXITCODE -ne 0) {
+    throw "Main UI publish failed."
+}
+
+$null = New-Item -ItemType Directory -Path $configOutput -Force
+Copy-Item (Join-Path $repoRoot "config\downloader.ini") (Join-Path $configOutput "downloader.ini") -Force
+Copy-Item (Join-Path $repoRoot "config\processor.ini") (Join-Path $configOutput "processor.ini") -Force
+
 Write-Host "Publishing Downloader package..." -ForegroundColor Cyan
-& $downloaderScript @commonParams -OutputPath $downloaderOutput
+& $downloaderScript @commonParams -OutputPath $packageRoot
 if ($LASTEXITCODE -ne 0) {
     throw "Downloader publish failed."
 }
 
 Write-Host "Publishing Processor package..." -ForegroundColor Cyan
-& $processorScript @commonParams -OutputPath $processorOutput
+& $processorScript @commonParams -OutputPath $packageRoot
 if ($LASTEXITCODE -ne 0) {
     throw "Processor publish failed."
 }
 
 if ($SkipZip) {
     Write-Host "Done. Zip packaging skipped." -ForegroundColor Yellow
+    Write-Host "Package:    $packageRoot"
     Write-Host "Downloader: $downloaderOutput"
     Write-Host "Processor:  $processorOutput"
+    Write-Host "Config:     $configOutput"
     return
 }
 
 $artifactsDir = Join-Path $DeployRoot "artifacts"
 $null = New-Item -ItemType Directory -Path $artifactsDir -Force
 
-$downloaderZip = Join-Path $artifactsDir ("downloader-{0}-{1}.zip" -f $Runtime, $Configuration.ToLowerInvariant())
-$processorZip = Join-Path $artifactsDir ("processor-{0}-{1}.zip" -f $Runtime, $Configuration.ToLowerInvariant())
+$packageZip = Join-Path $artifactsDir ("InvoiceIntelligence-{0}-{1}.zip" -f $Runtime, $Configuration.ToLowerInvariant())
 
-if (Test-Path $downloaderZip) {
-    Remove-Item $downloaderZip -Force
+if (Test-Path $packageZip) {
+    Remove-Item $packageZip -Force
 }
 
-if (Test-Path $processorZip) {
-    Remove-Item $processorZip -Force
-}
-
-Compress-Archive -Path (Join-Path $downloaderOutput "*") -DestinationPath $downloaderZip -Force
-Compress-Archive -Path (Join-Path $processorOutput "*") -DestinationPath $processorZip -Force
+Compress-Archive -Path (Join-Path $packageRoot "*") -DestinationPath $packageZip -Force
 
 Write-Host "Done. Packages and zip artifacts are ready." -ForegroundColor Green
+Write-Host "Package:    $packageRoot"
 Write-Host "Downloader: $downloaderOutput"
 Write-Host "Processor:  $processorOutput"
-Write-Host "Zip A:      $downloaderZip"
-Write-Host "Zip B:      $processorZip"
+Write-Host "Config:     $configOutput"
+Write-Host "Zip:        $packageZip"

@@ -13,15 +13,15 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: Unified INI settings UI
+Work Item Name: TDD test-first checklist refinement
 
-Description: Downloader offers one settings UI to maintain downloader.ini and processor.ini (except module.name), including shared folder paths and App credential mapping.
+Description: Refresh the TDD test-first checklist with project-specific traceability and verification commands so future work items follow a consistent Red-Green-Refactor flow.
 
 ---
 
 ## Track
 
-FULL
+LIGHT
 
 Tracks:
 
@@ -223,9 +223,9 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ### PLAN
 
-- [x] Goal + MVP Defined
-- [x] Scope + Acceptance Criteria
-- [x] Task Breakdown Ready
+- [ ] Goal + MVP Defined
+- [ ] Scope + Acceptance Criteria
+- [ ] Task Breakdown Ready
 
 ### IMPLEMENTATION
 
@@ -250,10 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-Completed unified INI settings UI implementation in Downloader.
-Added a single settings flow that writes downloader.ini and processor.ini together, with folder picker bindings for folderA/folderB.
-Aligned MOF credential fields to appId/appKey and persisted one shared UI credential into both keys.
-Verification passed via solution build and core tests before landing to main.
+Refined the TDD checklist with project scope guardrails and deterministic local verification commands.
+Added Red/Green evidence expectations for per-slice traceability.
+Executed verification gates (build/test/format) and resolved one formatter whitespace issue.
+Validated 57 core tests passing locally before delivery.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 
@@ -261,7 +261,7 @@ Verification passed via solution build and core tests before landing to main.
 
 ## Next Action
 
-Unified INI settings UI delivered and landed to main by direct push policy; branch cleanup completed.
+TDD checklist refinement delivered to main by direct-push policy; no PR required because main branch is unprotected.
 
 ---
 

@@ -2,6 +2,20 @@
 
 Use this checklist before writing implementation code.
 
+## Project Scope Guardrails
+
+- [ ] The slice maps to one acceptance criterion from docs/prd.
+- [ ] The test names or comments include the related acceptance criterion ID when available.
+- [ ] The change is scoped to one user-visible behavior outcome.
+
+## Local Verification Commands (Repository Default)
+
+Run these during Green/Refactor and before delivery:
+
+- dotnet build InvoiceIntelligenceAssistant.slnx -v minimal
+- dotnet test InvoiceIntelligenceAssistant.slnx -v minimal
+- dotnet format InvoiceIntelligenceAssistant.slnx --verify-no-changes
+
 ## 1) Pick the Smallest Behavior Slice
 
 - [ ] Select one user flow step from PRD.
@@ -66,6 +80,12 @@ Quality gate for test names:
 - [ ] All tests pass locally.
 - [ ] Acceptance criterion is satisfied.
 - [ ] Notes added to docs/status.md if required by team workflow.
+
+## 8) Evidence to Keep with the Slice
+
+- [ ] Red evidence captured (failing test output).
+- [ ] Green evidence captured (passing test output).
+- [ ] If test changes happened after handoff, rationale is documented.
 
 ## AI Prompt Snippets for Test-First Work
 

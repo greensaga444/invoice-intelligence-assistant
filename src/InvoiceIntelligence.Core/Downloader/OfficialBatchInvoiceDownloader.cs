@@ -180,7 +180,7 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
 
         foreach (var result in itemResults)
         {
-            logLines.Add($"[{(result.IsSuccess ? "成功" : "失敗")}]" );
+            logLines.Add($"[{(result.IsSuccess ? "成功" : "失敗")}]");
             logLines.Add(
                 $"統編={result.Customer.TaxId}, 公司={result.Customer.CompanyName}, 起日={result.Customer.DateFrom:yyyy-MM-dd}, 迄日={result.Customer.DateTo:yyyy-MM-dd}");
             logLines.Add($"訊息={result.Message}");

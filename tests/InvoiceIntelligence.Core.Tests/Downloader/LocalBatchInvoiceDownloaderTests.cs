@@ -7,7 +7,7 @@ namespace InvoiceIntelligence.Core.Tests.Downloader;
 public class LocalBatchInvoiceDownloaderTests
 {
     [Fact]
-    public void Download_ValidRequest_CreatesRawInvoiceFilesAndLog()
+    public async Task DownloadAsync_ValidRequest_CreatesRawInvoiceFilesAndLog()
     {
         var outputDirectory = CreateTempDirectory();
         var customers = new[]
@@ -25,7 +25,7 @@ public class LocalBatchInvoiceDownloaderTests
 
         try
         {
-            var result = downloader.Download(request);
+            var result = await downloader.DownloadAsync(request);
 
             Assert.Equal(2, result.Items.Count);
             Assert.All(result.Items, item => Assert.True(item.IsSuccess));
@@ -54,7 +54,7 @@ public class LocalBatchInvoiceDownloaderTests
     }
 
     [Fact]
-    public void Download_EmptySessionToken_ThrowsInvalidOperationException()
+    public async Task DownloadAsync_EmptySessionToken_ThrowsInvalidOperationException()
     {
         var outputDirectory = CreateTempDirectory();
         var customers = new[]
@@ -71,7 +71,7 @@ public class LocalBatchInvoiceDownloaderTests
 
         try
         {
-            Assert.Throws<InvalidOperationException>(() => downloader.Download(request));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => downloader.DownloadAsync(request));
         }
         finally
         {
@@ -80,7 +80,7 @@ public class LocalBatchInvoiceDownloaderTests
     }
 
     [Fact]
-    public void Download_DuplicateGeneratedFileName_UsesUniqueFileNames()
+    public async Task DownloadAsync_DuplicateGeneratedFileName_UsesUniqueFileNames()
     {
         var outputDirectory = CreateTempDirectory();
         var customers = new[]
@@ -98,7 +98,7 @@ public class LocalBatchInvoiceDownloaderTests
 
         try
         {
-            var result = downloader.Download(request);
+            var result = await downloader.DownloadAsync(request);
 
             Assert.Equal(2, result.Items.Count);
             Assert.All(result.Items, item => Assert.True(item.IsSuccess));
@@ -120,7 +120,7 @@ public class LocalBatchInvoiceDownloaderTests
     }
 
     [Fact]
-    public void Download_OneHundredFiftyCustomers_MeetsBatchScaleAndSuccessRateTarget()
+    public async Task DownloadAsync_OneHundredFiftyCustomers_MeetsBatchScaleAndSuccessRateTarget()
     {
         var outputDirectory = CreateTempDirectory();
         var customers = Enumerable.Range(1, 150)
@@ -140,7 +140,7 @@ public class LocalBatchInvoiceDownloaderTests
 
         try
         {
-            var result = downloader.Download(request);
+            var result = await downloader.DownloadAsync(request);
             var successCount = result.Items.Count(item => item.IsSuccess);
             var successRate = (decimal)successCount / result.Items.Count;
 

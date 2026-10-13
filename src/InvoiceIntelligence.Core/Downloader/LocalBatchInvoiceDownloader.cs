@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text;
 using ClosedXML.Excel;
 using InvoiceIntelligence.Core.Configuration;
 
@@ -7,7 +6,16 @@ namespace InvoiceIntelligence.Core.Downloader;
 
 public sealed class LocalBatchInvoiceDownloader : IBatchInvoiceDownloader
 {
-    public BatchInvoiceDownloadResult Download(BatchInvoiceDownloadRequest request)
+    public Task<BatchInvoiceDownloadResult> DownloadAsync(
+        BatchInvoiceDownloadRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return Task.Run(() => DownloadCore(request, cancellationToken), cancellationToken);
+    }
+
+    private static BatchInvoiceDownloadResult DownloadCore(
+        BatchInvoiceDownloadRequest request,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -35,10 +43,19 @@ public sealed class LocalBatchInvoiceDownloader : IBatchInvoiceDownloader
 
         foreach (var customer in request.Customers)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             try
             {
-                var fileName = BuildFileName(request.OutputNamingRule, customer, batchTimestamp);
-                var outputPath = EnsureUniquePath(Path.Combine(request.FolderAPath, fileName));
+                var fileName = OutputFileNameHelper.BuildFileName(
+                    namingRule: request.OutputNamingRule,
+                    taxId: customer.TaxId,
+                    companyName: customer.CompanyName,
+                    dateFrom: customer.DateFrom,
+                    dateTo: customer.DateTo,
+                    timestamp: batchTimestamp,
+                    extension: ".xlsx");
+                var outputPath = OutputFileNameHelper.EnsureUniquePath(Path.Combine(request.FolderAPath, fileName));
 
                 WriteInvoiceWorkbook(outputPath, customer);
 
@@ -62,47 +79,6 @@ public sealed class LocalBatchInvoiceDownloader : IBatchInvoiceDownloader
         WriteLogFile(logPath, itemResults, batchTimestamp);
 
         return new BatchInvoiceDownloadResult(itemResults, logPath);
-    }
-
-    private static string BuildFileName(string namingRule, CustomerRecord customer, DateTimeOffset timestamp)
-    {
-        var fileName = namingRule
-            .Replace("{taxId}", SanitizeSegment(customer.TaxId), StringComparison.OrdinalIgnoreCase)
-            .Replace("{companyName}", SanitizeSegment(customer.CompanyName), StringComparison.OrdinalIgnoreCase)
-            .Replace("{dateFrom}", customer.DateFrom.ToString("yyyyMMdd", CultureInfo.InvariantCulture), StringComparison.OrdinalIgnoreCase)
-            .Replace("{dateTo}", customer.DateTo.ToString("yyyyMMdd", CultureInfo.InvariantCulture), StringComparison.OrdinalIgnoreCase)
-            .Replace("{timestamp}", timestamp.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture), StringComparison.OrdinalIgnoreCase);
-
-        if (!fileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
-        {
-            fileName += ".xlsx";
-        }
-
-        return fileName;
-    }
-
-    private static string EnsureUniquePath(string filePath)
-    {
-        if (!File.Exists(filePath))
-        {
-            return filePath;
-        }
-
-        var directory = Path.GetDirectoryName(filePath)
-            ?? throw new InvalidOperationException("輸出路徑缺少目錄資訊。");
-        var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
-        var extension = Path.GetExtension(filePath);
-
-        for (var index = 2; index <= 9999; index++)
-        {
-            var candidate = Path.Combine(directory, $"{fileNameWithoutExtension}-{index}{extension}");
-            if (!File.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new IOException("無法產生唯一輸出檔名，請清理 Folder A 後重試。");
     }
 
     private static void WriteInvoiceWorkbook(string outputPath, CustomerRecord customer)
@@ -178,30 +154,6 @@ public sealed class LocalBatchInvoiceDownloader : IBatchInvoiceDownloader
         var suffix = ((prefix + offset + 11) % 90) + 10;
 
         return $"{prefix:000000}{suffix:00}";
-    }
-
-    private static string SanitizeSegment(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return "未提供";
-        }
-
-        var invalid = Path.GetInvalidFileNameChars();
-        var builder = new StringBuilder(value.Length);
-
-        foreach (var character in value.Trim())
-        {
-            if (invalid.Contains(character))
-            {
-                builder.Append('_');
-                continue;
-            }
-
-            builder.Append(character);
-        }
-
-        return builder.ToString();
     }
 
     private static void WriteLogFile(

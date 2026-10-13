@@ -6,7 +6,7 @@ namespace InvoiceIntelligence.Core.Tests.Downloader;
 public class OfficialBatchInvoiceDownloaderIntegrationTests
 {
     [Fact]
-    public void Download_ValidRequest_ExportsCsvAndCreatesLog()
+    public async Task DownloadAsync_ValidRequest_ExportsCsvAndCreatesLog()
     {
         var outputDirectory = CreateTempDirectory();
         var customers = new[]
@@ -28,7 +28,7 @@ public class OfficialBatchInvoiceDownloaderIntegrationTests
 
         try
         {
-            var result = downloader.Download(request);
+            var result = await downloader.DownloadAsync(request);
 
             Assert.Equal(2, result.Items.Count);
             Assert.All(result.Items, item => Assert.True(item.IsSuccess));

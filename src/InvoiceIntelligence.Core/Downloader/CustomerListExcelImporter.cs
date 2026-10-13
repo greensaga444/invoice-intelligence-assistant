@@ -11,6 +11,14 @@ public sealed class CustomerListExcelImporter : ICustomerListImporter
     private const string CompanyNameField = "Company Name";
     private const string DateRangeField = "Date Range";
 
+    private static readonly Regex TaxIdRegex = new(
+        "^[0-9]{8}$",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+    private static readonly Regex DateRegex = new(
+        @"\d{4}[-/]\d{1,2}[-/]\d{1,2}",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
     private static readonly string[] TaxIdAliases = ["Tax ID", "TaxId", "統編"];
     private static readonly string[] CompanyNameAliases = ["Company Name", "CompanyName", "公司名稱"];
     private static readonly string[] DateRangeAliases = ["Date Range", "DateRange", "日期區間", "期間"];
@@ -138,7 +146,7 @@ public sealed class CustomerListExcelImporter : ICustomerListImporter
             throw new InvalidDataException($"第 {rowNumber} 列：統編不可為空白。");
         }
 
-        if (!Regex.IsMatch(taxId, "^[0-9]{8}$"))
+        if (!TaxIdRegex.IsMatch(taxId))
         {
             throw new InvalidDataException($"第 {rowNumber} 列：統編必須為 8 位數字。");
         }
@@ -168,7 +176,7 @@ public sealed class CustomerListExcelImporter : ICustomerListImporter
             return TryParseDate(parts[0], out dateFrom) && TryParseDate(parts[1], out dateTo);
         }
 
-        var dateMatches = Regex.Matches(rawValue, @"\d{4}[-/]\d{1,2}[-/]\d{1,2}");
+        var dateMatches = DateRegex.Matches(rawValue);
         if (dateMatches.Count >= 2)
         {
             return TryParseDate(dateMatches[0].Value, out dateFrom) && TryParseDate(dateMatches[1].Value, out dateTo);

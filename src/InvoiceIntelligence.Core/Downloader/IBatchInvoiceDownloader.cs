@@ -2,5 +2,7 @@ namespace InvoiceIntelligence.Core.Downloader;
 
 public interface IBatchInvoiceDownloader
 {
-    BatchInvoiceDownloadResult Download(BatchInvoiceDownloadRequest request);
+    Task<BatchInvoiceDownloadResult> DownloadAsync(
+        BatchInvoiceDownloadRequest request,
+        CancellationToken cancellationToken = default);
 }

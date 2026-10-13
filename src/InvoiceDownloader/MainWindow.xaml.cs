@@ -149,7 +149,7 @@ public partial class MainWindow : Window
         MofPasswordBox.Clear();
     }
 
-    private void StartBatchDownloadButton_Click(object sender, RoutedEventArgs e)
+    private async void StartBatchDownloadButton_Click(object sender, RoutedEventArgs e)
     {
         if (_configuration is null)
         {
@@ -170,6 +170,8 @@ public partial class MainWindow : Window
             return;
         }
 
+        StartBatchDownloadButton.IsEnabled = false;
+
         try
         {
             var folderAPath = ResolveConfiguredPath(_configuration.FolderAPath);
@@ -182,7 +184,7 @@ public partial class MainWindow : Window
                 OfficialApiAccount: _configuration.MofAccount,
                 OfficialApiPassword: _authenticatedPassword);
 
-            var result = _batchInvoiceDownloader.Download(request);
+            var result = await _batchInvoiceDownloader.DownloadAsync(request);
 
             var successCount = result.Items.Count(item => item.IsSuccess);
             var failureCount = result.Items.Count - successCount;
@@ -196,6 +198,10 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             BatchDownloadResultText.Text = $"批次下載失敗: {ex.Message}";
+        }
+        finally
+        {
+            StartBatchDownloadButton.IsEnabled = _loadedCustomers.Count > 0 && HasActiveSession();
         }
     }
 

@@ -14,7 +14,7 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
 {
     private const string ApiVersion = "1.0";
     private readonly HttpClient _httpClient;
-    private readonly Uri _baseUri;
+    private readonly Uri _queryUri;
 
     public MofOfficialHttpInvoiceApiClient(HttpClient httpClient, string baseUrl)
     {
@@ -25,7 +25,8 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
             throw new ArgumentException("官方 API Base URL 必須為絕對網址。", nameof(baseUrl));
         }
 
-        _baseUri = parsedBaseUri;
+        var path = parsedBaseUri.AbsoluteUri.TrimEnd('/');
+        _queryUri = new Uri($"{path}/ods-main/ODS374I/query", UriKind.Absolute);
     }
 
     public async Task<OfficialInvoicePageResult> QueryInvoicesAsync(
@@ -50,7 +51,7 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
             );
         }
 
-        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, BuildQueryUri());
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, _queryUri);
         httpRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
         // Spec requires application/x-www-form-urlencoded payload.
@@ -129,12 +130,6 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
                 isTransient: false,
                 innerException: ex);
         }
-    }
-
-    private Uri BuildQueryUri()
-    {
-        var path = _baseUri.AbsoluteUri.TrimEnd('/');
-        return new Uri($"{path}/ods-main/ODS374I/query", UriKind.Absolute);
     }
 
     private static IReadOnlyList<OfficialInvoiceRecord> ParseItems(
@@ -248,6 +243,11 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
 
     private static JsonElement? TryGetProperty(JsonElement element, string propertyName)
     {
+        if (element.TryGetProperty(propertyName, out var exactProperty))
+        {
+            return exactProperty;
+        }
+
         foreach (var property in element.EnumerateObject())
         {
             if (string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase))

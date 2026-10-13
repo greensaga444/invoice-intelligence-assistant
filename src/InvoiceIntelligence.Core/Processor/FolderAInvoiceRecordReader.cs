@@ -18,7 +18,7 @@ public sealed class FolderAInvoiceRecordReader
         }
 
         var invoiceFiles = Directory
-            .GetFiles(folderAPath, "*.xlsx", SearchOption.TopDirectoryOnly)
+            .EnumerateFiles(folderAPath, "*.xlsx", SearchOption.TopDirectoryOnly)
             .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
             .ToArray();
 

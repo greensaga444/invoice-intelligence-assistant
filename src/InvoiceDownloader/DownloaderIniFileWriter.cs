@@ -1,5 +1,5 @@
 using System.IO;
-using System.Text;
+using InvoiceIntelligence.Core.Configuration;
 
 namespace InvoiceDownloader;
 
@@ -18,29 +18,17 @@ internal static class DownloaderIniFileWriter
             Directory.CreateDirectory(directoryPath);
         }
 
-        var sharedOfficialAppCredential = string.IsNullOrWhiteSpace(settings.OfficialApiAppId)
-            ? settings.OfficialApiAppKey
-            : settings.OfficialApiAppId;
+        var content = IniFileContentBuilder.BuildDownloaderContent(
+            moduleName: settings.ModuleName,
+            folderAPath: settings.FolderAPath,
+            folderBPath: settings.FolderBPath,
+            fileNamingRule: settings.FileNamingRule,
+            mofAccount: settings.MofAccount,
+            invoiceDownloadMode: settings.InvoiceDownloadMode,
+            officialApiBaseUrl: settings.OfficialApiBaseUrl,
+            officialApiAppId: settings.OfficialApiAppId,
+            officialApiAppKey: settings.OfficialApiAppKey);
 
-        var lineBreak = Environment.NewLine;
-        var builder = new StringBuilder();
-        builder.Append("[module]").Append(lineBreak);
-        builder.Append("name = ").Append(settings.ModuleName).Append(lineBreak);
-        builder.Append(lineBreak);
-        builder.Append("[paths]").Append(lineBreak);
-        builder.Append("folderA = ").Append(settings.FolderAPath).Append(lineBreak);
-        builder.Append("folderB = ").Append(settings.FolderBPath).Append(lineBreak);
-        builder.Append(lineBreak);
-        builder.Append("[output]").Append(lineBreak);
-        builder.Append("fileNamingRule = ").Append(settings.FileNamingRule).Append(lineBreak);
-        builder.Append(lineBreak);
-        builder.Append("[mof]").Append(lineBreak);
-        builder.Append("account = ").Append(settings.MofAccount).Append(lineBreak);
-        builder.Append("invoiceDownloadMode = ").Append(settings.InvoiceDownloadMode).Append(lineBreak);
-        builder.Append("officialApiBaseUrl = ").Append(settings.OfficialApiBaseUrl).Append(lineBreak);
-        builder.Append("appId = ").Append(sharedOfficialAppCredential).Append(lineBreak);
-        builder.Append("appKey = ").Append(sharedOfficialAppCredential).Append(lineBreak);
-
-        File.WriteAllText(iniPath, builder.ToString(), Encoding.UTF8);
+        File.WriteAllText(iniPath, content, System.Text.Encoding.UTF8);
     }
 }

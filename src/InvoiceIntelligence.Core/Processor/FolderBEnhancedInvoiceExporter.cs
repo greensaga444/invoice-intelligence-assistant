@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text;
 using ClosedXML.Excel;
 using InvoiceIntelligence.Core.Configuration;
 
@@ -48,15 +47,16 @@ public sealed class FolderBEnhancedInvoiceExporter
             var dateFrom = items.Min(item => item.Record.InvoiceDate);
             var dateTo = items.Max(item => item.Record.InvoiceDate);
 
-            var outputFileName = BuildFileName(
-                outputNamingRule,
-                firstRecord.TaxId,
-                firstRecord.CompanyName,
-                dateFrom,
-                dateTo,
-                timestamp);
+            var outputFileName = OutputFileNameHelper.BuildFileName(
+                namingRule: outputNamingRule,
+                taxId: firstRecord.TaxId,
+                companyName: firstRecord.CompanyName,
+                dateFrom: dateFrom,
+                dateTo: dateTo,
+                timestamp: timestamp,
+                extension: ".xlsx");
 
-            var outputPath = EnsureUniquePath(Path.Combine(folderBPath, outputFileName));
+            var outputPath = OutputFileNameHelper.EnsureUniquePath(Path.Combine(folderBPath, outputFileName));
 
             WriteWorkbook(outputPath, items);
 
@@ -67,77 +67,6 @@ public sealed class FolderBEnhancedInvoiceExporter
         }
 
         return new FolderBExportResult(outputFiles);
-    }
-
-    private static string BuildFileName(
-        string namingRule,
-        string taxId,
-        string companyName,
-        DateOnly dateFrom,
-        DateOnly dateTo,
-        DateTimeOffset timestamp)
-    {
-        var fileName = namingRule
-            .Replace("{taxId}", SanitizeSegment(taxId), StringComparison.OrdinalIgnoreCase)
-            .Replace("{companyName}", SanitizeSegment(companyName), StringComparison.OrdinalIgnoreCase)
-            .Replace("{dateFrom}", dateFrom.ToString("yyyyMMdd", CultureInfo.InvariantCulture), StringComparison.OrdinalIgnoreCase)
-            .Replace("{dateTo}", dateTo.ToString("yyyyMMdd", CultureInfo.InvariantCulture), StringComparison.OrdinalIgnoreCase)
-            .Replace("{timestamp}", timestamp.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture), StringComparison.OrdinalIgnoreCase);
-
-        if (!fileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
-        {
-            fileName += ".xlsx";
-        }
-
-        return fileName;
-    }
-
-    private static string EnsureUniquePath(string filePath)
-    {
-        if (!File.Exists(filePath))
-        {
-            return filePath;
-        }
-
-        var directory = Path.GetDirectoryName(filePath)
-            ?? throw new InvalidOperationException("資料夾 B 輸出路徑缺少目錄資訊。");
-        var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
-        var extension = Path.GetExtension(filePath);
-
-        for (var index = 2; index <= 9999; index++)
-        {
-            var candidatePath = Path.Combine(directory, $"{fileNameWithoutExtension}-{index}{extension}");
-            if (!File.Exists(candidatePath))
-            {
-                return candidatePath;
-            }
-        }
-
-        throw new IOException("無法產生唯一的資料夾 B 輸出檔名。");
-    }
-
-    private static string SanitizeSegment(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return "未提供";
-        }
-
-        var invalidCharacters = Path.GetInvalidFileNameChars();
-        var builder = new StringBuilder(value.Length);
-
-        foreach (var character in value.Trim())
-        {
-            if (invalidCharacters.Contains(character))
-            {
-                builder.Append('_');
-                continue;
-            }
-
-            builder.Append(character);
-        }
-
-        return builder.ToString();
     }
 
     private static void WriteWorkbook(string outputPath, IReadOnlyList<InvoiceDecisionResult> items)

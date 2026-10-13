@@ -14,6 +14,8 @@ public partial class MainWindow : Window
 {
     private readonly ModuleConfiguration? _configuration;
     private readonly string _solutionRootPath;
+    private readonly string _downloaderConfigPath;
+    private readonly string _processorConfigPath;
     private readonly ICustomerListImporter _customerListImporter;
     private readonly IMofAuthenticator _mofAuthenticator;
     private readonly IBatchInvoiceDownloader _batchInvoiceDownloader;
@@ -23,12 +25,19 @@ public partial class MainWindow : Window
     private DateTimeOffset? _sessionExpiresAt;
     private string? _authenticatedPassword;
 
-    public MainWindow(ModuleConfiguration? configuration, string statusMessage, string solutionRootPath)
+    public MainWindow(
+        ModuleConfiguration? configuration,
+        string statusMessage,
+        string solutionRootPath,
+        string downloaderConfigPath,
+        string processorConfigPath)
     {
         InitializeComponent();
 
         _configuration = configuration;
         _solutionRootPath = solutionRootPath;
+        _downloaderConfigPath = downloaderConfigPath;
+        _processorConfigPath = processorConfigPath;
         _customerListImporter = new CustomerListExcelImporter();
         _mofAuthenticator = new LocalMofAuthenticator();
 
@@ -53,7 +62,7 @@ public partial class MainWindow : Window
         }
 
         MofAccountValueText.Text = _configuration.MofAccount;
-        MofApiKeyValueText.Text = MaskApiKey(_configuration.MofCredentialKey);
+        MofApiKeyValueText.Text = MaskApiKey(GetEffectiveMofApiKey());
     }
 
     protected override void OnClosed(EventArgs e)
@@ -121,7 +130,7 @@ public partial class MainWindow : Window
 
         var credential = new MofCredential(
             _configuration.MofAccount,
-            _configuration.MofCredentialKey,
+            GetEffectiveMofApiKey(),
             MofPasswordBox.Password);
 
         var authResult = _mofAuthenticator.Authenticate(credential);
@@ -175,7 +184,7 @@ public partial class MainWindow : Window
                 FolderAPath: folderAPath,
                 OutputNamingRule: _configuration.OutputNamingRule,
                 SessionToken: _sessionToken!,
-                OfficialApiAppId: _configuration.MofCredentialKey,
+                OfficialApiAppId: GetEffectiveOfficialApiAppId(),
                 OfficialApiAccount: _configuration.MofAccount,
                 OfficialApiPassword: _authenticatedPassword);
 
@@ -194,6 +203,83 @@ public partial class MainWindow : Window
         {
             BatchDownloadResultText.Text = $"批次下載失敗: {ex.Message}";
         }
+    }
+
+    private void OpenSettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        var settingsWindow = new DownloaderSettingsWindow(BuildSettingsFromCurrentState())
+        {
+            Owner = this
+        };
+
+        if (settingsWindow.ShowDialog() != true || settingsWindow.SavedSettings is null)
+        {
+            return;
+        }
+
+        try
+        {
+            DownloaderIniFileWriter.Write(_downloaderConfigPath, settingsWindow.SavedSettings);
+            SyncProcessorSettings(settingsWindow.SavedSettings);
+
+            MessageBox.Show(
+                this,
+                $"設定已儲存。\nDownloader: {_downloaderConfigPath}\nProcessor: {_processorConfigPath}\n請重新啟動應用程式以套用新設定。",
+                "設定已儲存",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                $"儲存設定失敗: {ex.Message}",
+                "儲存失敗",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private void SyncProcessorSettings(DownloaderIniSettings settings)
+    {
+        var processorConfiguration = LoadProcessorConfigurationOrDefault();
+
+        ProcessorIniFileWriter.Write(
+            _processorConfigPath,
+            processorConfiguration,
+            settings.FolderAPath,
+            settings.FolderBPath,
+            settings.ProcessorFileNamingRule,
+            settings.ProcessorKnowledgeRepositoryFile,
+            settings.MofAccount,
+            settings.OfficialApiAppId);
+    }
+
+    private ModuleConfiguration LoadProcessorConfigurationOrDefault()
+    {
+        try
+        {
+            if (File.Exists(_processorConfigPath))
+            {
+                var loader = new IniModuleConfigurationLoader();
+                return loader.Load(_processorConfigPath);
+            }
+        }
+        catch
+        {
+            // Fallback to defaults so settings can still be saved.
+        }
+
+        return new ModuleConfiguration(
+            ModuleName: "InvoiceAiProcessor",
+            FolderAPath: "data\\folder-a",
+            FolderBPath: "data\\folder-b",
+            OutputNamingRule: "{taxId}_{companyName}_{dateFrom}_{dateTo}.xlsx",
+            MofAccount: "replace-with-mof-account",
+            MofCredentialKey: "replace-with-official-app-key",
+            KnowledgeRepositoryPath: "data\\knowledge\\knowledge-cases.json",
+            OfficialApiAppId: "replace-with-official-app-id",
+            OfficialApiAppKey: "replace-with-official-app-key");
     }
 
     private static string MaskApiKey(string apiKey)
@@ -218,6 +304,26 @@ public partial class MainWindow : Window
             && _sessionExpiresAt > DateTimeOffset.UtcNow;
     }
 
+    private string GetEffectiveMofApiKey()
+    {
+        if (!string.IsNullOrWhiteSpace(_configuration?.OfficialApiAppKey))
+        {
+            return _configuration.OfficialApiAppKey;
+        }
+
+        return _configuration?.OfficialApiAppId ?? string.Empty;
+    }
+
+    private string GetEffectiveOfficialApiAppId()
+    {
+        if (!string.IsNullOrWhiteSpace(_configuration?.OfficialApiAppId))
+        {
+            return _configuration.OfficialApiAppId;
+        }
+
+        return _configuration?.OfficialApiAppKey ?? string.Empty;
+    }
+
     private string ResolveConfiguredPath(string configuredPath)
     {
         if (Path.IsPathRooted(configuredPath))
@@ -226,6 +332,40 @@ public partial class MainWindow : Window
         }
 
         return Path.GetFullPath(Path.Combine(_solutionRootPath, configuredPath));
+    }
+
+    private DownloaderIniSettings BuildSettingsFromCurrentState()
+    {
+        var processorConfiguration = LoadProcessorConfigurationOrDefault();
+
+        if (_configuration is null)
+        {
+            return new DownloaderIniSettings(
+                ModuleName: "InvoiceDownloader",
+                FolderAPath: string.Empty,
+                FolderBPath: string.Empty,
+                FileNamingRule: "{taxId}_{companyName}_{timestamp}.xlsx",
+                ProcessorFileNamingRule: processorConfiguration.OutputNamingRule,
+                ProcessorKnowledgeRepositoryFile: processorConfiguration.KnowledgeRepositoryPath,
+                MofAccount: string.Empty,
+                InvoiceDownloadMode: "local",
+                OfficialApiBaseUrl: "https://service-mc.einvoice.nat.gov.tw/ptl/portal/api",
+                OfficialApiAppId: string.Empty,
+                OfficialApiAppKey: string.Empty);
+        }
+
+        return new DownloaderIniSettings(
+            ModuleName: _configuration.ModuleName,
+            FolderAPath: ResolveConfiguredPath(_configuration.FolderAPath),
+            FolderBPath: ResolveConfiguredPath(_configuration.FolderBPath),
+            FileNamingRule: _configuration.OutputNamingRule,
+            ProcessorFileNamingRule: processorConfiguration.OutputNamingRule,
+            ProcessorKnowledgeRepositoryFile: processorConfiguration.KnowledgeRepositoryPath,
+            MofAccount: _configuration.MofAccount,
+            InvoiceDownloadMode: _configuration.InvoiceDownloadMode,
+            OfficialApiBaseUrl: _configuration.OfficialApiBaseUrl ?? string.Empty,
+            OfficialApiAppId: _configuration.OfficialApiAppId ?? string.Empty,
+            OfficialApiAppKey: _configuration.OfficialApiAppKey ?? string.Empty);
     }
 
     private static (IBatchInvoiceDownloader Downloader, HttpClient? OfficialApiHttpClient) CreateBatchDownloader(ModuleConfiguration configuration)

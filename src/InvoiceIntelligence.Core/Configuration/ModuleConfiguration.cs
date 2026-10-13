@@ -9,4 +9,6 @@ public sealed record ModuleConfiguration(
     string MofCredentialKey,
     string KnowledgeRepositoryPath,
     string InvoiceDownloadMode = "local",
-    string? OfficialApiBaseUrl = null);
+    string? OfficialApiBaseUrl = null,
+    string? OfficialApiAppId = null,
+    string? OfficialApiAppKey = null);

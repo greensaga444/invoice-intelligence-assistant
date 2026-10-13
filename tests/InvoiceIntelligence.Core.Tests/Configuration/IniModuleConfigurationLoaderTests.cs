@@ -21,7 +21,7 @@ public class IniModuleConfigurationLoaderTests
 
             [mof]
             account = sample-account
-            credentialKey = sample-secret
+            appKey = sample-secret
             """;
 
         var iniPath = WriteTempIni(iniContent);
@@ -40,6 +40,8 @@ public class IniModuleConfigurationLoaderTests
             Assert.Equal("data\\knowledge\\knowledge-cases.json", config.KnowledgeRepositoryPath);
             Assert.Equal("local", config.InvoiceDownloadMode);
             Assert.Null(config.OfficialApiBaseUrl);
+            Assert.Equal("sample-secret", config.OfficialApiAppId);
+            Assert.Equal("sample-secret", config.OfficialApiAppKey);
         }
         finally
         {
@@ -66,7 +68,7 @@ public class IniModuleConfigurationLoaderTests
 
             [mof]
             account = sample-account
-            credentialKey = sample-secret
+            appKey = sample-secret
             """;
 
         var iniPath = WriteTempIni(iniContent);
@@ -100,7 +102,7 @@ public class IniModuleConfigurationLoaderTests
 
             [mof]
             account = sample-account
-            credentialKey = sample-secret
+            appKey = sample-secret
             """;
 
         var iniPath = WriteTempIni(iniContent);
@@ -131,7 +133,7 @@ public class IniModuleConfigurationLoaderTests
 
             [mof]
             account = sample-account
-            credentialKey = sample-secret
+            appKey = sample-secret
             """;
 
         var iniPath = WriteTempIni(iniContent);
@@ -163,9 +165,10 @@ public class IniModuleConfigurationLoaderTests
 
             [mof]
             account = sample-account
-            credentialKey = sample-secret
             invoiceDownloadMode = official
             officialApiBaseUrl = https://service-mc.einvoice.nat.gov.tw/ptl/portal/api
+            appId = sample-app-id
+            appKey = sample-app-key
             """;
 
         var iniPath = WriteTempIni(iniContent);
@@ -177,6 +180,8 @@ public class IniModuleConfigurationLoaderTests
 
             Assert.Equal("official", config.InvoiceDownloadMode);
             Assert.Equal("https://service-mc.einvoice.nat.gov.tw/ptl/portal/api", config.OfficialApiBaseUrl);
+            Assert.Equal("sample-app-id", config.OfficialApiAppId);
+            Assert.Equal("sample-app-key", config.OfficialApiAppKey);
         }
         finally
         {
@@ -200,8 +205,77 @@ public class IniModuleConfigurationLoaderTests
 
             [mof]
             account = sample-account
-            credentialKey = sample-secret
+            appKey = sample-secret
             invoiceDownloadMode = official
+            """;
+
+        var iniPath = WriteTempIni(iniContent);
+        var loader = new IniModuleConfigurationLoader();
+
+        try
+        {
+            Assert.Throws<InvalidDataException>(() => loader.Load(iniPath));
+        }
+        finally
+        {
+            File.Delete(iniPath);
+        }
+    }
+
+    [Fact]
+    public void Load_AppKeyOnly_UsesAppKeyAsCredentialKey()
+    {
+        const string iniContent = """
+            [module]
+            name = Processor
+
+            [paths]
+            folderA = C:\Data\FolderA
+            folderB = C:\Data\FolderB
+
+            [output]
+            fileNamingRule = {taxId}_{companyName}_{timestamp}.xlsx
+
+            [mof]
+            account = sample-account
+            appId = sample-app-id
+            appKey = sample-app-key
+            """;
+
+        var iniPath = WriteTempIni(iniContent);
+        var loader = new IniModuleConfigurationLoader();
+
+        try
+        {
+            var config = loader.Load(iniPath);
+
+            Assert.Equal("sample-app-key", config.MofCredentialKey);
+            Assert.Equal("sample-app-id", config.OfficialApiAppId);
+            Assert.Equal("sample-app-key", config.OfficialApiAppKey);
+        }
+        finally
+        {
+            File.Delete(iniPath);
+        }
+    }
+
+    [Fact]
+    public void Load_WithoutAppKey_ThrowsInvalidDataException()
+    {
+        const string iniContent = """
+            [module]
+            name = Processor
+
+            [paths]
+            folderA = C:\Data\FolderA
+            folderB = C:\Data\FolderB
+
+            [output]
+            fileNamingRule = {taxId}_{companyName}_{timestamp}.xlsx
+
+            [mof]
+            account = sample-account
+            appId = sample-app-id
             """;
 
         var iniPath = WriteTempIni(iniContent);

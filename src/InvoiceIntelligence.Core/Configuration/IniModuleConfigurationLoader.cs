@@ -32,7 +32,9 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
         var folderBPath = iniData.GetRequired("paths", "folderB");
         var outputNamingRule = iniData.GetRequired("output", "fileNamingRule");
         var mofAccount = iniData.GetRequired("mof", "account");
-        var mofCredentialKey = iniData.GetRequired("mof", "credentialKey");
+        var officialApiAppKey = iniData.GetRequired("mof", "appKey").Trim();
+        var officialApiAppId = TrimOptional(iniData.GetOptional("mof", "appId")) ?? officialApiAppKey;
+        var mofCredentialKey = officialApiAppKey;
         var knowledgeRepositoryPath = iniData.GetOptional("knowledge", "repositoryFile")
             ?? DefaultKnowledgeRepositoryPath;
         var invoiceDownloadMode = NormalizeInvoiceDownloadMode(iniData.GetOptional("mof", "invoiceDownloadMode"));
@@ -49,7 +51,9 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
             mofCredentialKey,
             knowledgeRepositoryPath,
             invoiceDownloadMode,
-            officialApiBaseUrl);
+            officialApiBaseUrl,
+            officialApiAppId,
+            officialApiAppKey);
     }
 
     private static string NormalizeInvoiceDownloadMode(string? configuredMode)
@@ -66,6 +70,11 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
         }
 
         return normalized;
+    }
+
+    private static string? TrimOptional(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 
     private static string? ResolveOfficialApiBaseUrl(string invoiceDownloadMode, string? configuredBaseUrl)

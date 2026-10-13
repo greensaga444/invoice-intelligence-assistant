@@ -13,7 +13,7 @@ public sealed class LocalMofAuthenticator : IMofAuthenticator
 
         if (IsPlaceholder(credential.ApiKey))
         {
-            return Failure("MOF API 金鑰尚未設定，請先更新 downloader.ini 的 [mof].credentialKey。");
+            return Failure("MOF API 金鑰尚未設定，請先更新 downloader.ini 的 [mof].appKey。");
         }
 
         if (string.IsNullOrWhiteSpace(credential.Password))

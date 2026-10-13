@@ -115,12 +115,21 @@ AI 與檢索：
 - AI Processor 已支援手動知識回饋：可勾選人工核准紀錄並更新本地知識庫，且後續執行會將已核准案例載入 RAG 檢索。
 - 目前版本已完成在地化與品質閘道：使用者可見訊息與輸出欄位維持繁體中文，且已加入離線 AI 驗證與目標規模效能測試。
 
-## 開發環境自檢（Git Clone 後建議先執行）
+## 開發與交付快速路徑
 
-使用下列腳本可一次檢查是否具備可建置條件（含 .NET SDK 檢查 + restore/build）。
+### PowerShell 前置（僅當前視窗）
+
+若遇到 `.ps1` 無法執行，先在同一個 PowerShell 視窗執行：
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+```
+
+### 1) 開發環境自檢（Git Clone 後第一步）
+
+使用下列腳本檢查機器是否具備可建置條件（.NET SDK + restore/build）：
+
+```powershell
 .\scripts\check-developer-environment.ps1
 ```
 
@@ -128,9 +137,17 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 
 - `-Configuration Release|Debug`
 
+### 2) 本機驗證（開發者）
+
+```powershell
+dotnet build InvoiceIntelligenceAssistant.slnx -v minimal
+dotnet test InvoiceIntelligenceAssistant.slnx -v minimal
+dotnet format InvoiceIntelligenceAssistant.slnx --verify-no-changes
+```
+
 ## 模組化部署指南（可只交付單一模組）
 
-### 一鍵打包腳本
+### 3) 一鍵打包腳本
 
 ```powershell
 .\scripts\publish-downloader.ps1
@@ -138,7 +155,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 .\scripts\publish-all.ps1
 ```
 
-可選參數：
+常見用法：
 
 ```powershell
 .\scripts\publish-downloader.ps1 -Runtime win-x64 -Configuration Release
@@ -146,44 +163,49 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 .\scripts\publish-all.ps1 -Runtime win-x64 -Configuration Release
 ```
 
-若遇到「因為這個系統上已停用指令碼執行，所以無法載入 .ps1 檔案」錯誤，請先在同一個 PowerShell 視窗執行：
-例如:
-.\scripts\publish-all.ps1 : 無法辨識 '.\scripts\publish-all.ps1' 詞彙是否為 Cmdlet、函數、指令檔或可執行程式的名稱。請檢查名稱拼字是否正確，如果包含路徑的話，請確認路徑是否正確，然後再試一次。
+常用參數：
+
+- `-Runtime win-x64|win-x86|win-arm64`：目標 Windows RID。
+- `-Configuration Release|Debug`：建置組態。
+- `-FrameworkDependent`：改為 framework-dependent 打包（客戶端需安裝對應 .NET Runtime）。
+- `-OutputPath`（publish-downloader / publish-processor）：指定輸出根路徑（預設 `build/deploy/InvoiceIntelligence`）。
+- `-DeployRoot`（publish-all）：指定輸出根路徑（預設 `build/deploy`，整包在 `build/deploy/InvoiceIntelligence`）。
+- `-SkipZip`（publish-all）：僅產出資料夾，不建立 zip。
+
+輸出與預設：
+
+- 三個 publish 腳本預設輸出皆在 `build/deploy/InvoiceIntelligence`。
+- 預設為 self-contained 打包；若客戶端已具備 Runtime 可使用 `-FrameworkDependent`。
+
+### 4) 客戶端環境檢查（check-customer-environment.ps1）
+
+`check-customer-environment.ps1` 用於驗證部署包是否可在客戶端環境執行。
+
+檢查內容：
+
+- 作業系統是否為 Windows。
+- 部署資料夾與必要檔案是否存在（exe、dll、deps、runtimeconfig、config）。
+- 若為 framework-dependent 打包，會檢查 `dotnet` 與所需 shared runtime 是否已安裝。
+
+參數：
+
+- `-PackageRoot <path>`：指定部署根目錄（例如 `build/deploy/InvoiceIntelligence`）。
+- `-Profile all|downloader|processor`：指定檢查範圍，預設為 `all`。
+
+範例：
 
 ```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-.\scripts\publish-all.ps1 -Runtime win-x64 -Configuration Release
+# 在 repo 根目錄執行（檢查整合包）
+.\scripts\check-customer-environment.ps1 -PackageRoot .\build\deploy\InvoiceIntelligence -Profile all
+
+# 在交付給客戶的部署資料夾根目錄執行
+.\check-customer-environment.ps1 -Profile all
 ```
 
-參數說明：
+回傳碼：
 
-- `-Runtime`
-  指定目標 Windows Runtime Identifier（RID）。
-- `win-x64`：64 位元 Windows（建議正式交付使用）。
-- `win-x86`：32 位元 Windows。
-- `win-arm64`：ARM64 Windows。
-- `-Configuration`
-  指定建置組態。
-- `Release`：正式版，最佳化輸出，建議交付客戶。
-- `Debug`：除錯版，供內部測試與開發調查。
-
-其他常用參數（選用）：
-
-- `-FrameworkDependent`
-  改為 framework-dependent 打包，不內含 .NET Runtime（客戶端需先安裝對應 Runtime）。
-- `-OutputPath`（publish-downloader / publish-processor）
-	指定輸出根路徑（預設皆為 `build/deploy/InvoiceIntelligence`）。
-- `-DeployRoot`（publish-all）
-	指定輸出根路徑（預設為 `build/deploy`，實際整包輸出到 `build/deploy/InvoiceIntelligence`）。
-- `-SkipZip`（publish-all）
-  僅產出資料夾，不建立 zip 檔。
-
-- `publish-all` 預設輸出（推薦交付客戶）：`build/deploy/InvoiceIntelligence`
-- `publish-downloader` 預設輸出：`build/deploy/InvoiceIntelligence`
-- `publish-processor` 預設輸出：`build/deploy/InvoiceIntelligence`
-- 預設為 self-contained 打包（客戶端可不先安裝 .NET Runtime）。
-- 如需 framework-dependent 打包，可加上 `-FrameworkDependent`。
-- 若遇到 PowerShell 執行政策封鎖，可先執行：`Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force`（僅作用於當前視窗）。
+- `0`：Environment status = READY
+- `1`：Environment status = NOT READY
 
 ### 部署資料夾結構
 
@@ -292,13 +314,5 @@ flowchart LR
 - Processor 目前只會讀取 Folder A 下的 `.xlsx` 檔案。
 - Downloader 在 local 模式輸出 `.xlsx`；official 模式輸出 `.csv`。
 - 若要將 Downloader 輸出直接餵給 Processor，請確保 Folder A 內容符合 Processor 期望的 `.xlsx` 欄位格式。
-
-### 本機驗證指令
-
-```powershell
-dotnet build InvoiceIntelligenceAssistant.slnx -v minimal
-dotnet test InvoiceIntelligenceAssistant.slnx -v minimal
-dotnet format InvoiceIntelligenceAssistant.slnx --verify-no-changes
-```
 
 兩個桌面模組會在啟動時讀取對應 INI 設定並驗證命名規則占位符；官方 API 憑證欄位採 appId/appKey。

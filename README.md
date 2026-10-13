@@ -185,6 +185,7 @@ dotnet format InvoiceIntelligenceAssistant.slnx --verify-no-changes
 
 - 作業系統是否為 Windows。
 - 部署資料夾與必要檔案是否存在（exe、dll、deps、runtimeconfig、config）。
+- 每個模組根目錄是否存在 `libs/`，且根目錄不殘留 `.dll`。
 - 若為 framework-dependent 打包，會檢查 `dotnet` 與所需 shared runtime 是否已安裝。
 
 參數：
@@ -214,8 +215,11 @@ dotnet format InvoiceIntelligenceAssistant.slnx --verify-no-changes
 ```text
 InvoiceIntelligence/
 |-- InvoiceLauncher.exe
+|-- libs/
 |-- downloader/
+|   `-- libs/
 |-- processor/
+|   `-- libs/
 `-- config/
     |-- downloader.ini
     `-- processor.ini
@@ -226,6 +230,7 @@ InvoiceIntelligence/
 ```text
 InvoiceIntelligence/
 |-- downloader/
+|   `-- libs/
 `-- config/
     `-- downloader.ini
 ```
@@ -235,9 +240,12 @@ InvoiceIntelligence/
 ```text
 InvoiceIntelligence/
 |-- processor/
+|   `-- libs/
 `-- config/
     `-- processor.ini
 ```
+
+- 每個可執行模組（主控台、Downloader、Processor）根目錄保留啟動用 `*.exe` 包裝器；實際執行檔與所有 `.dll` 皆位於 `libs/`。
 
 ### 部署流程 0：主控台整合部署（推薦）
 

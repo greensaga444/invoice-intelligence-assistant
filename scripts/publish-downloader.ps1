@@ -40,6 +40,11 @@ if (-not (Test-Path $projectPath)) {
     throw "Project file not found: $projectPath"
 }
 
+$bootstrapperProjectPath = Join-Path $repoRoot "src\InvoiceAppBootstrapper\InvoiceAppBootstrapper.csproj"
+if (-not (Test-Path $bootstrapperProjectPath)) {
+    throw "Project file not found: $bootstrapperProjectPath"
+}
+
 $readinessScriptSource = Join-Path $scriptRoot "check-customer-environment.ps1"
 if (-not (Test-Path $readinessScriptSource)) {
     throw "Script not found: $readinessScriptSource"
@@ -53,11 +58,80 @@ if (-not (Test-Path $powershellPath)) {
 
 $selfContained = if ($FrameworkDependent) { "false" } else { "true" }
 
+function Publish-BootstrapperBinary {
+    param(
+        [string]$PublishRuntime,
+        [string]$PublishConfiguration,
+        [string]$PublishSelfContained
+    )
+
+    $bootstrapperOutputPath = Join-Path ([System.IO.Path]::GetTempPath()) ("invoice-bootstrapper-{0}" -f [System.Guid]::NewGuid().ToString("N"))
+    $null = New-Item -ItemType Directory -Path $bootstrapperOutputPath -Force
+
+    & $dotnetPath publish $bootstrapperProjectPath -c $PublishConfiguration -r $PublishRuntime --self-contained $PublishSelfContained -p:PublishSingleFile=true -p:DebugType=None -p:DebugSymbols=false -o $bootstrapperOutputPath | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "dotnet publish failed for InvoiceAppBootstrapper."
+    }
+
+    $bootstrapperExecutablePath = Join-Path $bootstrapperOutputPath "InvoiceAppBootstrapper.exe"
+    if (-not (Test-Path -LiteralPath $bootstrapperExecutablePath -PathType Leaf)) {
+        throw "Bootstrapper executable not found: $bootstrapperExecutablePath"
+    }
+
+    return $bootstrapperExecutablePath
+}
+
+function Convert-ToBootstrapLayout {
+    param(
+        [string]$ApplicationOutputPath,
+        [string]$ApplicationExecutableName,
+        [string]$BootstrapperExecutablePath
+    )
+
+    if (-not (Test-Path -LiteralPath $ApplicationOutputPath -PathType Container)) {
+        throw "Application output path not found: $ApplicationOutputPath"
+    }
+
+    $applicationExecutablePath = Join-Path $ApplicationOutputPath $ApplicationExecutableName
+    if (-not (Test-Path -LiteralPath $applicationExecutablePath -PathType Leaf)) {
+        throw "Application executable not found: $applicationExecutablePath"
+    }
+
+    $libsOutputPath = Join-Path $ApplicationOutputPath "libs"
+    if (Test-Path -LiteralPath $libsOutputPath -PathType Container) {
+        Remove-Item -LiteralPath $libsOutputPath -Recurse -Force
+    }
+
+    $null = New-Item -ItemType Directory -Path $libsOutputPath -Force
+
+    $topLevelItems = @(Get-ChildItem -LiteralPath $ApplicationOutputPath -Force)
+    foreach ($topLevelItem in $topLevelItems) {
+        if ($topLevelItem.Name -eq "libs") {
+            continue
+        }
+
+        Move-Item -LiteralPath $topLevelItem.FullName -Destination (Join-Path $libsOutputPath $topLevelItem.Name) -Force
+    }
+
+    Copy-Item -LiteralPath $BootstrapperExecutablePath -Destination (Join-Path $ApplicationOutputPath $ApplicationExecutableName) -Force
+
+    return $libsOutputPath
+}
+
+if (Test-Path -LiteralPath $moduleOutput -PathType Container) {
+    Remove-Item -LiteralPath $moduleOutput -Recurse -Force
+}
+
 Write-Host "Publishing InvoiceDownloader..." -ForegroundColor Cyan
 & $dotnetPath publish $projectPath -c $Configuration -r $Runtime --self-contained $selfContained -o $moduleOutput
 if ($LASTEXITCODE -ne 0) {
     throw "dotnet publish failed for InvoiceDownloader."
 }
+
+$bootstrapperExecutablePath = Publish-BootstrapperBinary -PublishRuntime $Runtime -PublishConfiguration $Configuration -PublishSelfContained $selfContained
+$downloaderLibsPath = Convert-ToBootstrapLayout -ApplicationOutputPath $moduleOutput -ApplicationExecutableName "InvoiceDownloader.exe" -BootstrapperExecutablePath $bootstrapperExecutablePath
+$downloaderLibsDllCount = @(Get-ChildItem -LiteralPath $downloaderLibsPath -Recurse -File -Filter "*.dll").Count
+Write-Host ("Downloader runtime relocated to {0} ({1} dll files under libs)." -f $downloaderLibsPath, $downloaderLibsDllCount)
 
 $configDir = Join-Path $OutputPath "config"
 
@@ -75,6 +149,7 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Packaging complete." -ForegroundColor Green
 Write-Host "Package Root: $OutputPath"
 Write-Host "Downloader:   $moduleOutput"
+Write-Host "Runtime libs: $downloaderLibsPath"
 Write-Host "Config:       $configDir"
 Write-Host "Env Check:    $readinessScriptTarget"
 Write-Host "Entry:        $([System.IO.Path]::Combine($moduleOutput, 'InvoiceDownloader.exe'))"

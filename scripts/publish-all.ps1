@@ -56,10 +56,18 @@ if (-not (Test-Path $launcherProjectPath)) {
     throw "Project file not found: $launcherProjectPath"
 }
 
+$bootstrapperProjectPath = Join-Path $repoRoot "src\InvoiceAppBootstrapper\InvoiceAppBootstrapper.csproj"
+if (-not (Test-Path $bootstrapperProjectPath)) {
+    throw "Project file not found: $bootstrapperProjectPath"
+}
+
 $packageRoot = Join-Path $DeployRoot "InvoiceIntelligence"
 $downloaderOutput = Join-Path $packageRoot "downloader"
 $processorOutput = Join-Path $packageRoot "processor"
 $configOutput = Join-Path $packageRoot "config"
+$launcherLibsOutput = Join-Path $packageRoot "libs"
+$downloaderLibsOutput = Join-Path $downloaderOutput "libs"
+$processorLibsOutput = Join-Path $processorOutput "libs"
 $readinessScriptTarget = Join-Path $packageRoot "check-customer-environment.ps1"
 $powershellPath = Join-Path $PSHOME "powershell.exe"
 if (-not (Test-Path $powershellPath)) {
@@ -67,6 +75,66 @@ if (-not (Test-Path $powershellPath)) {
 }
 
 $selfContained = if ($FrameworkDependent) { "false" } else { "true" }
+
+function Publish-BootstrapperBinary {
+    param(
+        [string]$PublishRuntime,
+        [string]$PublishConfiguration,
+        [string]$PublishSelfContained
+    )
+
+    $bootstrapperOutputPath = Join-Path ([System.IO.Path]::GetTempPath()) ("invoice-bootstrapper-{0}" -f [System.Guid]::NewGuid().ToString("N"))
+    $null = New-Item -ItemType Directory -Path $bootstrapperOutputPath -Force
+
+    & $dotnetPath publish $bootstrapperProjectPath -c $PublishConfiguration -r $PublishRuntime --self-contained $PublishSelfContained -p:PublishSingleFile=true -p:DebugType=None -p:DebugSymbols=false -o $bootstrapperOutputPath | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "dotnet publish failed for InvoiceAppBootstrapper."
+    }
+
+    $bootstrapperExecutablePath = Join-Path $bootstrapperOutputPath "InvoiceAppBootstrapper.exe"
+    if (-not (Test-Path -LiteralPath $bootstrapperExecutablePath -PathType Leaf)) {
+        throw "Bootstrapper executable not found: $bootstrapperExecutablePath"
+    }
+
+    return $bootstrapperExecutablePath
+}
+
+function Convert-ToBootstrapLayout {
+    param(
+        [string]$ApplicationOutputPath,
+        [string]$ApplicationExecutableName,
+        [string]$BootstrapperExecutablePath
+    )
+
+    if (-not (Test-Path -LiteralPath $ApplicationOutputPath -PathType Container)) {
+        throw "Application output path not found: $ApplicationOutputPath"
+    }
+
+    $applicationExecutablePath = Join-Path $ApplicationOutputPath $ApplicationExecutableName
+    if (-not (Test-Path -LiteralPath $applicationExecutablePath -PathType Leaf)) {
+        throw "Application executable not found: $applicationExecutablePath"
+    }
+
+    $libsOutputPath = Join-Path $ApplicationOutputPath "libs"
+    if (Test-Path -LiteralPath $libsOutputPath -PathType Container) {
+        Remove-Item -LiteralPath $libsOutputPath -Recurse -Force
+    }
+
+    $null = New-Item -ItemType Directory -Path $libsOutputPath -Force
+
+    $topLevelItems = @(Get-ChildItem -LiteralPath $ApplicationOutputPath -Force)
+    foreach ($topLevelItem in $topLevelItems) {
+        if ($topLevelItem.Name -eq "libs") {
+            continue
+        }
+
+        Move-Item -LiteralPath $topLevelItem.FullName -Destination (Join-Path $libsOutputPath $topLevelItem.Name) -Force
+    }
+
+    Copy-Item -LiteralPath $BootstrapperExecutablePath -Destination (Join-Path $ApplicationOutputPath $ApplicationExecutableName) -Force
+
+    return $libsOutputPath
+}
 
 $commonParams = @{
     Configuration = $Configuration
@@ -77,11 +145,22 @@ if ($FrameworkDependent) {
     $commonParams.FrameworkDependent = $true
 }
 
+if (Test-Path -LiteralPath $packageRoot -PathType Container) {
+    Remove-Item -LiteralPath $packageRoot -Recurse -Force
+}
+
+$null = New-Item -ItemType Directory -Path $packageRoot -Force
+
 Write-Host "Publishing Main UI package..." -ForegroundColor Cyan
 & $dotnetPath publish $launcherProjectPath -c $Configuration -r $Runtime --self-contained $selfContained -o $packageRoot
 if ($LASTEXITCODE -ne 0) {
     throw "Main UI publish failed."
 }
+
+$bootstrapperExecutablePath = Publish-BootstrapperBinary -PublishRuntime $Runtime -PublishConfiguration $Configuration -PublishSelfContained $selfContained
+$launcherRuntimePath = Convert-ToBootstrapLayout -ApplicationOutputPath $packageRoot -ApplicationExecutableName "InvoiceLauncher.exe" -BootstrapperExecutablePath $bootstrapperExecutablePath
+$launcherRuntimeDllCount = @(Get-ChildItem -LiteralPath $launcherRuntimePath -Recurse -File -Filter "*.dll").Count
+Write-Host ("Launcher runtime relocated to {0} ({1} dll files under libs)." -f $launcherRuntimePath, $launcherRuntimeDllCount)
 
 $null = New-Item -ItemType Directory -Path $configOutput -Force
 Copy-Item (Join-Path $repoRoot "config\downloader.ini") (Join-Path $configOutput "downloader.ini") -Force
@@ -111,6 +190,9 @@ if ($SkipZip) {
     Write-Host "Package:    $packageRoot"
     Write-Host "Downloader: $downloaderOutput"
     Write-Host "Processor:  $processorOutput"
+    Write-Host "Launcher runtime:   $launcherLibsOutput"
+    Write-Host "Downloader runtime: $downloaderLibsOutput"
+    Write-Host "Processor runtime:  $processorLibsOutput"
     Write-Host "Config:     $configOutput"
     Write-Host "Env Check:  $readinessScriptTarget"
     return
@@ -131,6 +213,9 @@ Write-Host "Done. Packages and zip artifacts are ready." -ForegroundColor Green
 Write-Host "Package:    $packageRoot"
 Write-Host "Downloader: $downloaderOutput"
 Write-Host "Processor:  $processorOutput"
+Write-Host "Launcher runtime:   $launcherLibsOutput"
+Write-Host "Downloader runtime: $downloaderLibsOutput"
+Write-Host "Processor runtime:  $processorLibsOutput"
 Write-Host "Config:     $configOutput"
 Write-Host "Env Check:  $readinessScriptTarget"
 Write-Host "Zip:        $packageZip"

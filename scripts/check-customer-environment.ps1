@@ -84,6 +84,39 @@ function Test-RequiredFile {
     return $false
 }
 
+function Test-LibsLayout {
+    param(
+        [System.Collections.Generic.List[object]]$Results,
+        [string]$AppName,
+        [string]$AppBasePath
+    )
+
+    $libsFolderPath = Join-Path $AppBasePath "libs"
+    if (-not (Test-Path -LiteralPath $libsFolderPath -PathType Container)) {
+        Add-Result -Results $Results -Name ("{0}:libs-folder" -f $AppName) -Passed $false -Detail "Missing libs folder: $libsFolderPath"
+        return
+    }
+
+    Add-Result -Results $Results -Name ("{0}:libs-folder" -f $AppName) -Passed $true -Detail "Found libs folder: $libsFolderPath"
+
+    $rootDllFiles = @(Get-ChildItem -LiteralPath $AppBasePath -File -Filter "*.dll")
+    if ($rootDllFiles.Count -gt 0) {
+        $rootDllList = [string]::Join(", ", ($rootDllFiles | Select-Object -ExpandProperty Name))
+        Add-Result -Results $Results -Name ("{0}:root-dll-clean" -f $AppName) -Passed $false -Detail "Root folder still contains DLL files: $rootDllList"
+        return
+    }
+
+    Add-Result -Results $Results -Name ("{0}:root-dll-clean" -f $AppName) -Passed $true -Detail "Root folder has no DLL files."
+
+    $libsDllFiles = @(Get-ChildItem -LiteralPath $libsFolderPath -Recurse -File -Filter "*.dll")
+    if ($libsDllFiles.Count -eq 0) {
+        Add-Result -Results $Results -Name ("{0}:libs-dll-count" -f $AppName) -Passed $false -Detail "No DLL files found in libs folder."
+        return
+    }
+
+    Add-Result -Results $Results -Name ("{0}:libs-dll-count" -f $AppName) -Passed $true -Detail "libs contains $($libsDllFiles.Count) DLL files."
+}
+
 function Get-RuntimeRequirement {
     param(
         [string]$RuntimeConfigPath
@@ -262,13 +295,23 @@ $requiredFrameworks = New-Object System.Collections.Generic.List[object]
 
 foreach ($app in $targetApps) {
     $appBase = if ($app.BasePath -eq ".") { $resolvedPackageRoot } else { Join-Path $resolvedPackageRoot $app.BasePath }
+    $libsBase = Join-Path $appBase "libs"
 
     [void](Test-RequiredFile -Results $results -CheckName "$($app.Name):exe" -FullPath (Join-Path $appBase $app.Exe))
-    [void](Test-RequiredFile -Results $results -CheckName "$($app.Name):dll" -FullPath (Join-Path $appBase $app.Dll))
-    [void](Test-RequiredFile -Results $results -CheckName "$($app.Name):deps" -FullPath (Join-Path $appBase $app.Deps))
 
-    $runtimeConfigPath = Join-Path $appBase $app.RuntimeConfig
-    if (Test-RequiredFile -Results $results -CheckName "$($app.Name):runtimeconfig" -FullPath $runtimeConfigPath) {
+    if (Test-Path -LiteralPath $libsBase -PathType Container) {
+        Add-Result -Results $results -Name "$($app.Name):libs-base" -Passed $true -Detail "Found libs folder: $libsBase"
+    }
+    else {
+        Add-Result -Results $results -Name "$($app.Name):libs-base" -Passed $false -Detail "Missing libs folder: $libsBase"
+    }
+
+    [void](Test-RequiredFile -Results $results -CheckName "$($app.Name):libs-exe" -FullPath (Join-Path $libsBase $app.Exe))
+    [void](Test-RequiredFile -Results $results -CheckName "$($app.Name):libs-dll" -FullPath (Join-Path $libsBase $app.Dll))
+    [void](Test-RequiredFile -Results $results -CheckName "$($app.Name):libs-deps" -FullPath (Join-Path $libsBase $app.Deps))
+
+    $runtimeConfigPath = Join-Path $libsBase $app.RuntimeConfig
+    if (Test-RequiredFile -Results $results -CheckName "$($app.Name):libs-runtimeconfig" -FullPath $runtimeConfigPath) {
         try {
             $runtimeRequirement = Get-RuntimeRequirement -RuntimeConfigPath $runtimeConfigPath
             if ($runtimeRequirement.FrameworkDependent) {
@@ -289,6 +332,8 @@ foreach ($app in $targetApps) {
             Add-Result -Results $results -Name "$($app.Name):runtimeconfig-parse" -Passed $false -Detail "Invalid runtimeconfig JSON: $runtimeConfigPath. $($_.Exception.Message)"
         }
     }
+
+    Test-LibsLayout -Results $results -AppName $app.Name -AppBasePath $appBase
 }
 
 if ($requiredFrameworks.Count -gt 0) {

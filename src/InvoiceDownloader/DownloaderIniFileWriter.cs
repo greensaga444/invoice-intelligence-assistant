@@ -18,6 +18,8 @@ internal static class DownloaderIniFileWriter
             Directory.CreateDirectory(directoryPath);
         }
 
+        var encryptedPassword = MofPasswordProtector.Encrypt(settings.OfficialApiPassword);
+
         var content = IniFileContentBuilder.BuildDownloaderContent(
             moduleName: settings.ModuleName,
             folderAPath: settings.FolderAPath,
@@ -27,7 +29,8 @@ internal static class DownloaderIniFileWriter
             invoiceDownloadMode: settings.InvoiceDownloadMode,
             officialApiBaseUrl: settings.OfficialApiBaseUrl,
             officialApiAppId: settings.OfficialApiAppId,
-            officialApiAppKey: settings.OfficialApiAppKey);
+            officialApiAppKey: settings.OfficialApiAppKey,
+            officialApiPasswordEncrypted: encryptedPassword);
 
         File.WriteAllText(iniPath, content, System.Text.Encoding.UTF8);
     }

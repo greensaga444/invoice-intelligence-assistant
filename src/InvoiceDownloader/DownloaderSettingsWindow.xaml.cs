@@ -26,6 +26,7 @@ public partial class DownloaderSettingsWindow : Window
         OfficialApiAppKeyTextBox.Text = string.IsNullOrWhiteSpace(settings.OfficialApiAppKey)
             ? settings.OfficialApiAppId
             : settings.OfficialApiAppKey;
+        OfficialApiPasswordBox.Password = settings.OfficialApiPassword;
     }
 
     public DownloaderIniSettings? SavedSettings { get; private set; }
@@ -53,6 +54,7 @@ public partial class DownloaderSettingsWindow : Window
         var officialApiBaseUrl = OfficialApiBaseUrlTextBox.Text.Trim();
         var officialApiAppId = OfficialApiAppIdTextBox.Text.Trim();
         var officialApiAppKey = OfficialApiAppKeyTextBox.Text.Trim();
+        var officialApiPassword = OfficialApiPasswordBox.Password;
 
         if (string.IsNullOrWhiteSpace(moduleName)
             || string.IsNullOrWhiteSpace(folderAPath)
@@ -76,6 +78,13 @@ public partial class DownloaderSettingsWindow : Window
             return;
         }
 
+        if (string.Equals(invoiceDownloadMode, "official", StringComparison.OrdinalIgnoreCase)
+            && string.IsNullOrWhiteSpace(officialApiPassword))
+        {
+            MessageBox.Show(this, "official 模式必須填寫 MOF 密碼。", "設定驗證", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
         SavedSettings = new DownloaderIniSettings(
             moduleName,
             folderAPath,
@@ -87,7 +96,8 @@ public partial class DownloaderSettingsWindow : Window
             invoiceDownloadMode,
             officialApiBaseUrl,
             officialApiAppId,
-            officialApiAppKey);
+            officialApiAppKey,
+            officialApiPassword);
 
         DialogResult = true;
         Close();

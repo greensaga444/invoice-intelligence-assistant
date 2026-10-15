@@ -42,6 +42,7 @@ public class IniModuleConfigurationLoaderTests
             Assert.Null(config.OfficialApiBaseUrl);
             Assert.Equal("sample-secret", config.OfficialApiAppId);
             Assert.Equal("sample-secret", config.OfficialApiAppKey);
+            Assert.Null(config.OfficialApiPasswordEncrypted);
         }
         finally
         {
@@ -169,6 +170,7 @@ public class IniModuleConfigurationLoaderTests
             officialApiBaseUrl = https://service-mc.einvoice.nat.gov.tw/ptl/portal/api
             appId = sample-app-id
             appKey = sample-app-key
+            passwordEncrypted = sample-encrypted-password
             """;
 
         var iniPath = WriteTempIni(iniContent);
@@ -182,6 +184,7 @@ public class IniModuleConfigurationLoaderTests
             Assert.Equal("https://service-mc.einvoice.nat.gov.tw/ptl/portal/api", config.OfficialApiBaseUrl);
             Assert.Equal("sample-app-id", config.OfficialApiAppId);
             Assert.Equal("sample-app-key", config.OfficialApiAppKey);
+            Assert.Equal("sample-encrypted-password", config.OfficialApiPasswordEncrypted);
         }
         finally
         {

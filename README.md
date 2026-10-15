@@ -276,7 +276,7 @@ flowchart LR
 
 1. 執行 `scripts/publish-downloader.ps1`。
 2. 交付 `build/deploy/InvoiceIntelligence` 整個資料夾給客戶端（包含 `downloader` 與 `config`）。
-3. 確認 `config/downloader.ini` 參數（folderA、folderB、mof.account、mof.appId、mof.appKey）。
+3. 確認 `config/downloader.ini` 參數（folderA、folderB、mof.account、mof.appId、mof.appKey、mof.passwordEncrypted）。
 4. 若採官方 API，設定 `mof.invoiceDownloadMode=official` 與 `mof.officialApiBaseUrl`。
 5. 客戶端執行 `downloader/InvoiceDownloader.exe`。
 6. 驗證是否成功輸出檔案到 Folder A，並產生下載紀錄 `.log`。

@@ -16,13 +16,15 @@ public class IniFileContentBuilderTests
             invoiceDownloadMode: "official",
             officialApiBaseUrl: "https://service-mc.einvoice.nat.gov.tw/ptl/portal/api",
             officialApiAppId: "",
-            officialApiAppKey: "sample-app-key");
+            officialApiAppKey: "sample-app-key",
+            officialApiPasswordEncrypted: "encrypted-password");
 
         Assert.Contains("[module]", content, StringComparison.Ordinal);
         Assert.Contains("[mof]", content, StringComparison.Ordinal);
         Assert.Contains("invoiceDownloadMode = official", content, StringComparison.Ordinal);
         Assert.Contains("appId = sample-app-key", content, StringComparison.Ordinal);
         Assert.Contains("appKey = sample-app-key", content, StringComparison.Ordinal);
+        Assert.Contains("passwordEncrypted = encrypted-password", content, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -37,10 +39,12 @@ public class IniFileContentBuilderTests
             invoiceDownloadMode: "official",
             officialApiBaseUrl: "https://service-mc.einvoice.nat.gov.tw/ptl/portal/api",
             officialApiAppId: "sample-app-id",
-            officialApiAppKey: "sample-app-key");
+            officialApiAppKey: "sample-app-key",
+            officialApiPasswordEncrypted: "encrypted-password");
 
         Assert.Contains("appId = sample-app-id", content, StringComparison.Ordinal);
         Assert.Contains("appKey = sample-app-key", content, StringComparison.Ordinal);
+        Assert.Contains("passwordEncrypted = encrypted-password", content, StringComparison.Ordinal);
     }
 
     [Fact]

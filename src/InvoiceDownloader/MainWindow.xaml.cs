@@ -21,6 +21,7 @@ public partial class MainWindow : Window
     private IReadOnlyList<CustomerRecord> _loadedCustomers = [];
     private string? _sessionToken;
     private DateTimeOffset? _sessionExpiresAt;
+    private string? _configuredMofPassword;
     private string? _authenticatedPassword;
 
     public MainWindow(
@@ -57,6 +58,12 @@ public partial class MainWindow : Window
 
         MofAccountValueText.Text = _configuration.MofAccount;
         MofApiKeyValueText.Text = MaskApiKey(GetEffectiveMofApiKey());
+
+        if (MofPasswordProtector.TryDecrypt(_configuration.OfficialApiPasswordEncrypted, out var configuredPassword))
+        {
+            _configuredMofPassword = configuredPassword;
+            MofPasswordBox.Password = configuredPassword;
+        }
     }
 
     protected override void OnClosed(EventArgs e)
@@ -122,10 +129,15 @@ public partial class MainWindow : Window
             return;
         }
 
+        var inputPassword = MofPasswordBox.Password;
+        var resolvedPassword = string.IsNullOrWhiteSpace(inputPassword)
+            ? _configuredMofPassword ?? string.Empty
+            : inputPassword;
+
         var credential = new MofCredential(
             _configuration.MofAccount,
             GetEffectiveMofApiKey(),
-            MofPasswordBox.Password);
+            resolvedPassword);
 
         var authResult = _mofAuthenticator.Authenticate(credential);
         if (!authResult.IsSuccess)
@@ -140,6 +152,7 @@ public partial class MainWindow : Window
 
         _sessionToken = authResult.SessionToken;
         _sessionExpiresAt = authResult.ExpiresAt;
+        _configuredMofPassword = credential.Password;
         _authenticatedPassword = credential.Password;
         StartBatchDownloadButton.IsEnabled = _loadedCustomers.Count > 0;
 

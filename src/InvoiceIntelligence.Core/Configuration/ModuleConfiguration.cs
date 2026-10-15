@@ -11,4 +11,5 @@ public sealed record ModuleConfiguration(
     string InvoiceDownloadMode = "local",
     string? OfficialApiBaseUrl = null,
     string? OfficialApiAppId = null,
-    string? OfficialApiAppKey = null);
+    string? OfficialApiAppKey = null,
+    string? OfficialApiPasswordEncrypted = null);

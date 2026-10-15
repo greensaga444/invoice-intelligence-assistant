@@ -39,6 +39,7 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
             ?? DefaultKnowledgeRepositoryPath;
         var invoiceDownloadMode = NormalizeInvoiceDownloadMode(iniData.GetOptional("mof", "invoiceDownloadMode"));
         var officialApiBaseUrl = ResolveOfficialApiBaseUrl(invoiceDownloadMode, iniData.GetOptional("mof", "officialApiBaseUrl"));
+        var officialApiPasswordEncrypted = TrimOptional(iniData.GetOptional("mof", "passwordEncrypted"));
 
         NamingRuleValidator.Validate(outputNamingRule);
 
@@ -53,7 +54,8 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
             invoiceDownloadMode,
             officialApiBaseUrl,
             officialApiAppId,
-            officialApiAppKey);
+                officialApiAppKey,
+                officialApiPasswordEncrypted);
     }
 
     private static string NormalizeInvoiceDownloadMode(string? configuredMode)

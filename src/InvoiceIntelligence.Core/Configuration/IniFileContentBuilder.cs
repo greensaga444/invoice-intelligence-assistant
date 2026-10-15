@@ -13,7 +13,8 @@ public static class IniFileContentBuilder
         string invoiceDownloadMode,
         string officialApiBaseUrl,
         string officialApiAppId,
-        string officialApiAppKey)
+        string officialApiAppKey,
+        string officialApiPasswordEncrypted)
     {
         var resolvedOfficialApiAppId = ResolveOfficialApiAppId(officialApiAppId, officialApiAppKey);
         var resolvedOfficialApiAppKey = ResolveOfficialApiAppKey(officialApiAppId, officialApiAppKey);
@@ -36,6 +37,7 @@ public static class IniFileContentBuilder
         builder.Append("officialApiBaseUrl = ").Append(officialApiBaseUrl).Append(lineBreak);
         builder.Append("appId = ").Append(resolvedOfficialApiAppId).Append(lineBreak);
         builder.Append("appKey = ").Append(resolvedOfficialApiAppKey).Append(lineBreak);
+        builder.Append("passwordEncrypted = ").Append(officialApiPasswordEncrypted).Append(lineBreak);
 
         return builder.ToString();
     }

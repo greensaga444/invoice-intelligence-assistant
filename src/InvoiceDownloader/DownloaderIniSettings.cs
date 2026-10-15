@@ -11,4 +11,5 @@ public sealed record DownloaderIniSettings(
     string InvoiceDownloadMode,
     string OfficialApiBaseUrl,
     string OfficialApiAppId,
-    string OfficialApiAppKey);
+    string OfficialApiAppKey,
+    string OfficialApiPassword);

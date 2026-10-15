@@ -286,6 +286,7 @@ public partial class MainWindow : Window
     {
         var downloaderConfiguration = LoadConfigurationOrDefault(_downloaderConfigPath, CreateDefaultDownloaderConfig());
         var processorConfiguration = LoadConfigurationOrDefault(_processorConfigPath, CreateDefaultProcessorConfig());
+        var officialApiPassword = ResolveOfficialApiPassword(downloaderConfiguration.OfficialApiPasswordEncrypted);
 
         return new LauncherIniSettings(
             ModuleName: downloaderConfiguration.ModuleName,
@@ -298,7 +299,8 @@ public partial class MainWindow : Window
             InvoiceDownloadMode: downloaderConfiguration.InvoiceDownloadMode,
             OfficialApiBaseUrl: downloaderConfiguration.OfficialApiBaseUrl ?? string.Empty,
             OfficialApiAppId: downloaderConfiguration.OfficialApiAppId ?? string.Empty,
-            OfficialApiAppKey: downloaderConfiguration.OfficialApiAppKey ?? string.Empty);
+                OfficialApiAppKey: downloaderConfiguration.OfficialApiAppKey ?? string.Empty,
+                OfficialApiPassword: officialApiPassword);
     }
 
     private ModuleConfiguration LoadConfigurationOrDefault(string configPath, ModuleConfiguration fallback)
@@ -357,6 +359,13 @@ public partial class MainWindow : Window
         }
 
         return Path.GetFullPath(Path.Combine(_packageRootPath, configuredPath));
+    }
+
+    private static string ResolveOfficialApiPassword(string? encryptedPassword)
+    {
+        return MofPasswordProtector.TryDecrypt(encryptedPassword, out var plainPassword)
+            ? plainPassword
+            : string.Empty;
     }
 
     private static string ResolvePackageRootPath()

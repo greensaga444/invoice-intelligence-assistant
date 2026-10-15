@@ -29,7 +29,6 @@ internal static class DownloaderIniFileWriter
             invoiceFileSuffix: settings.InvoiceFileSuffix,
             allowanceFileSuffix: settings.AllowanceFileSuffix,
             mofAccount: settings.MofAccount,
-            invoiceDownloadMode: settings.InvoiceDownloadMode,
             officialApiBaseUrl: settings.OfficialApiBaseUrl,
             officialApiAppId: settings.OfficialApiAppId,
             officialApiAppKey: settings.OfficialApiAppKey,

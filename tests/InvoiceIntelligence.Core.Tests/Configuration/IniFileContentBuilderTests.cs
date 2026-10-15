@@ -16,7 +16,6 @@ public class IniFileContentBuilderTests
             invoiceFileSuffix: "invoice",
             allowanceFileSuffix: "allowance",
             mofAccount: "sample-account",
-            invoiceDownloadMode: "official",
             officialApiBaseUrl: "https://service-mc.einvoice.nat.gov.tw/ptl/portal/api",
             officialApiAppId: "",
             officialApiAppKey: "sample-app-key",
@@ -28,7 +27,7 @@ public class IniFileContentBuilderTests
         Assert.Contains("invoiceFileSuffix = invoice", content, StringComparison.Ordinal);
         Assert.Contains("allowanceFileSuffix = allowance", content, StringComparison.Ordinal);
         Assert.Contains("[mof]", content, StringComparison.Ordinal);
-        Assert.Contains("invoiceDownloadMode = official", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("invoiceDownloadMode", content, StringComparison.Ordinal);
         Assert.Contains("appId = sample-app-key", content, StringComparison.Ordinal);
         Assert.Contains("appKey = sample-app-key", content, StringComparison.Ordinal);
         Assert.Contains("passwordEncrypted = encrypted-password", content, StringComparison.Ordinal);
@@ -46,7 +45,6 @@ public class IniFileContentBuilderTests
             invoiceFileSuffix: "invoice",
             allowanceFileSuffix: "allowance",
             mofAccount: "sample-account",
-            invoiceDownloadMode: "official",
             officialApiBaseUrl: "https://service-mc.einvoice.nat.gov.tw/ptl/portal/api",
             officialApiAppId: "sample-app-id",
             officialApiAppKey: "sample-app-key",

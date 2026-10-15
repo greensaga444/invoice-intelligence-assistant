@@ -38,7 +38,7 @@ public partial class MainWindow : Window
 
         if (_configuration is null)
         {
-            _batchInvoiceDownloader = new LocalBatchInvoiceDownloader();
+            _batchInvoiceDownloader = new DisabledBatchInvoiceDownloader();
         }
         else
         {
@@ -307,11 +307,6 @@ public partial class MainWindow : Window
 
     private static (IBatchInvoiceDownloader Downloader, HttpClient? OfficialApiHttpClient) CreateBatchDownloader(ModuleConfiguration configuration)
     {
-        if (!string.Equals(configuration.InvoiceDownloadMode, "official", StringComparison.OrdinalIgnoreCase))
-        {
-            return (new LocalBatchInvoiceDownloader(), null);
-        }
-
         if (string.IsNullOrWhiteSpace(configuration.OfficialApiBaseUrl))
         {
             throw new InvalidOperationException("官方下載模式缺少 officialApiBaseUrl 設定。請更新 INI 後重啟。");
@@ -334,8 +329,16 @@ public partial class MainWindow : Window
 
     private string GetDownloadModeLabel()
     {
-        return string.Equals(_configuration?.InvoiceDownloadMode, "official", StringComparison.OrdinalIgnoreCase)
-            ? "官方 API"
-            : "本地模擬";
+        return "官方 API";
+    }
+
+    private sealed class DisabledBatchInvoiceDownloader : IBatchInvoiceDownloader
+    {
+        public Task<BatchInvoiceDownloadResult> DownloadAsync(
+            BatchInvoiceDownloadRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException("設定尚未載入，無法執行批次下載。");
+        }
     }
 }

@@ -1,7 +1,7 @@
 namespace InvoiceIntelligence.Core.Downloader;
 
 /// <summary>
-/// Contract for batch downloader implementations (local mode and official mode).
+/// Contract for batch downloader implementations.
 /// </summary>
 public interface IBatchInvoiceDownloader
 {

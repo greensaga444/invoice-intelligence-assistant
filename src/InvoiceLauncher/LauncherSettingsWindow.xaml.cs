@@ -8,7 +8,6 @@ namespace InvoiceLauncher;
 public partial class LauncherSettingsWindow : Window
 {
     private readonly string _moduleName;
-    private readonly string _invoiceDownloadMode;
 
     public LauncherSettingsWindow(LauncherIniSettings settings)
     {
@@ -30,7 +29,6 @@ public partial class LauncherSettingsWindow : Window
         ProcessorKnowledgeRepositoryFileTextBox.Text = settings.ProcessorKnowledgeRepositoryFile;
         LowConfidenceThresholdTextBox.Text = settings.LowConfidenceThreshold.ToString("0.00", CultureInfo.InvariantCulture);
         MofAccountTextBox.Text = settings.MofAccount;
-        _invoiceDownloadMode = settings.InvoiceDownloadMode;
         OfficialApiBaseUrlTextBox.Text = settings.OfficialApiBaseUrl;
         OfficialApiAppIdTextBox.Text = string.IsNullOrWhiteSpace(settings.OfficialApiAppId)
             ? settings.OfficialApiAppKey
@@ -79,9 +77,7 @@ public partial class LauncherSettingsWindow : Window
         var processorKnowledgeRepositoryFile = ProcessorKnowledgeRepositoryFileTextBox.Text.Trim();
         var lowConfidenceThresholdText = LowConfidenceThresholdTextBox.Text.Trim();
         var mofAccount = MofAccountTextBox.Text.Trim();
-        var invoiceDownloadMode = string.IsNullOrWhiteSpace(_invoiceDownloadMode)
-            ? "local"
-            : _invoiceDownloadMode.Trim();
+        var invoiceDownloadMode = "official";
         var officialApiBaseUrl = OfficialApiBaseUrlTextBox.Text.Trim();
         var officialApiAppId = OfficialApiAppIdTextBox.Text.Trim();
         var officialApiAppKey = OfficialApiAppKeyTextBox.Text.Trim();
@@ -113,17 +109,15 @@ public partial class LauncherSettingsWindow : Window
             return;
         }
 
-        if (string.Equals(invoiceDownloadMode, "official", StringComparison.OrdinalIgnoreCase)
-            && string.IsNullOrWhiteSpace(officialApiBaseUrl))
+        if (string.IsNullOrWhiteSpace(officialApiBaseUrl))
         {
-            MessageBox.Show(this, "official 模式必須填寫官方 API Base URL。", "設定驗證", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, "請填寫官方 API Base URL。", "設定驗證", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
-        if (string.Equals(invoiceDownloadMode, "official", StringComparison.OrdinalIgnoreCase)
-            && string.IsNullOrWhiteSpace(officialApiPassword))
+        if (string.IsNullOrWhiteSpace(officialApiPassword))
         {
-            MessageBox.Show(this, "official 模式必須填寫 MOF 密碼。", "設定驗證", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, "請填寫 MOF 密碼。", "設定驗證", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 

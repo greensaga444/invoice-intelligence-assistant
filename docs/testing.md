@@ -17,7 +17,7 @@ This document lists all current automated tests in the repository, grouped by te
 - BuildDownloaderContent_WhenBothAppIdAndAppKeyProvided_PreservesBothValues
 - BuildProcessorContent_WhenAppKeyIsMissing_UsesAppIdForBothFields
 
-### A2. IniModuleConfigurationLoaderTests (8)
+### A2. IniModuleConfigurationLoaderTests (9)
 
 - Load_ValidIni_ReturnsConfiguration
 - Load_KnowledgeRepositoryPathProvided_UsesConfiguredPath
@@ -25,6 +25,7 @@ This document lists all current automated tests in the repository, grouped by te
 - Load_MissingRequiredKey_ThrowsInvalidDataException
 - Load_OfficialMode_ParsesBaseUrl
 - Load_OfficialModeWithoutBaseUrl_ThrowsInvalidDataException
+- Load_LocalMode_ThrowsInvalidDataException
 - Load_AppKeyOnly_UsesAppKeyAsCredentialKey
 - Load_WithoutAppKey_ThrowsInvalidDataException
 
@@ -53,20 +54,13 @@ This document lists all current automated tests in the repository, grouped by te
 - Import_MissingRequiredColumn_ThrowsInvalidDataException
 - Import_InvalidDateRange_ThrowsInvalidDataException
 
-### B2. LocalBatchInvoiceDownloaderTests (4)
-
-- DownloadAsync_ValidRequest_CreatesRawInvoiceFilesAndLog
-- DownloadAsync_EmptySessionToken_ThrowsInvalidOperationException
-- DownloadAsync_DuplicateGeneratedFileName_UsesUniqueFileNames
-- DownloadAsync_OneHundredFiftyCustomers_MeetsBatchScaleAndSuccessRateTarget
-
-### B3. LocalMofAuthenticatorTests (3)
+### B2. LocalMofAuthenticatorTests (3)
 
 - Authenticate_ValidCredential_ReturnsSuccess
 - Authenticate_PlaceholderAccount_ReturnsFailure
 - Authenticate_EmptyPassword_ReturnsFailure
 
-### B4. MofOfficialHttpInvoiceApiClientTests (5)
+### B3. MofOfficialHttpInvoiceApiClientTests (5)
 
 - QueryInvoicesAsync_ValidOfficialResponse_UsesOfficialEndpointAndMapsRecords
 - QueryInvoicesAsync_BusinessCodeNot200_ThrowsMofOfficialInvoiceApiException
@@ -74,7 +68,7 @@ This document lists all current automated tests in the repository, grouped by te
 - QueryInvoicesAsync_AllowanceFieldsPresent_MapsAllowanceAmountAndType
 - QueryInvoicesAsync_Raw1ItemsPresent_MapsAllowanceDetailRow
 
-### B5. OfficialInvoiceBatchDownloaderTests (5)
+### B4. OfficialInvoiceBatchDownloaderTests (5)
 
 - DownloadAsync_MultiDirectionAndPaging_MergesResultsAndDeduplicates
 - DownloadAsync_AllFourScopesEnabled_QueriesEachDirectionAndDocumentType
@@ -82,7 +76,7 @@ This document lists all current automated tests in the repository, grouped by te
 - DownloadAsync_TransientErrorExceedsMaxRetry_Throws
 - DownloadAsync_NoDirectionSelected_ThrowsInvalidOperationException
 
-### B6. OfficialInvoiceFolderAExcelExporterTests (3)
+### B5. OfficialInvoiceFolderAExcelExporterTests (3)
 
 - ExportAsync_ValidInvoices_WritesOfficialTwoSheetWorkbook
 - ExportAsync_EmptyInvoices_WritesHeadersOnly
@@ -131,6 +125,6 @@ This document lists all current automated tests in the repository, grouped by te
 
 ## Test Inventory Summary
 
-- Test classes: 16
-- Test cases: 62
+- Test classes: 15
+- Test cases: 64
 - Primary automated test project: tests/InvoiceIntelligence.Core.Tests

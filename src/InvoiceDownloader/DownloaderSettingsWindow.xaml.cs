@@ -25,7 +25,8 @@ public partial class DownloaderSettingsWindow : Window
         ProcessorFileNamingRuleTextBox.Text = settings.ProcessorFileNamingRule;
         ProcessorKnowledgeRepositoryFileTextBox.Text = settings.ProcessorKnowledgeRepositoryFile;
         MofAccountTextBox.Text = settings.MofAccount;
-        InvoiceDownloadModeTextBox.Text = settings.InvoiceDownloadMode;
+        InvoiceDownloadModeTextBox.Text = "official";
+        InvoiceDownloadModeTextBox.IsReadOnly = true;
         OfficialApiBaseUrlTextBox.Text = settings.OfficialApiBaseUrl;
         OfficialApiAppIdTextBox.Text = string.IsNullOrWhiteSpace(settings.OfficialApiAppId)
             ? settings.OfficialApiAppKey
@@ -57,7 +58,7 @@ public partial class DownloaderSettingsWindow : Window
         var processorFileNamingRule = ProcessorFileNamingRuleTextBox.Text.Trim();
         var processorKnowledgeRepositoryFile = ProcessorKnowledgeRepositoryFileTextBox.Text.Trim();
         var mofAccount = MofAccountTextBox.Text.Trim();
-        var invoiceDownloadMode = InvoiceDownloadModeTextBox.Text.Trim();
+        var invoiceDownloadMode = "official";
         var officialApiBaseUrl = OfficialApiBaseUrlTextBox.Text.Trim();
         var officialApiAppId = OfficialApiAppIdTextBox.Text.Trim();
         var officialApiAppKey = OfficialApiAppKeyTextBox.Text.Trim();
@@ -70,7 +71,6 @@ public partial class DownloaderSettingsWindow : Window
             || string.IsNullOrWhiteSpace(processorFileNamingRule)
             || string.IsNullOrWhiteSpace(processorKnowledgeRepositoryFile)
             || string.IsNullOrWhiteSpace(mofAccount)
-            || string.IsNullOrWhiteSpace(invoiceDownloadMode)
             || string.IsNullOrWhiteSpace(officialApiAppId)
             || string.IsNullOrWhiteSpace(officialApiAppKey))
         {
@@ -78,17 +78,15 @@ public partial class DownloaderSettingsWindow : Window
             return;
         }
 
-        if (string.Equals(invoiceDownloadMode, "official", StringComparison.OrdinalIgnoreCase)
-            && string.IsNullOrWhiteSpace(officialApiBaseUrl))
+        if (string.IsNullOrWhiteSpace(officialApiBaseUrl))
         {
-            MessageBox.Show(this, "official 模式必須填寫官方 API Base URL。", "設定驗證", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, "請填寫官方 API Base URL。", "設定驗證", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
-        if (string.Equals(invoiceDownloadMode, "official", StringComparison.OrdinalIgnoreCase)
-            && string.IsNullOrWhiteSpace(officialApiPassword))
+        if (string.IsNullOrWhiteSpace(officialApiPassword))
         {
-            MessageBox.Show(this, "official 模式必須填寫 MOF 密碼。", "設定驗證", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, "請填寫 MOF 密碼。", "設定驗證", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 

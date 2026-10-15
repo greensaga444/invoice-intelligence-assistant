@@ -18,8 +18,8 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
     private const string DefaultAllowanceOutputLabel = "PurchaseVoucherDetail-T4";
     private const string DefaultInvoiceFileSuffix = "invoice";
     private const string DefaultAllowanceFileSuffix = "allowance";
-    private const string LocalDownloadMode = "local";
     private const string OfficialDownloadMode = "official";
+    private const string DefaultOfficialApiBaseUrl = "https://service-mc.einvoice.nat.gov.tw/ptl/portal/api";
 
     public ModuleConfiguration Load(string iniPath)
     {
@@ -61,8 +61,11 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
             ?? DefaultKnowledgeRepositoryPath;
         var customerListFilePath = TrimOptional(iniData.GetOptional("input", "customerListFile"))
             ?? DefaultCustomerListFilePath;
-        var invoiceDownloadMode = NormalizeInvoiceDownloadMode(iniData.GetOptional("mof", "invoiceDownloadMode"));
-        var officialApiBaseUrl = ResolveOfficialApiBaseUrl(invoiceDownloadMode, iniData.GetOptional("mof", "officialApiBaseUrl"));
+        var configuredInvoiceDownloadMode = iniData.GetOptional("mof", "invoiceDownloadMode");
+        var invoiceDownloadMode = NormalizeInvoiceDownloadMode(configuredInvoiceDownloadMode);
+        var officialApiBaseUrl = ResolveOfficialApiBaseUrl(
+            iniData.GetOptional("mof", "officialApiBaseUrl"),
+            isInvoiceDownloadModeExplicitlyConfigured: !string.IsNullOrWhiteSpace(configuredInvoiceDownloadMode));
         var officialApiPasswordEncrypted = TrimOptional(iniData.GetOptional("mof", "passwordEncrypted"));
         var lowConfidenceThreshold = ResolveLowConfidenceThreshold(iniData.GetOptional("review", "confidenceThreshold"));
 
@@ -126,13 +129,13 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
     {
         if (string.IsNullOrWhiteSpace(configuredMode))
         {
-            return LocalDownloadMode;
+            return OfficialDownloadMode;
         }
 
         var normalized = configuredMode.Trim().ToLowerInvariant();
-        if (normalized is not (LocalDownloadMode or OfficialDownloadMode))
+        if (normalized != OfficialDownloadMode)
         {
-            throw new InvalidDataException("mof.invoiceDownloadMode 僅支援 local 或 official。");
+            throw new InvalidDataException("mof.invoiceDownloadMode 僅支援 official。");
         }
 
         return normalized;
@@ -143,16 +146,18 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 
-    private static string? ResolveOfficialApiBaseUrl(string invoiceDownloadMode, string? configuredBaseUrl)
+    private static string ResolveOfficialApiBaseUrl(
+        string? configuredBaseUrl,
+        bool isInvoiceDownloadModeExplicitlyConfigured)
     {
-        if (invoiceDownloadMode != OfficialDownloadMode)
-        {
-            return string.IsNullOrWhiteSpace(configuredBaseUrl) ? null : configuredBaseUrl.Trim();
-        }
-
         if (string.IsNullOrWhiteSpace(configuredBaseUrl))
         {
-            throw new InvalidDataException("當 mof.invoiceDownloadMode=official 時，mof.officialApiBaseUrl 不可為空白。");
+            if (isInvoiceDownloadModeExplicitlyConfigured)
+            {
+                throw new InvalidDataException("當 mof.invoiceDownloadMode=official 時，mof.officialApiBaseUrl 不可為空白。");
+            }
+
+            return DefaultOfficialApiBaseUrl;
         }
 
         var normalized = configuredBaseUrl.Trim();

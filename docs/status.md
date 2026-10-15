@@ -13,9 +13,9 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: Processor output format and settings alignment
+Work Item Name: Remove downloader local mode
 
-Description: Align downloader/processor suffix and output-label behavior so Folder A reads/writes invoice+allowance pairs and settings UI can edit all four related keys.
+Description: Enforce official-only downloader behavior, remove local-mode runtime path, and simplify downloader INI by dropping invoiceDownloadMode configuration.
 
 ---
 
@@ -250,10 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-Implemented suffix-based split flow end-to-end: downloader outputs invoice/allowance files and processor reads/groups by configurable suffix keys.
-Implemented processor dual-export naming with configurable output labels and preserved default/legacy compatibility.
-Extended unified launcher settings UI to edit invoiceFileSuffix, allowanceFileSuffix, invoiceOutputLabel, and allowanceOutputLabel.
-Validated clean/build/test/format gates locally and prepared direct-to-main delivery per policy.
+Removed local downloader execution and related tests, keeping only official API flow across loader/defaults/UI paths.
+Simplified downloader INI contract by removing invoiceDownloadMode from template and generated content.
+Updated docs and configuration tests to match official-only behavior and explicit rejection of local mode.
+Validated build/test gates locally for delivery.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 
@@ -261,7 +261,7 @@ Validated clean/build/test/format gates locally and prepared direct-to-main deli
 
 ## Next Action
 
-Processor output format alignment delivered to main by direct-push policy; no PR required because main is unprotected.
+Deliver this branch by direct push to main per policy (main unprotected, no PR required).
 
 ---
 

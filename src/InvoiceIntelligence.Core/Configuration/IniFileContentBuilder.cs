@@ -14,7 +14,6 @@ public static class IniFileContentBuilder
         string invoiceFileSuffix,
         string allowanceFileSuffix,
         string mofAccount,
-        string invoiceDownloadMode,
         string officialApiBaseUrl,
         string officialApiAppId,
         string officialApiAppKey,
@@ -42,7 +41,6 @@ public static class IniFileContentBuilder
         builder.Append(lineBreak);
         builder.Append("[mof]").Append(lineBreak);
         builder.Append("account = ").Append(mofAccount).Append(lineBreak);
-        builder.Append("invoiceDownloadMode = ").Append(invoiceDownloadMode).Append(lineBreak);
         builder.Append("officialApiBaseUrl = ").Append(officialApiBaseUrl).Append(lineBreak);
         builder.Append("appId = ").Append(resolvedOfficialApiAppId).Append(lineBreak);
         builder.Append("appKey = ").Append(resolvedOfficialApiAppKey).Append(lineBreak);

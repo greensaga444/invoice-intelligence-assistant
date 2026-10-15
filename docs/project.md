@@ -193,6 +193,7 @@ Constraints / Non-Functional Requirements:
 | 6 | Manual knowledge feedback workflow | User-approved records can be written back to knowledge storage and become retrievable by RAG without automatic learning. | P1 | FULL | 4 | DONE |
 | 7 | Localization and quality gates | Traditional Chinese UI/output, offline-only AI checks, performance targets, and acceptance test suite are all validated. | P1 | FULL | 3,5,6 | DONE |
 | 8 | Unified INI settings UI | Downloader provides one settings UI to edit both downloader.ini and processor.ini fields (except module.name) with shared folder/App credential sync. | P1 | LIGHT | 1 | DONE |
+| 9 | Downloader official-only mode | Downloader local mode is removed, official API flow is fixed in code, and downloader.ini no longer requires invoiceDownloadMode. | P1 | LIGHT | 3,8 | DONE |
 
 Definition of Done: one line describing a distinct user-visible outcome; no two rows should share it.
 Track values: FULL (full pipeline) / LIGHT (skip PLAN)

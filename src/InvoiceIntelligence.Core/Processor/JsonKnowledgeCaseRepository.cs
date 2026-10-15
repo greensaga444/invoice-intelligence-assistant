@@ -148,7 +148,23 @@ public sealed class JsonKnowledgeCaseRepository : IKnowledgeCaseRepository
         }
 
         var content = JsonSerializer.Serialize(storedCases, SerializerOptions);
-        File.WriteAllText(RepositoryFilePath, content);
+        var tempFilePath = $"{RepositoryFilePath}.{Guid.NewGuid():N}.tmp";
+        var backupFilePath = $"{RepositoryFilePath}.bak";
+
+        File.WriteAllText(tempFilePath, content);
+
+        if (File.Exists(RepositoryFilePath))
+        {
+            File.Replace(tempFilePath, RepositoryFilePath, backupFilePath, ignoreMetadataErrors: true);
+            if (File.Exists(backupFilePath))
+            {
+                File.Delete(backupFilePath);
+            }
+
+            return;
+        }
+
+        File.Move(tempFilePath, RepositoryFilePath);
     }
 
     private static KnowledgeReferenceCase ToReferenceCase(StoredKnowledgeCase storedCase)

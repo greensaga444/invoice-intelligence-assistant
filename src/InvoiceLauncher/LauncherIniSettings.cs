@@ -15,7 +15,6 @@ public sealed record LauncherIniSettings(
     string ProcessorKnowledgeRepositoryFile,
     decimal LowConfidenceThreshold,
     string MofAccount,
-    string InvoiceDownloadMode,
     string OfficialApiBaseUrl,
     string OfficialApiAppId,
     string OfficialApiAppKey,

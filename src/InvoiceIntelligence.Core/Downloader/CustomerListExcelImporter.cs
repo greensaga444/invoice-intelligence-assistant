@@ -1,7 +1,7 @@
-using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
 using ClosedXML.Excel;
+using InvoiceIntelligence.Core.Common;
 
 namespace InvoiceIntelligence.Core.Downloader;
 
@@ -51,10 +51,15 @@ public sealed class CustomerListExcelImporter : ICustomerListImporter
         }
 
         // Resolve required columns through aliases so users can keep Chinese/English headers.
-        var headerIndex = ReadHeaderIndex(worksheet);
-        var taxIdColumn = GetRequiredColumn(headerIndex, TaxIdAliases, TaxIdField);
-        var companyColumn = GetRequiredColumn(headerIndex, CompanyNameAliases, CompanyNameField);
-        var dateRangeColumn = GetRequiredColumn(headerIndex, DateRangeAliases, DateRangeField);
+        var headerIndex = ExcelSchemaHelper.ReadHeaderIndex(worksheet, normalize: true);
+        if (headerIndex.Count == 0)
+        {
+            throw new InvalidDataException("客戶清單標題列為空白。");
+        }
+
+        var taxIdColumn = ExcelSchemaHelper.GetRequiredColumn(headerIndex, TaxIdAliases, TaxIdField, normalize: true);
+        var companyColumn = ExcelSchemaHelper.GetRequiredColumn(headerIndex, CompanyNameAliases, CompanyNameField, normalize: true);
+        var dateRangeColumn = ExcelSchemaHelper.GetRequiredColumn(headerIndex, DateRangeAliases, DateRangeField, normalize: true);
 
         var records = new List<CustomerRecord>();
         var lastRow = worksheet.LastRowUsed()?.RowNumber() ?? 1;
@@ -92,55 +97,6 @@ public sealed class CustomerListExcelImporter : ICustomerListImporter
         }
 
         return new CustomerImportResult(records);
-    }
-
-    private static Dictionary<string, int> ReadHeaderIndex(IXLWorksheet worksheet)
-    {
-        var headerRow = worksheet.Row(1);
-        var lastColumn = headerRow.LastCellUsed()?.Address.ColumnNumber ?? 0;
-
-        if (lastColumn == 0)
-        {
-            throw new InvalidDataException("客戶清單標題列為空白。");
-        }
-
-        var headerIndex = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-
-        for (var column = 1; column <= lastColumn; column++)
-        {
-            var rawHeader = headerRow.Cell(column).GetString().Trim();
-            if (rawHeader.Length == 0)
-            {
-                continue;
-            }
-
-            headerIndex[NormalizeHeader(rawHeader)] = column;
-        }
-
-        return headerIndex;
-    }
-
-    private static int GetRequiredColumn(
-        IReadOnlyDictionary<string, int> headerIndex,
-        IEnumerable<string> aliases,
-        string requiredFieldName)
-    {
-        foreach (var alias in aliases)
-        {
-            if (headerIndex.TryGetValue(NormalizeHeader(alias), out var column))
-            {
-                return column;
-            }
-        }
-
-        throw new InvalidDataException($"缺少必要欄位：{requiredFieldName}。");
-    }
-
-    private static string NormalizeHeader(string header)
-    {
-        return header.Replace(" ", string.Empty, StringComparison.Ordinal)
-            .Replace("_", string.Empty, StringComparison.Ordinal)
-            .ToLowerInvariant();
     }
 
     private static void ValidateTaxId(string taxId, int rowNumber)
@@ -192,11 +148,6 @@ public sealed class CustomerListExcelImporter : ICustomerListImporter
 
     private static bool TryParseDate(string input, out DateOnly value)
     {
-        if (DateOnly.TryParse(input, CultureInfo.InvariantCulture, DateTimeStyles.None, out value))
-        {
-            return true;
-        }
-
-        return DateOnly.TryParse(input, CultureInfo.CurrentCulture, DateTimeStyles.None, out value);
+        return DateOnlyParsingHelper.TryParseDate(input, out value);
     }
 }

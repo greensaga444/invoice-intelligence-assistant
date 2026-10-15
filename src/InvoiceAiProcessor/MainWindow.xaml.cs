@@ -1,4 +1,6 @@
 ﻿using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using InvoiceIntelligence.Core.Processor;
 
@@ -77,8 +79,6 @@ public partial class MainWindow : Window
             {
                 row.IsApproved = false;
             }
-
-            FeedbackGrid.Items.Refresh();
         }
         catch (Exception ex)
         {
@@ -86,8 +86,10 @@ public partial class MainWindow : Window
         }
     }
 
-    private sealed class FeedbackCandidateRow
+    private sealed class FeedbackCandidateRow : INotifyPropertyChanged
     {
+        private bool _isApproved;
+
         private FeedbackCandidateRow(InvoiceDecisionResult sourceResult)
         {
             SourceResult = sourceResult;
@@ -97,16 +99,23 @@ public partial class MainWindow : Window
             DeductibleStatus = sourceResult.Decision.DeductibleStatus;
             AccountingCategory = sourceResult.Decision.AccountingCategory;
             ConfidenceScoreDisplay = sourceResult.Decision.ConfidenceScore.ToString("0.00");
-            ResolvedByDisplay = sourceResult.ResolvedBy switch
-            {
-                DecisionStage.RuleEngine => "規則引擎",
-                DecisionStage.CaseCache => "案例快取",
-                DecisionStage.Llm => "本地 LLM",
-                _ => "未知來源"
-            };
+            ResolvedByDisplay = sourceResult.ResolvedBy.ToDisplayName();
         }
 
-        public bool IsApproved { get; set; }
+        public bool IsApproved
+        {
+            get => _isApproved;
+            set
+            {
+                if (_isApproved == value)
+                {
+                    return;
+                }
+
+                _isApproved = value;
+                OnPropertyChanged();
+            }
+        }
 
         public string InvoiceNumber { get; }
 
@@ -127,6 +136,13 @@ public partial class MainWindow : Window
         public static FeedbackCandidateRow Create(InvoiceDecisionResult sourceResult)
         {
             return new FeedbackCandidateRow(sourceResult);
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

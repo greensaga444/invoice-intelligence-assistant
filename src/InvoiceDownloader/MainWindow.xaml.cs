@@ -16,7 +16,8 @@ public partial class MainWindow : Window
     private readonly string _solutionRootPath;
     private readonly ICustomerListImporter _customerListImporter;
     private readonly IMofAuthenticator _mofAuthenticator;
-    private readonly IBatchInvoiceDownloader _batchInvoiceDownloader;
+    private readonly DownloaderWorkflowService _workflowService;
+    private readonly IBatchInvoiceDownloader? _batchInvoiceDownloader;
     private readonly HttpClient? _officialApiHttpClient;
     private IReadOnlyList<CustomerRecord> _loadedCustomers = [];
     private string? _sessionToken;
@@ -35,12 +36,9 @@ public partial class MainWindow : Window
         _solutionRootPath = solutionRootPath;
         _customerListImporter = new CustomerListExcelImporter();
         _mofAuthenticator = new LocalMofAuthenticator();
+        _workflowService = new DownloaderWorkflowService();
 
-        if (_configuration is null)
-        {
-            _batchInvoiceDownloader = new DisabledBatchInvoiceDownloader();
-        }
-        else
+        if (_configuration is not null)
         {
             (_batchInvoiceDownloader, _officialApiHttpClient) = CreateBatchDownloader(_configuration);
         }
@@ -150,27 +148,17 @@ public partial class MainWindow : Window
 
     private void AuthenticateButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_configuration is null)
+        if (!_workflowService.TryValidateAuthentication(_configuration, _loadedCustomers, out var authMessage))
         {
-            MofAuthResultText.Text = "設定尚未載入，無法進行 MOF 驗證。";
+            MofAuthResultText.Text = authMessage;
             return;
         }
 
-        if (_loadedCustomers.Count == 0)
-        {
-            MofAuthResultText.Text = "請先匯入客戶清單，再進行 MOF 驗證。";
-            return;
-        }
-
-        var inputPassword = MofPasswordBox.Password;
-        var resolvedPassword = string.IsNullOrWhiteSpace(inputPassword)
-            ? _configuredMofPassword ?? string.Empty
-            : inputPassword;
-
-        var credential = new MofCredential(
-            _configuration.MofAccount,
+        var credential = _workflowService.BuildCredential(
+            _configuration!,
             GetEffectiveMofApiKey(),
-            resolvedPassword);
+            _configuredMofPassword,
+            MofPasswordBox.Password);
 
         var authResult = _mofAuthenticator.Authenticate(credential);
         if (!authResult.IsSuccess)
@@ -197,22 +185,15 @@ public partial class MainWindow : Window
 
     private async void StartBatchDownloadButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_configuration is null)
+        if (!_workflowService.TryValidateBatchDownload(
+                _configuration,
+                _loadedCustomers,
+                HasActiveSession(),
+                _batchInvoiceDownloader,
+                out var batchValidationMessage))
         {
-            BatchDownloadResultText.Text = "設定尚未載入，無法執行批次下載。";
-            return;
-        }
-
-        if (_loadedCustomers.Count == 0)
-        {
-            BatchDownloadResultText.Text = "請先匯入客戶清單，再執行批次下載。";
-            return;
-        }
-
-        if (!HasActiveSession())
-        {
-            StartBatchDownloadButton.IsEnabled = false;
-            BatchDownloadResultText.Text = "MOF 工作階段已失效，請重新驗證後再執行批次下載。";
+            StartBatchDownloadButton.IsEnabled = HasActiveSession() && _loadedCustomers.Count > 0;
+            BatchDownloadResultText.Text = batchValidationMessage;
             return;
         }
 
@@ -220,19 +201,18 @@ public partial class MainWindow : Window
 
         try
         {
-            var folderAPath = ResolveConfiguredPath(_configuration.FolderAPath);
-            var request = new BatchInvoiceDownloadRequest(
-                Customers: _loadedCustomers,
-                FolderAPath: folderAPath,
-                OutputNamingRule: _configuration.OutputNamingRule,
-                SessionToken: _sessionToken!,
-                OfficialApiAppId: GetEffectiveOfficialApiAppId(),
-                OfficialApiAccount: _configuration.MofAccount,
-                OfficialApiPassword: _authenticatedPassword,
-                InvoiceFileSuffix: _configuration.InvoiceFileSuffix,
-                AllowanceFileSuffix: _configuration.AllowanceFileSuffix);
+            var configuration = _configuration!;
+            var batchDownloader = _batchInvoiceDownloader!;
+            var folderAPath = ResolveConfiguredPath(configuration.FolderAPath);
+            var request = _workflowService.BuildBatchRequest(
+                configuration,
+                _loadedCustomers,
+                folderAPath,
+                _sessionToken!,
+                GetEffectiveOfficialApiAppId(),
+                _authenticatedPassword);
 
-            var result = await _batchInvoiceDownloader.DownloadAsync(request);
+            var result = await batchDownloader.DownloadAsync(request);
 
             var successCount = result.Items.Count(item => item.IsSuccess);
             var failureCount = result.Items.Count - successCount;
@@ -277,32 +257,21 @@ public partial class MainWindow : Window
 
     private string GetEffectiveMofApiKey()
     {
-        if (!string.IsNullOrWhiteSpace(_configuration?.OfficialApiAppKey))
-        {
-            return _configuration.OfficialApiAppKey;
-        }
-
-        return _configuration?.OfficialApiAppId ?? string.Empty;
+        return MofApiCredentialResolver.ResolveAppKey(
+            _configuration?.OfficialApiAppId,
+            _configuration?.OfficialApiAppKey);
     }
 
     private string GetEffectiveOfficialApiAppId()
     {
-        if (!string.IsNullOrWhiteSpace(_configuration?.OfficialApiAppId))
-        {
-            return _configuration.OfficialApiAppId;
-        }
-
-        return _configuration?.OfficialApiAppKey ?? string.Empty;
+        return MofApiCredentialResolver.ResolveAppId(
+            _configuration?.OfficialApiAppId,
+            _configuration?.OfficialApiAppKey);
     }
 
     private string ResolveConfiguredPath(string configuredPath)
     {
-        if (Path.IsPathRooted(configuredPath))
-        {
-            return configuredPath;
-        }
-
-        return Path.GetFullPath(Path.Combine(_solutionRootPath, configuredPath));
+        return PathResolutionHelper.ResolveConfiguredPath(_solutionRootPath, configuredPath);
     }
 
     private static (IBatchInvoiceDownloader Downloader, HttpClient? OfficialApiHttpClient) CreateBatchDownloader(ModuleConfiguration configuration)
@@ -319,10 +288,7 @@ public partial class MainWindow : Window
         var batchDownloader = new OfficialBatchInvoiceDownloader(
             officialDownloader,
             exporter,
-            includeSalesInvoices: true,
-            includePurchaseInvoices: true,
-            includeSalesAllowances: true,
-            includePurchaseAllowances: true);
+            scopeSelection: OfficialInvoiceScopeSelection.Default);
 
         return (batchDownloader, httpClient);
     }
@@ -330,15 +296,5 @@ public partial class MainWindow : Window
     private string GetDownloadModeLabel()
     {
         return "官方 API";
-    }
-
-    private sealed class DisabledBatchInvoiceDownloader : IBatchInvoiceDownloader
-    {
-        public Task<BatchInvoiceDownloadResult> DownloadAsync(
-            BatchInvoiceDownloadRequest request,
-            CancellationToken cancellationToken = default)
-        {
-            throw new InvalidOperationException("設定尚未載入，無法執行批次下載。");
-        }
     }
 }

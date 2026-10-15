@@ -1,5 +1,4 @@
-﻿using System.IO;
-using System.Windows;
+﻿using System.Windows;
 using InvoiceIntelligence.Core.Configuration;
 
 namespace InvoiceDownloader;
@@ -15,8 +14,8 @@ public partial class App : Application
 
         string message;
         ModuleConfiguration? config = null;
-        var configPath = ResolveConfigPath("downloader.ini");
-        var solutionRootPath = ResolveSolutionRootPath(configPath);
+        var configPath = PathResolutionHelper.ResolveConfigPath("downloader.ini");
+        var solutionRootPath = PathResolutionHelper.ResolveSolutionRootPath(configPath);
 
         try
         {
@@ -41,33 +40,6 @@ public partial class App : Application
 
         var fallbackWindow = new MainWindow(config, message, solutionRootPath);
         fallbackWindow.Show();
-    }
-
-    private static string ResolveConfigPath(string fileName)
-    {
-        var current = new DirectoryInfo(AppContext.BaseDirectory);
-
-        while (current is not null)
-        {
-            var candidate = Path.Combine(current.FullName, "config", fileName);
-            if (File.Exists(candidate))
-            {
-                return candidate;
-            }
-
-            current = current.Parent;
-        }
-
-        return Path.Combine(AppContext.BaseDirectory, "config", fileName);
-    }
-
-    private static string ResolveSolutionRootPath(string configPath)
-    {
-        var configDirectory = Path.GetDirectoryName(configPath)
-            ?? throw new InvalidOperationException("無法解析設定檔目錄路徑。");
-
-        var solutionRootDirectory = Directory.GetParent(configDirectory)?.FullName;
-        return solutionRootDirectory ?? AppContext.BaseDirectory;
     }
 }
 

@@ -10,27 +10,18 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
     private readonly OfficialInvoiceBatchDownloader _officialDownloader;
     private readonly IOfficialInvoiceExporter _exporter;
     private readonly OfficialInvoiceDownloadOptions _options;
-    private readonly bool _includeSalesInvoices;
-    private readonly bool _includePurchaseInvoices;
-    private readonly bool _includeSalesAllowances;
-    private readonly bool _includePurchaseAllowances;
+    private readonly OfficialInvoiceScopeSelection _scopeSelection;
 
     public OfficialBatchInvoiceDownloader(
         OfficialInvoiceBatchDownloader officialDownloader,
         IOfficialInvoiceExporter exporter,
         OfficialInvoiceDownloadOptions? options = null,
-        bool includeSalesInvoices = true,
-        bool includePurchaseInvoices = true,
-        bool includeSalesAllowances = true,
-        bool includePurchaseAllowances = true)
+        OfficialInvoiceScopeSelection? scopeSelection = null)
     {
         _officialDownloader = officialDownloader ?? throw new ArgumentNullException(nameof(officialDownloader));
         _exporter = exporter ?? throw new ArgumentNullException(nameof(exporter));
         _options = options ?? OfficialInvoiceDownloadOptions.Default;
-        _includeSalesInvoices = includeSalesInvoices;
-        _includePurchaseInvoices = includePurchaseInvoices;
-        _includeSalesAllowances = includeSalesAllowances;
-        _includePurchaseAllowances = includePurchaseAllowances;
+        _scopeSelection = scopeSelection ?? OfficialInvoiceScopeSelection.Default;
     }
 
     public async Task<BatchInvoiceDownloadResult> DownloadAsync(
@@ -54,13 +45,7 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
             throw new ArgumentException("資料夾 A 路徑不可為空白。", nameof(request));
         }
 
-        if (!_includeSalesInvoices
-            && !_includePurchaseInvoices
-            && !_includeSalesAllowances
-            && !_includePurchaseAllowances)
-        {
-            throw new InvalidOperationException("官方下載模式至少需啟用銷項/進項發票或銷貨/進貨折讓其中一種查詢類型。");
-        }
+        _scopeSelection.Validate();
 
         NamingRuleValidator.Validate(request.OutputNamingRule);
 
@@ -104,14 +89,14 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
 
             var outputPaths = new List<string>(2);
 
-            if (_includeSalesInvoices || _includePurchaseInvoices)
+            if (_scopeSelection.IncludesAnyInvoice)
             {
                 var invoiceOutputPath = BuildOutputPath(batchRequest, customer, batchTimestamp, batchRequest.InvoiceFileSuffix);
                 await _exporter.ExportAsync(invoices, invoiceOutputPath, cancellationToken);
                 outputPaths.Add(invoiceOutputPath);
             }
 
-            if (_includeSalesAllowances || _includePurchaseAllowances)
+            if (_scopeSelection.IncludesAnyAllowance)
             {
                 var allowanceOutputPath = BuildOutputPath(batchRequest, customer, batchTimestamp, batchRequest.AllowanceFileSuffix);
                 await _exporter.ExportAsync(allowances, allowanceOutputPath, cancellationToken);
@@ -140,14 +125,14 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
             DateFrom: customer.DateFrom,
             DateTo: customer.DateTo,
             SessionToken: batchRequest.SessionToken,
-            IncludeSalesInvoices: _includeSalesInvoices,
-            IncludePurchaseInvoices: _includePurchaseInvoices,
+                IncludeSalesInvoices: _scopeSelection.IncludeSalesInvoices,
+                IncludePurchaseInvoices: _scopeSelection.IncludePurchaseInvoices,
             Options: _options,
             OfficialApiAppId: batchRequest.OfficialApiAppId,
             OfficialApiAccount: batchRequest.OfficialApiAccount,
             OfficialApiPassword: batchRequest.OfficialApiPassword,
-            IncludeSalesAllowances: _includeSalesAllowances,
-            IncludePurchaseAllowances: _includePurchaseAllowances);
+                IncludeSalesAllowances: _scopeSelection.IncludeSalesAllowances,
+                IncludePurchaseAllowances: _scopeSelection.IncludePurchaseAllowances);
     }
 
     private static string BuildOutputPath(

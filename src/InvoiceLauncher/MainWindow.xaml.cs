@@ -14,10 +14,9 @@ public partial class MainWindow : Window
     private readonly string _configFolderPath;
     private readonly string _downloaderFolderPath;
     private readonly string _processorFolderPath;
-    private readonly string _downloaderExecutablePath;
-    private readonly string _processorExecutablePath;
-    private readonly string _downloaderConfigPath;
-    private readonly string _processorConfigPath;
+    private readonly ModuleRuntimeDefinition _downloaderModule;
+    private readonly ModuleRuntimeDefinition _processorModule;
+    private readonly ModuleRuntimeCoordinator _runtimeCoordinator;
 
     public MainWindow()
     {
@@ -27,10 +26,17 @@ public partial class MainWindow : Window
         _configFolderPath = Path.Combine(_packageRootPath, "config");
         _downloaderFolderPath = Path.GetFullPath(Path.Combine(_packageRootPath, "downloader"));
         _processorFolderPath = Path.GetFullPath(Path.Combine(_packageRootPath, "processor"));
-        _downloaderExecutablePath = Path.Combine(_downloaderFolderPath, "InvoiceDownloader.exe");
-        _processorExecutablePath = Path.Combine(_processorFolderPath, "InvoiceAiProcessor.exe");
-        _downloaderConfigPath = Path.Combine(_configFolderPath, "downloader.ini");
-        _processorConfigPath = Path.Combine(_configFolderPath, "processor.ini");
+        _downloaderModule = new ModuleRuntimeDefinition(
+            DisplayName: "Downloader",
+            ExecutablePath: Path.Combine(_downloaderFolderPath, "InvoiceDownloader.exe"),
+            WorkingDirectory: _downloaderFolderPath,
+            ConfigPath: Path.Combine(_configFolderPath, "downloader.ini"));
+        _processorModule = new ModuleRuntimeDefinition(
+            DisplayName: "Processor",
+            ExecutablePath: Path.Combine(_processorFolderPath, "InvoiceAiProcessor.exe"),
+            WorkingDirectory: _processorFolderPath,
+            ConfigPath: Path.Combine(_configFolderPath, "processor.ini"));
+        _runtimeCoordinator = new ModuleRuntimeCoordinator();
 
         RefreshModuleStatus();
         AppendLog($"主控台已啟動，根目錄：{_packageRootPath}");
@@ -38,8 +44,8 @@ public partial class MainWindow : Window
 
     private async void RunFullFlowButton_Click(object sender, RoutedEventArgs e)
     {
-        if (!EnsureModuleReady(_downloaderExecutablePath, _downloaderConfigPath, "Downloader")
-            || !EnsureModuleReady(_processorExecutablePath, _processorConfigPath, "Processor"))
+        if (!_runtimeCoordinator.EnsureModuleReady(this, _downloaderModule, AppendLog)
+            || !_runtimeCoordinator.EnsureModuleReady(this, _processorModule, AppendLog))
         {
             return;
         }
@@ -49,9 +55,7 @@ public partial class MainWindow : Window
         try
         {
             AppendLog("開始完整流程：啟動 Downloader。");
-            var downloaderExitCode = await StartAndWaitForExitAsync(
-                _downloaderExecutablePath,
-                _downloaderFolderPath);
+            var downloaderExitCode = await _runtimeCoordinator.StartAndWaitForExitAsync(_downloaderModule);
 
             AppendLog($"Downloader 已結束，退出碼：{downloaderExitCode}。");
 
@@ -69,9 +73,7 @@ public partial class MainWindow : Window
             }
 
             AppendLog("啟動 Processor。");
-            var processorExitCode = await StartAndWaitForExitAsync(
-                _processorExecutablePath,
-                _processorFolderPath);
+            var processorExitCode = await _runtimeCoordinator.StartAndWaitForExitAsync(_processorModule);
             AppendLog($"Processor 已結束，退出碼：{processorExitCode}。");
         }
         catch (Exception ex)
@@ -88,12 +90,12 @@ public partial class MainWindow : Window
 
     private void LaunchDownloaderButton_Click(object sender, RoutedEventArgs e)
     {
-        LaunchModuleWithoutWaiting(_downloaderExecutablePath, _downloaderFolderPath, _downloaderConfigPath, "Downloader");
+        _runtimeCoordinator.LaunchWithoutWaiting(this, _downloaderModule, AppendLog);
     }
 
     private void LaunchProcessorButton_Click(object sender, RoutedEventArgs e)
     {
-        LaunchModuleWithoutWaiting(_processorExecutablePath, _processorFolderPath, _processorConfigPath, "Processor");
+        _runtimeCoordinator.LaunchWithoutWaiting(this, _processorModule, AppendLog);
     }
 
     private void OpenSettingsButton_Click(object sender, RoutedEventArgs e)
@@ -110,15 +112,15 @@ public partial class MainWindow : Window
 
         try
         {
-            var processorConfiguration = LoadConfigurationOrDefault(_processorConfigPath, CreateDefaultProcessorConfig());
+            var processorConfiguration = LoadConfigurationOrDefault(_processorModule.ConfigPath, CreateDefaultProcessorConfig());
 
-            DownloaderIniFileWriter.Write(_downloaderConfigPath, settingsWindow.SavedSettings);
-            ProcessorIniFileWriter.Write(_processorConfigPath, processorConfiguration, settingsWindow.SavedSettings);
+            DownloaderIniFileWriter.Write(_downloaderModule.ConfigPath, settingsWindow.SavedSettings);
+            ProcessorIniFileWriter.Write(_processorModule.ConfigPath, processorConfiguration, settingsWindow.SavedSettings);
 
             AppendLog("設定已更新至根目錄 config。啟動中的模組請重啟後套用。");
             MessageBox.Show(
                 this,
-                $"設定已儲存。\nDownloader: {_downloaderConfigPath}\nProcessor: {_processorConfigPath}",
+                $"設定已儲存。\nDownloader: {_downloaderModule.ConfigPath}\nProcessor: {_processorModule.ConfigPath}",
                 "設定已儲存",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
@@ -140,91 +142,23 @@ public partial class MainWindow : Window
 
     private void OpenDownloaderFolderButton_Click(object sender, RoutedEventArgs e)
     {
-        OpenFolder(_downloaderFolderPath);
+        _runtimeCoordinator.OpenFolder(this, _downloaderFolderPath, AppendLog);
     }
 
     private void OpenProcessorFolderButton_Click(object sender, RoutedEventArgs e)
     {
-        OpenFolder(_processorFolderPath);
-    }
-
-    private static async Task<int> StartAndWaitForExitAsync(string executablePath, string workingDirectory)
-    {
-        var process = Process.Start(new ProcessStartInfo
-        {
-            FileName = executablePath,
-            WorkingDirectory = workingDirectory,
-            UseShellExecute = true
-        });
-
-        if (process is null)
-        {
-            throw new InvalidOperationException($"無法啟動程序：{executablePath}");
-        }
-
-        await process.WaitForExitAsync();
-        return process.ExitCode;
-    }
-
-    private void LaunchModuleWithoutWaiting(
-        string executablePath,
-        string workingDirectory,
-        string configPath,
-        string moduleDisplayName)
-    {
-        if (!EnsureModuleReady(executablePath, configPath, moduleDisplayName))
-        {
-            return;
-        }
-
-        try
-        {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = executablePath,
-                WorkingDirectory = workingDirectory,
-                UseShellExecute = true
-            });
-
-            AppendLog($"{moduleDisplayName} 已啟動。");
-        }
-        catch (Exception ex)
-        {
-            AppendLog($"啟動 {moduleDisplayName} 失敗：{ex.Message}");
-            MessageBox.Show(this, ex.Message, "啟動失敗", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-    private bool EnsureModuleReady(string executablePath, string configPath, string moduleDisplayName)
-    {
-        if (!File.Exists(executablePath))
-        {
-            var executableMessage = $"找不到 {moduleDisplayName} 可執行檔：{executablePath}";
-            AppendLog(executableMessage);
-            MessageBox.Show(this, executableMessage, "模組未就緒", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return false;
-        }
-
-        if (File.Exists(configPath))
-        {
-            return true;
-        }
-
-        var configMessage = $"找不到 {moduleDisplayName} 設定檔：{configPath}";
-        AppendLog(configMessage);
-        MessageBox.Show(this, configMessage, "設定未就緒", MessageBoxButton.OK, MessageBoxImage.Warning);
-        return false;
+        _runtimeCoordinator.OpenFolder(this, _processorFolderPath, AppendLog);
     }
 
     private void RefreshModuleStatus()
     {
-        DownloaderPathText.Text = _downloaderExecutablePath;
-        ProcessorPathText.Text = _processorExecutablePath;
+        DownloaderPathText.Text = _downloaderModule.ExecutablePath;
+        ProcessorPathText.Text = _processorModule.ExecutablePath;
 
-        var downloaderReady = File.Exists(_downloaderExecutablePath);
-        var processorReady = File.Exists(_processorExecutablePath);
-        var downloaderConfigReady = File.Exists(_downloaderConfigPath);
-        var processorConfigReady = File.Exists(_processorConfigPath);
+        var downloaderReady = File.Exists(_downloaderModule.ExecutablePath);
+        var processorReady = File.Exists(_processorModule.ExecutablePath);
+        var downloaderConfigReady = File.Exists(_downloaderModule.ConfigPath);
+        var processorConfigReady = File.Exists(_processorModule.ConfigPath);
 
         DownloaderStatusText.Text = downloaderReady
             ? downloaderConfigReady ? "已就緒" : "缺設定"
@@ -243,36 +177,18 @@ public partial class MainWindow : Window
     private void SetActionButtonsEnabled(bool isEnabled)
     {
         RunFullFlowButton.IsEnabled = isEnabled
-            && File.Exists(_downloaderExecutablePath)
-            && File.Exists(_processorExecutablePath)
-            && File.Exists(_downloaderConfigPath)
-            && File.Exists(_processorConfigPath);
+            && File.Exists(_downloaderModule.ExecutablePath)
+            && File.Exists(_processorModule.ExecutablePath)
+            && File.Exists(_downloaderModule.ConfigPath)
+            && File.Exists(_processorModule.ConfigPath);
         LaunchDownloaderButton.IsEnabled = isEnabled
-            && File.Exists(_downloaderExecutablePath)
-            && File.Exists(_downloaderConfigPath);
+            && File.Exists(_downloaderModule.ExecutablePath)
+            && File.Exists(_downloaderModule.ConfigPath);
         LaunchProcessorButton.IsEnabled = isEnabled
-            && File.Exists(_processorExecutablePath)
-            && File.Exists(_processorConfigPath);
+            && File.Exists(_processorModule.ExecutablePath)
+            && File.Exists(_processorModule.ConfigPath);
         RefreshStatusButton.IsEnabled = isEnabled;
         OpenSettingsButton.IsEnabled = isEnabled;
-    }
-
-    private void OpenFolder(string folderPath)
-    {
-        if (!Directory.Exists(folderPath))
-        {
-            AppendLog($"資料夾不存在：{folderPath}");
-            MessageBox.Show(this, $"資料夾不存在：{folderPath}", "無法開啟", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-
-        Process.Start(new ProcessStartInfo
-        {
-            FileName = folderPath,
-            UseShellExecute = true
-        });
-
-        AppendLog($"已開啟資料夾：{folderPath}");
     }
 
     private void AppendLog(string message)
@@ -284,8 +200,8 @@ public partial class MainWindow : Window
 
     private LauncherIniSettings BuildSettingsFromCurrentState()
     {
-        var downloaderConfiguration = LoadConfigurationOrDefault(_downloaderConfigPath, CreateDefaultDownloaderConfig());
-        var processorConfiguration = LoadConfigurationOrDefault(_processorConfigPath, CreateDefaultProcessorConfig());
+        var downloaderConfiguration = LoadConfigurationOrDefault(_downloaderModule.ConfigPath, CreateDefaultDownloaderConfig());
+        var processorConfiguration = LoadConfigurationOrDefault(_processorModule.ConfigPath, CreateDefaultProcessorConfig());
         var officialApiPassword = ResolveOfficialApiPassword(downloaderConfiguration.OfficialApiPasswordEncrypted);
 
         return new LauncherIniSettings(
@@ -303,10 +219,13 @@ public partial class MainWindow : Window
             ProcessorKnowledgeRepositoryFile: ResolveConfiguredPath(processorConfiguration.KnowledgeRepositoryPath),
             LowConfidenceThreshold: processorConfiguration.LowConfidenceThreshold,
             MofAccount: downloaderConfiguration.MofAccount,
-            InvoiceDownloadMode: "official",
             OfficialApiBaseUrl: downloaderConfiguration.OfficialApiBaseUrl ?? string.Empty,
-            OfficialApiAppId: downloaderConfiguration.OfficialApiAppId ?? string.Empty,
-            OfficialApiAppKey: downloaderConfiguration.OfficialApiAppKey ?? string.Empty,
+            OfficialApiAppId: MofApiCredentialResolver.ResolveAppId(
+                downloaderConfiguration.OfficialApiAppId,
+                downloaderConfiguration.OfficialApiAppKey),
+            OfficialApiAppKey: MofApiCredentialResolver.ResolveAppKey(
+                downloaderConfiguration.OfficialApiAppId,
+                downloaderConfiguration.OfficialApiAppKey),
             OfficialApiPassword: officialApiPassword);
     }
 
@@ -337,14 +256,14 @@ public partial class MainWindow : Window
             OutputNamingRule: "{taxId}_{companyName}_{timestamp}.xlsx",
             MofAccount: "replace-with-mof-account",
             MofCredentialKey: "replace-with-official-app-key",
-            KnowledgeRepositoryPath: "data\\knowledge\\knowledge-cases.json",
-            InvoiceDownloadMode: "official",
-            OfficialApiBaseUrl: "https://service-mc.einvoice.nat.gov.tw/ptl/portal/api",
+            KnowledgeRepositoryPath: ConfigurationDefaults.KnowledgeRepositoryPath,
+            InvoiceDownloadMode: ConfigurationDefaults.OfficialDownloadMode,
+            OfficialApiBaseUrl: ConfigurationDefaults.OfficialApiBaseUrl,
             OfficialApiAppId: "replace-with-official-app-id",
             OfficialApiAppKey: "replace-with-official-app-key",
-            CustomerListFilePath: "config\\company-list.xlsx",
-            InvoiceFileSuffix: "invoice",
-            AllowanceFileSuffix: "allowance");
+            CustomerListFilePath: ConfigurationDefaults.CustomerListFilePath,
+            InvoiceFileSuffix: ConfigurationDefaults.InvoiceFileSuffix,
+            AllowanceFileSuffix: ConfigurationDefaults.AllowanceFileSuffix);
     }
 
     private ModuleConfiguration CreateDefaultProcessorConfig()
@@ -353,26 +272,21 @@ public partial class MainWindow : Window
             ModuleName: "InvoiceAiProcessor",
             FolderAPath: "data\\folder-a",
             FolderBPath: "data\\folder-b",
-            FolderCPath: "data\\folder-c-review",
+            FolderCPath: ConfigurationDefaults.FolderCPath,
             OutputNamingRule: "{taxId}_{companyName}_{dateFrom}_{dateTo}.xlsx",
             MofAccount: "replace-with-mof-account",
             MofCredentialKey: "replace-with-official-app-key",
-            KnowledgeRepositoryPath: "data\\knowledge\\knowledge-cases.json",
-            LowConfidenceThreshold: 0.80m,
+            KnowledgeRepositoryPath: ConfigurationDefaults.KnowledgeRepositoryPath,
+            LowConfidenceThreshold: ConfigurationDefaults.LowConfidenceThreshold,
             OfficialApiAppId: "replace-with-official-app-id",
             OfficialApiAppKey: "replace-with-official-app-key",
-            InvoiceFileSuffix: "invoice",
-            AllowanceFileSuffix: "allowance");
+            InvoiceFileSuffix: ConfigurationDefaults.InvoiceFileSuffix,
+            AllowanceFileSuffix: ConfigurationDefaults.AllowanceFileSuffix);
     }
 
     private string ResolveConfiguredPath(string configuredPath)
     {
-        if (Path.IsPathRooted(configuredPath))
-        {
-            return configuredPath;
-        }
-
-        return Path.GetFullPath(Path.Combine(_packageRootPath, configuredPath));
+        return PathResolutionHelper.ResolveConfiguredPath(_packageRootPath, configuredPath);
     }
 
     private static string ResolveOfficialApiPassword(string? encryptedPassword)
@@ -384,7 +298,7 @@ public partial class MainWindow : Window
 
     private static string ResolvePackageRootPath()
     {
-        var downloaderConfigPath = ResolveConfigPath("downloader.ini");
+        var downloaderConfigPath = PathResolutionHelper.ResolveConfigPath("downloader.ini");
         var configDirectory = Path.GetDirectoryName(downloaderConfigPath);
         if (string.IsNullOrWhiteSpace(configDirectory))
         {
@@ -395,23 +309,5 @@ public partial class MainWindow : Window
         return string.IsNullOrWhiteSpace(packageRootDirectory)
             ? AppContext.BaseDirectory
             : packageRootDirectory;
-    }
-
-    private static string ResolveConfigPath(string fileName)
-    {
-        var current = new DirectoryInfo(AppContext.BaseDirectory);
-
-        while (current is not null)
-        {
-            var candidate = Path.Combine(current.FullName, "config", fileName);
-            if (File.Exists(candidate))
-            {
-                return candidate;
-            }
-
-            current = current.Parent;
-        }
-
-        return Path.Combine(AppContext.BaseDirectory, "config", fileName);
     }
 }

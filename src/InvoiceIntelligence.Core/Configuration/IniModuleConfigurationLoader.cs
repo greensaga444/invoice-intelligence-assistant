@@ -1,5 +1,4 @@
 using System.IO;
-using System.Globalization;
 
 namespace InvoiceIntelligence.Core.Configuration;
 
@@ -10,17 +9,6 @@ public interface IModuleConfigurationLoader
 
 public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
 {
-    private const string DefaultKnowledgeRepositoryPath = "data\\knowledge\\knowledge-cases.json";
-    private const string DefaultCustomerListFilePath = "config\\company-list.xlsx";
-    private const string DefaultFolderCPath = "data\\folder-c-review";
-    private const decimal DefaultLowConfidenceThreshold = 0.80m;
-    private const string DefaultInvoiceOutputLabel = "SalesInvoiceDetail-T3";
-    private const string DefaultAllowanceOutputLabel = "PurchaseVoucherDetail-T4";
-    private const string DefaultInvoiceFileSuffix = "invoice";
-    private const string DefaultAllowanceFileSuffix = "allowance";
-    private const string OfficialDownloadMode = "official";
-    private const string DefaultOfficialApiBaseUrl = "https://service-mc.einvoice.nat.gov.tw/ptl/portal/api";
-
     public ModuleConfiguration Load(string iniPath)
     {
         if (string.IsNullOrWhiteSpace(iniPath))
@@ -39,28 +27,30 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
         var folderAPath = iniData.GetRequired("paths", "folderA");
         var folderBPath = iniData.GetRequired("paths", "folderB");
         var folderCPath = TrimOptional(iniData.GetOptional("paths", "folderC"))
-            ?? DefaultFolderCPath;
+            ?? ConfigurationDefaults.FolderCPath;
         var outputNamingRule = iniData.GetRequired("output", "fileNamingRule");
         var invoiceOutputLabel = TrimOptional(iniData.GetOptional("output", "invoiceOutputLabel"))
-            ?? DefaultInvoiceOutputLabel;
+            ?? ConfigurationDefaults.InvoiceOutputLabel;
         var allowanceOutputLabel = TrimOptional(iniData.GetOptional("output", "allowanceOutputLabel"))
-            ?? DefaultAllowanceOutputLabel;
+            ?? ConfigurationDefaults.AllowanceOutputLabel;
         var invoiceFileSuffix = ResolveFileSuffix(
             iniData.GetOptional("output", "invoiceFileSuffix"),
-            DefaultInvoiceFileSuffix,
+            ConfigurationDefaults.InvoiceFileSuffix,
             "output.invoiceFileSuffix");
         var allowanceFileSuffix = ResolveFileSuffix(
             iniData.GetOptional("output", "allowanceFileSuffix"),
-            DefaultAllowanceFileSuffix,
+            ConfigurationDefaults.AllowanceFileSuffix,
             "output.allowanceFileSuffix");
         var mofAccount = iniData.GetRequired("mof", "account");
         var officialApiAppKey = iniData.GetRequired("mof", "appKey").Trim();
-        var officialApiAppId = TrimOptional(iniData.GetOptional("mof", "appId")) ?? officialApiAppKey;
+        var officialApiAppId = MofApiCredentialResolver.ResolveAppId(
+            iniData.GetOptional("mof", "appId"),
+            officialApiAppKey);
         var mofCredentialKey = officialApiAppKey;
         var knowledgeRepositoryPath = iniData.GetOptional("knowledge", "repositoryFile")
-            ?? DefaultKnowledgeRepositoryPath;
+            ?? ConfigurationDefaults.KnowledgeRepositoryPath;
         var customerListFilePath = TrimOptional(iniData.GetOptional("input", "customerListFile"))
-            ?? DefaultCustomerListFilePath;
+            ?? ConfigurationDefaults.CustomerListFilePath;
         var configuredInvoiceDownloadMode = iniData.GetOptional("mof", "invoiceDownloadMode");
         var invoiceDownloadMode = NormalizeInvoiceDownloadMode(configuredInvoiceDownloadMode);
         var officialApiBaseUrl = ResolveOfficialApiBaseUrl(
@@ -129,11 +119,11 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
     {
         if (string.IsNullOrWhiteSpace(configuredMode))
         {
-            return OfficialDownloadMode;
+            return ConfigurationDefaults.OfficialDownloadMode;
         }
 
         var normalized = configuredMode.Trim().ToLowerInvariant();
-        if (normalized != OfficialDownloadMode)
+        if (normalized != ConfigurationDefaults.OfficialDownloadMode)
         {
             throw new InvalidDataException("mof.invoiceDownloadMode 僅支援 official。");
         }
@@ -157,7 +147,7 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
                 throw new InvalidDataException("當 mof.invoiceDownloadMode=official 時，mof.officialApiBaseUrl 不可為空白。");
             }
 
-            return DefaultOfficialApiBaseUrl;
+            return ConfigurationDefaults.OfficialApiBaseUrl;
         }
 
         var normalized = configuredBaseUrl.Trim();
@@ -173,22 +163,14 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
     {
         if (string.IsNullOrWhiteSpace(configuredThreshold))
         {
-            return DefaultLowConfidenceThreshold;
+            return ConfigurationDefaults.LowConfidenceThreshold;
         }
 
-        var normalized = configuredThreshold.Trim();
-
-        if (!decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.InvariantCulture, out var threshold)
-            && !decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.CurrentCulture, out threshold))
+        if (!ConfigurationValueParser.TryParseLowConfidenceThreshold(configuredThreshold, out var threshold))
         {
             throw new InvalidDataException("review.confidenceThreshold 必須為 0 到 1 之間的小數。例：0.80");
         }
 
-        if (threshold is < 0m or > 1m)
-        {
-            throw new InvalidDataException("review.confidenceThreshold 必須介於 0 與 1 之間。");
-        }
-
-        return decimal.Round(threshold, 2, MidpointRounding.AwayFromZero);
+        return threshold;
     }
 }

@@ -2,6 +2,7 @@ using Microsoft.Win32;
 using System.Globalization;
 using System.IO;
 using System.Windows;
+using InvoiceIntelligence.Core.Configuration;
 
 namespace InvoiceLauncher;
 
@@ -77,49 +78,38 @@ public partial class LauncherSettingsWindow : Window
         var processorKnowledgeRepositoryFile = ProcessorKnowledgeRepositoryFileTextBox.Text.Trim();
         var lowConfidenceThresholdText = LowConfidenceThresholdTextBox.Text.Trim();
         var mofAccount = MofAccountTextBox.Text.Trim();
-        var invoiceDownloadMode = "official";
         var officialApiBaseUrl = OfficialApiBaseUrlTextBox.Text.Trim();
         var officialApiAppId = OfficialApiAppIdTextBox.Text.Trim();
         var officialApiAppKey = OfficialApiAppKeyTextBox.Text.Trim();
         var officialApiPassword = OfficialApiPasswordBox.Password;
 
-        if (string.IsNullOrWhiteSpace(moduleName)
-            || string.IsNullOrWhiteSpace(folderAPath)
-            || string.IsNullOrWhiteSpace(folderBPath)
-            || string.IsNullOrWhiteSpace(folderCPath)
-            || string.IsNullOrWhiteSpace(customerListFilePath)
-            || string.IsNullOrWhiteSpace(fileNamingRule)
-            || string.IsNullOrWhiteSpace(invoiceFileSuffix)
-            || string.IsNullOrWhiteSpace(allowanceFileSuffix)
-            || string.IsNullOrWhiteSpace(invoiceOutputLabel)
-            || string.IsNullOrWhiteSpace(allowanceOutputLabel)
-            || string.IsNullOrWhiteSpace(processorFileNamingRule)
-            || string.IsNullOrWhiteSpace(processorKnowledgeRepositoryFile)
-            || string.IsNullOrWhiteSpace(mofAccount)
-            || string.IsNullOrWhiteSpace(officialApiAppId)
-            || string.IsNullOrWhiteSpace(officialApiAppKey))
+        var validationInput = new LauncherSettingsInput(
+            ModuleName: moduleName,
+            FolderAPath: folderAPath,
+            FolderBPath: folderBPath,
+            FolderCPath: folderCPath,
+            CustomerListFilePath: customerListFilePath,
+            FileNamingRule: fileNamingRule,
+            InvoiceFileSuffix: invoiceFileSuffix,
+            AllowanceFileSuffix: allowanceFileSuffix,
+            InvoiceOutputLabel: invoiceOutputLabel,
+            AllowanceOutputLabel: allowanceOutputLabel,
+            ProcessorFileNamingRule: processorFileNamingRule,
+            ProcessorKnowledgeRepositoryFile: processorKnowledgeRepositoryFile,
+            LowConfidenceThresholdText: lowConfidenceThresholdText,
+            MofAccount: mofAccount,
+            OfficialApiBaseUrl: officialApiBaseUrl,
+            OfficialApiAppId: officialApiAppId,
+            OfficialApiAppKey: officialApiAppKey,
+            OfficialApiPassword: officialApiPassword);
+
+        if (!LauncherSettingsValidator.TryValidate(validationInput, out var errorMessage))
         {
-            MessageBox.Show(this, "請完整填寫所有欄位。", "設定驗證", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, errorMessage, "設定驗證", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
-        if (!TryParseLowConfidenceThreshold(lowConfidenceThresholdText, out var lowConfidenceThreshold))
-        {
-            MessageBox.Show(this, "低信心門檻必須為 0 到 1 之間的小數。例：0.80", "設定驗證", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(officialApiBaseUrl))
-        {
-            MessageBox.Show(this, "請填寫官方 API Base URL。", "設定驗證", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(officialApiPassword))
-        {
-            MessageBox.Show(this, "請填寫 MOF 密碼。", "設定驗證", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
+        _ = ConfigurationValueParser.TryParseLowConfidenceThreshold(lowConfidenceThresholdText, out var lowConfidenceThreshold);
 
         SavedSettings = new LauncherIniSettings(
             ModuleName: moduleName,
@@ -136,7 +126,6 @@ public partial class LauncherSettingsWindow : Window
             ProcessorKnowledgeRepositoryFile: processorKnowledgeRepositoryFile,
             LowConfidenceThreshold: lowConfidenceThreshold,
             MofAccount: mofAccount,
-            InvoiceDownloadMode: invoiceDownloadMode,
             OfficialApiBaseUrl: officialApiBaseUrl,
             OfficialApiAppId: officialApiAppId,
             OfficialApiAppKey: officialApiAppKey,
@@ -201,28 +190,4 @@ public partial class LauncherSettingsWindow : Window
         }
     }
 
-    private static bool TryParseLowConfidenceThreshold(string thresholdText, out decimal threshold)
-    {
-        threshold = 0m;
-
-        if (string.IsNullOrWhiteSpace(thresholdText))
-        {
-            return false;
-        }
-
-        var normalized = thresholdText.Trim();
-        if (!decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.InvariantCulture, out threshold)
-            && !decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.CurrentCulture, out threshold))
-        {
-            return false;
-        }
-
-        if (threshold is < 0m or > 1m)
-        {
-            return false;
-        }
-
-        threshold = decimal.Round(threshold, 2, MidpointRounding.AwayFromZero);
-        return true;
-    }
 }

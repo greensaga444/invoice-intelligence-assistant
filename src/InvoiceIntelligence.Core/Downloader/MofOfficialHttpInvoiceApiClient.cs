@@ -13,74 +13,6 @@ namespace InvoiceIntelligence.Core.Downloader;
 public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClient
 {
     private const string ApiVersion = "1.0";
-    private static readonly string[] Raw1InvoiceNumberFieldAliases =
-    [
-        "發票號碼",
-        "invoiceNo",
-        "invoiceNumber",
-        "invoiceNum"
-    ];
-
-    private static readonly string[] Raw1AllowanceNumberFieldAliases =
-    [
-        "折讓單號碼",
-        "allowanceNo",
-        "allowanceNumber"
-    ];
-
-    private static readonly string[] Raw1InvoiceDateFieldAliases =
-    [
-        "發票日期",
-        "invoiceDate"
-    ];
-
-    private static readonly string[] Raw1AllowanceDateFieldAliases =
-    [
-        "折讓單日期",
-        "allowanceDate"
-    ];
-
-    private static readonly string[] Raw1BuyerTaxIdFieldAliases =
-    [
-        "買方統一編號",
-        "buyerTaxId",
-        "buyerBan",
-        "buyerIdentifier"
-    ];
-
-    private static readonly string[] Raw1SellerTaxIdFieldAliases =
-    [
-        "賣方統一編號",
-        "sellerTaxId",
-        "sellerBan",
-        "sellerIdentifier"
-    ];
-
-    private static readonly string[] Raw1NetAmountFieldAliases =
-    [
-        "折讓金額(不含稅)",
-        "allowanceAmount",
-        "allowanceNetAmount",
-        "netAmount",
-        "itemNetAmount",
-        "品項折讓金額(不含稅)"
-    ];
-
-    private static readonly string[] Raw1TaxAmountFieldAliases =
-    [
-        "折讓稅額",
-        "allowanceTaxAmount",
-        "taxAmount",
-        "itemTaxAmount",
-        "品項折讓稅額"
-    ];
-
-    private static readonly string[] Raw1TotalAmountFieldAliases =
-    [
-        "折讓總額",
-        "totalAmount",
-        "allowanceTotalAmount"
-    ];
 
     private readonly HttpClient _httpClient;
     private readonly Uri _queryUri;
@@ -217,19 +149,19 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
             var invoiceDate = ResolveInvoiceDate(item, raw1Items);
             var totalAmount = ResolveTotalAmount(item, direction, documentType, raw1Items);
 
-            var invoiceNumber = ResolveRaw1Value(raw1Items, Raw1InvoiceNumberFieldAliases)
-                ?? ResolveRaw1Value(raw1Items, Raw1AllowanceNumberFieldAliases)
+            var invoiceNumber = ResolveRaw1Value(raw1Items, OfficialRawFieldAliases.InvoiceNumber)
+                ?? ResolveRaw1Value(raw1Items, OfficialRawFieldAliases.AllowanceNumber)
                 ?? BuildStatisticInvoiceNumber(invoiceDate, direction, documentType);
 
-            var buyerTaxId = ResolveRaw1Value(raw1Items, Raw1BuyerTaxIdFieldAliases)
+            var buyerTaxId = ResolveRaw1Value(raw1Items, OfficialRawFieldAliases.BuyerTaxId)
                 ?? (direction == InvoiceDirection.Purchase ? taxId : string.Empty);
 
-            var sellerTaxId = ResolveRaw1Value(raw1Items, Raw1SellerTaxIdFieldAliases)
+            var sellerTaxId = ResolveRaw1Value(raw1Items, OfficialRawFieldAliases.SellerTaxId)
                 ?? (direction == InvoiceDirection.Sales ? taxId : string.Empty);
 
-            var netAmount = ResolveRaw1Decimal(raw1Items, Raw1NetAmountFieldAliases) ?? totalAmount;
-            var taxAmount = ResolveRaw1Decimal(raw1Items, Raw1TaxAmountFieldAliases) ?? 0m;
-            var derivedTotalAmount = ResolveRaw1Decimal(raw1Items, Raw1TotalAmountFieldAliases) ?? (netAmount + taxAmount);
+            var netAmount = ResolveRaw1Decimal(raw1Items, OfficialRawFieldAliases.NetAmountAll) ?? totalAmount;
+            var taxAmount = ResolveRaw1Decimal(raw1Items, OfficialRawFieldAliases.TaxAmountAll) ?? 0m;
+            var derivedTotalAmount = ResolveRaw1Decimal(raw1Items, OfficialRawFieldAliases.TotalAmount) ?? (netAmount + taxAmount);
 
             // ODS374I returns daily statistics only, so we synthesize a stable key-like invoice number.
             records.Add(new OfficialInvoiceRecord(
@@ -277,23 +209,23 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
         {
             var singleRaw1List = new List<IReadOnlyDictionary<string, string>> { raw1Item };
 
-            var invoiceDate = ResolveRaw1Date(singleRaw1List, Raw1InvoiceDateFieldAliases)
-                ?? ResolveRaw1Date(singleRaw1List, Raw1AllowanceDateFieldAliases)
+            var invoiceDate = ResolveRaw1Date(singleRaw1List, OfficialRawFieldAliases.InvoiceDate)
+                ?? ResolveRaw1Date(singleRaw1List, OfficialRawFieldAliases.AllowanceDate)
                 ?? DateOnly.FromDateTime(DateTime.Today);
 
-            var invoiceNumber = ResolveRaw1Value(singleRaw1List, Raw1InvoiceNumberFieldAliases)
-                ?? ResolveRaw1Value(singleRaw1List, Raw1AllowanceNumberFieldAliases)
+            var invoiceNumber = ResolveRaw1Value(singleRaw1List, OfficialRawFieldAliases.InvoiceNumber)
+                ?? ResolveRaw1Value(singleRaw1List, OfficialRawFieldAliases.AllowanceNumber)
                 ?? BuildStatisticInvoiceNumber(invoiceDate, direction, documentType);
 
-            var buyerTaxId = ResolveRaw1Value(singleRaw1List, Raw1BuyerTaxIdFieldAliases)
+            var buyerTaxId = ResolveRaw1Value(singleRaw1List, OfficialRawFieldAliases.BuyerTaxId)
                 ?? (direction == InvoiceDirection.Purchase ? taxId : string.Empty);
 
-            var sellerTaxId = ResolveRaw1Value(singleRaw1List, Raw1SellerTaxIdFieldAliases)
+            var sellerTaxId = ResolveRaw1Value(singleRaw1List, OfficialRawFieldAliases.SellerTaxId)
                 ?? (direction == InvoiceDirection.Sales ? taxId : string.Empty);
 
-            var netAmount = ResolveRaw1Decimal(singleRaw1List, Raw1NetAmountFieldAliases) ?? 0m;
-            var taxAmount = ResolveRaw1Decimal(singleRaw1List, Raw1TaxAmountFieldAliases) ?? 0m;
-            var totalAmount = ResolveRaw1Decimal(singleRaw1List, Raw1TotalAmountFieldAliases) ?? (netAmount + taxAmount);
+            var netAmount = ResolveRaw1Decimal(singleRaw1List, OfficialRawFieldAliases.NetAmountAll) ?? 0m;
+            var taxAmount = ResolveRaw1Decimal(singleRaw1List, OfficialRawFieldAliases.TaxAmountAll) ?? 0m;
+            var totalAmount = ResolveRaw1Decimal(singleRaw1List, OfficialRawFieldAliases.TotalAmount) ?? (netAmount + taxAmount);
 
             records.Add(new OfficialInvoiceRecord(
                 InvoiceNumber: invoiceNumber,
@@ -342,14 +274,14 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
             return fallbackAmount;
         }
 
-        var raw1TotalAmount = ResolveRaw1Decimal(raw1Items, Raw1TotalAmountFieldAliases);
+        var raw1TotalAmount = ResolveRaw1Decimal(raw1Items, OfficialRawFieldAliases.TotalAmount);
         if (raw1TotalAmount.HasValue)
         {
             return raw1TotalAmount.Value;
         }
 
-        var raw1NetAmount = ResolveRaw1Decimal(raw1Items, Raw1NetAmountFieldAliases) ?? 0m;
-        var raw1TaxAmount = ResolveRaw1Decimal(raw1Items, Raw1TaxAmountFieldAliases) ?? 0m;
+        var raw1NetAmount = ResolveRaw1Decimal(raw1Items, OfficialRawFieldAliases.NetAmountAll) ?? 0m;
+        var raw1TaxAmount = ResolveRaw1Decimal(raw1Items, OfficialRawFieldAliases.TaxAmountAll) ?? 0m;
         return raw1NetAmount + raw1TaxAmount;
     }
 
@@ -357,8 +289,8 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
         JsonElement item,
         IReadOnlyList<IReadOnlyDictionary<string, string>> raw1Items)
     {
-        var raw1InvoiceDate = ResolveRaw1Date(raw1Items, Raw1InvoiceDateFieldAliases)
-            ?? ResolveRaw1Date(raw1Items, Raw1AllowanceDateFieldAliases);
+        var raw1InvoiceDate = ResolveRaw1Date(raw1Items, OfficialRawFieldAliases.InvoiceDate)
+            ?? ResolveRaw1Date(raw1Items, OfficialRawFieldAliases.AllowanceDate);
         if (raw1InvoiceDate.HasValue)
         {
             return raw1InvoiceDate.Value;
@@ -630,30 +562,6 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
         }
 
         return null;
-    }
-
-    private static DateOnly ReadRequiredDate(JsonElement element, params string[] names)
-    {
-        foreach (var name in names)
-        {
-            var raw = ReadString(element, name);
-            if (string.IsNullOrWhiteSpace(raw))
-            {
-                continue;
-            }
-
-            if (DateOnly.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dateOnly))
-            {
-                return dateOnly;
-            }
-
-            if (DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var dateTime))
-            {
-                return DateOnly.FromDateTime(dateTime);
-            }
-        }
-
-        throw new JsonException($"缺少必要日期欄位: {string.Join("/", names)}");
     }
 
     private static decimal? ReadDecimal(JsonElement element, params string[] names)

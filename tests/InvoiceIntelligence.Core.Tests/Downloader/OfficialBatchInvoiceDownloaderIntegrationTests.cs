@@ -1,4 +1,5 @@
 using System.IO;
+using ClosedXML.Excel;
 using InvoiceIntelligence.Core.Downloader;
 
 namespace InvoiceIntelligence.Core.Tests.Downloader;
@@ -6,7 +7,7 @@ namespace InvoiceIntelligence.Core.Tests.Downloader;
 public class OfficialBatchInvoiceDownloaderIntegrationTests
 {
     [Fact]
-    public async Task DownloadAsync_ValidRequest_ExportsCsvAndCreatesLog()
+    public async Task DownloadAsync_ValidRequest_ExportsWorkbookAndCreatesLog()
     {
         var outputDirectory = CreateTempDirectory();
         var customers = new[]
@@ -17,13 +18,13 @@ public class OfficialBatchInvoiceDownloaderIntegrationTests
 
         var apiClient = new FakeOfficialApiClient();
         var pagedDownloader = new OfficialInvoiceBatchDownloader(apiClient, (_, _) => Task.CompletedTask);
-        var exporter = new OfficialInvoiceCsvExporter();
+    var exporter = new OfficialInvoiceFolderAExcelExporter();
         var downloader = new OfficialBatchInvoiceDownloader(pagedDownloader, exporter);
 
         var request = new BatchInvoiceDownloadRequest(
             Customers: customers,
             FolderAPath: outputDirectory,
-            OutputNamingRule: "{taxId}_{companyName}_{timestamp}.csv",
+            OutputNamingRule: "{taxId}_{companyName}_{timestamp}.xlsx",
             SessionToken: "session-token");
 
         try
@@ -36,12 +37,16 @@ public class OfficialBatchInvoiceDownloaderIntegrationTests
             Assert.All(result.Items, item => Assert.True(File.Exists(item.OutputFilePath)));
             Assert.True(File.Exists(result.LogFilePath));
 
-            var firstCsvPath = result.Items[0].OutputFilePath!;
-            var csvLines = File.ReadAllLines(firstCsvPath);
+            var firstWorkbookPath = result.Items[0].OutputFilePath!;
             var logLines = File.ReadAllLines(result.LogFilePath);
+            using var workbook = new XLWorkbook(firstWorkbookPath);
+            var summarySheet = workbook.Worksheet("btb411w_xls1");
+            var detailSheet = workbook.Worksheet("btb411w_xls2");
 
-            Assert.True(csvLines.Length >= 2);
-            Assert.Equal("Direction,DocumentType,InvoiceNumber,InvoiceDate,SellerTaxId,BuyerTaxId,NetAmount,TaxAmount,TotalAmount,Currency", csvLines[0]);
+            Assert.Equal("發票號碼", summarySheet.Cell(1, 1).GetString());
+            Assert.Equal("發票日期", summarySheet.Cell(1, 5).GetString());
+            Assert.Equal("發票號碼", detailSheet.Cell(1, 1).GetString());
+            Assert.Equal("品名", detailSheet.Cell(1, 4).GetString());
             Assert.Contains("發票下載批次紀錄", logLines[0]);
             Assert.Contains("成功:", logLines[3]);
         }

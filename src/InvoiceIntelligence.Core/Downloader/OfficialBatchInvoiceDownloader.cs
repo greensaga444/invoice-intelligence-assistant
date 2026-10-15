@@ -3,7 +3,7 @@ using InvoiceIntelligence.Core.Configuration;
 namespace InvoiceIntelligence.Core.Downloader;
 
 /// <summary>
-/// Orchestrates official per-customer downloads plus CSV export and batch logging.
+/// Orchestrates official per-customer downloads plus Folder A Excel export and batch logging.
 /// </summary>
 public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
 {
@@ -97,8 +97,8 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
 
             var outputPath = BuildOutputPath(batchRequest, customer, batchTimestamp);
 
-            // Persist one CSV per customer to Folder A for downstream processing.
-            await _exporter.ExportCsvAsync(queryResult.Invoices, outputPath, cancellationToken);
+            // Persist one workbook per customer to Folder A for downstream processing.
+            await _exporter.ExportAsync(queryResult.Invoices, outputPath, cancellationToken);
 
             return CreateSuccessResult(customer, queryResult, outputPath);
         }
@@ -144,7 +144,7 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
             dateFrom: customer.DateFrom,
             dateTo: customer.DateTo,
             timestamp: batchTimestamp,
-            extension: ".csv");
+            extension: ".xlsx");
 
         return OutputFileNameHelper.EnsureUniquePath(Path.Combine(batchRequest.FolderAPath, fileName));
     }

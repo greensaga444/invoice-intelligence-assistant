@@ -285,7 +285,7 @@ public partial class MainWindow : Window
         var httpClient = new HttpClient();
         var apiClient = new MofOfficialHttpInvoiceApiClient(httpClient, configuration.OfficialApiBaseUrl);
         var officialDownloader = new OfficialInvoiceBatchDownloader(apiClient);
-        var exporter = new OfficialInvoiceCsvExporter();
+        var exporter = new OfficialInvoiceFolderAExcelExporter();
         var batchDownloader = new OfficialBatchInvoiceDownloader(
             officialDownloader,
             exporter,

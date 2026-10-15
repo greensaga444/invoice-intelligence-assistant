@@ -5,7 +5,7 @@ namespace InvoiceIntelligence.Core.Downloader;
 /// </summary>
 public interface IOfficialInvoiceExporter
 {
-    Task ExportCsvAsync(
+    Task ExportAsync(
         IReadOnlyList<OfficialInvoiceRecord> invoices,
         string outputPath,
         CancellationToken cancellationToken = default);

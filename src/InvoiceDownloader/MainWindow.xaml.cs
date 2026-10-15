@@ -228,7 +228,9 @@ public partial class MainWindow : Window
                 SessionToken: _sessionToken!,
                 OfficialApiAppId: GetEffectiveOfficialApiAppId(),
                 OfficialApiAccount: _configuration.MofAccount,
-                OfficialApiPassword: _authenticatedPassword);
+                OfficialApiPassword: _authenticatedPassword,
+                InvoiceFileSuffix: _configuration.InvoiceFileSuffix,
+                AllowanceFileSuffix: _configuration.AllowanceFileSuffix);
 
             var result = await _batchInvoiceDownloader.DownloadAsync(request);
 

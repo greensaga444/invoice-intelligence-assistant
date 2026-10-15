@@ -46,6 +46,10 @@ public class IniModuleConfigurationLoaderTests
             Assert.Equal("config\\company-list.xlsx", config.CustomerListFilePath);
             Assert.Equal("data\\folder-c-review", config.FolderCPath);
             Assert.Equal(0.80m, config.LowConfidenceThreshold);
+            Assert.Equal("SalesInvoiceDetail-T3", config.InvoiceOutputLabel);
+            Assert.Equal("PurchaseVoucherDetail-T4", config.AllowanceOutputLabel);
+            Assert.Equal("invoice", config.InvoiceFileSuffix);
+            Assert.Equal("allowance", config.AllowanceFileSuffix);
         }
         finally
         {
@@ -159,6 +163,47 @@ public class IniModuleConfigurationLoaderTests
 
             Assert.Equal("C:\\Data\\FolderC", config.FolderCPath);
             Assert.Equal(0.72m, config.LowConfidenceThreshold);
+        }
+        finally
+        {
+            File.Delete(iniPath);
+        }
+    }
+
+    [Fact]
+    public void Load_OutputLabelsProvided_UsesConfiguredValues()
+    {
+        const string iniContent = """
+            [module]
+            name = Processor
+
+            [paths]
+            folderA = C:\Data\FolderA
+            folderB = C:\Data\FolderB
+
+            [output]
+            fileNamingRule = {taxId}_{companyName}_{timestamp}.xlsx
+            invoiceOutputLabel = Invoice-Readable-Name
+            allowanceOutputLabel = Allowance-Readable-Name
+            invoiceFileSuffix = invoice-data
+            allowanceFileSuffix = allowance-data
+
+            [mof]
+            account = sample-account
+            appKey = sample-secret
+            """;
+
+        var iniPath = WriteTempIni(iniContent);
+        var loader = new IniModuleConfigurationLoader();
+
+        try
+        {
+            var config = loader.Load(iniPath);
+
+            Assert.Equal("Invoice-Readable-Name", config.InvoiceOutputLabel);
+            Assert.Equal("Allowance-Readable-Name", config.AllowanceOutputLabel);
+            Assert.Equal("invoice-data", config.InvoiceFileSuffix);
+            Assert.Equal("allowance-data", config.AllowanceFileSuffix);
         }
         finally
         {

@@ -13,6 +13,8 @@ public class IniFileContentBuilderTests
             folderBPath: "C:\\Data\\FolderB",
             customerListFilePath: "config\\company-list.xlsx",
             fileNamingRule: "{taxId}_{timestamp}.xlsx",
+            invoiceFileSuffix: "invoice",
+            allowanceFileSuffix: "allowance",
             mofAccount: "sample-account",
             invoiceDownloadMode: "official",
             officialApiBaseUrl: "https://service-mc.einvoice.nat.gov.tw/ptl/portal/api",
@@ -23,6 +25,8 @@ public class IniFileContentBuilderTests
         Assert.Contains("[module]", content, StringComparison.Ordinal);
         Assert.Contains("[input]", content, StringComparison.Ordinal);
         Assert.Contains("customerListFile = config\\company-list.xlsx", content, StringComparison.Ordinal);
+        Assert.Contains("invoiceFileSuffix = invoice", content, StringComparison.Ordinal);
+        Assert.Contains("allowanceFileSuffix = allowance", content, StringComparison.Ordinal);
         Assert.Contains("[mof]", content, StringComparison.Ordinal);
         Assert.Contains("invoiceDownloadMode = official", content, StringComparison.Ordinal);
         Assert.Contains("appId = sample-app-key", content, StringComparison.Ordinal);
@@ -39,6 +43,8 @@ public class IniFileContentBuilderTests
             folderBPath: "C:\\Data\\FolderB",
             customerListFilePath: "config\\company-list.xlsx",
             fileNamingRule: "{taxId}_{timestamp}.xlsx",
+            invoiceFileSuffix: "invoice",
+            allowanceFileSuffix: "allowance",
             mofAccount: "sample-account",
             invoiceDownloadMode: "official",
             officialApiBaseUrl: "https://service-mc.einvoice.nat.gov.tw/ptl/portal/api",
@@ -60,6 +66,8 @@ public class IniFileContentBuilderTests
             folderBPath: "C:\\Data\\FolderB",
             folderCPath: "C:\\Data\\FolderC",
             fileNamingRule: "{taxId}_{companyName}_{timestamp}.xlsx",
+            invoiceFileSuffix: "invoice",
+            allowanceFileSuffix: "allowance",
             lowConfidenceThreshold: 0.75m,
             knowledgeRepositoryFile: "D:\\Knowledge\\cases.json",
             mofAccount: "sample-account",
@@ -67,6 +75,10 @@ public class IniFileContentBuilderTests
             officialApiAppKey: "");
 
         Assert.Contains("folderC = C:\\Data\\FolderC", content, StringComparison.Ordinal);
+        Assert.Contains("invoiceOutputLabel = SalesInvoiceDetail-T3", content, StringComparison.Ordinal);
+        Assert.Contains("allowanceOutputLabel = PurchaseVoucherDetail-T4", content, StringComparison.Ordinal);
+        Assert.Contains("invoiceFileSuffix = invoice", content, StringComparison.Ordinal);
+        Assert.Contains("allowanceFileSuffix = allowance", content, StringComparison.Ordinal);
         Assert.Contains("[review]", content, StringComparison.Ordinal);
         Assert.Contains("confidenceThreshold = 0.75", content, StringComparison.Ordinal);
         Assert.Contains("[knowledge]", content, StringComparison.Ordinal);

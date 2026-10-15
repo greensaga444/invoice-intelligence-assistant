@@ -15,4 +15,8 @@ public sealed record ModuleConfiguration(
     string? OfficialApiPasswordEncrypted = null,
     string CustomerListFilePath = "config\\company-list.xlsx",
     string FolderCPath = "data\\folder-c-review",
-    decimal LowConfidenceThreshold = 0.80m);
+    decimal LowConfidenceThreshold = 0.80m,
+    string InvoiceOutputLabel = "SalesInvoiceDetail-T3",
+    string AllowanceOutputLabel = "PurchaseVoucherDetail-T4",
+    string InvoiceFileSuffix = "invoice",
+    string AllowanceFileSuffix = "allowance");

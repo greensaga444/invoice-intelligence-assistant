@@ -30,13 +30,20 @@ public class LocalBatchInvoiceDownloaderTests
             Assert.Equal(2, result.Items.Count);
             Assert.All(result.Items, item => Assert.True(item.IsSuccess));
             Assert.All(result.Items, item => Assert.True(File.Exists(item.OutputFilePath)));
+            Assert.All(result.Items, item => Assert.NotNull(item.OutputFilePaths));
+            Assert.All(result.Items, item => Assert.Equal(2, item.OutputFilePaths!.Count));
+            Assert.All(result.Items, item => Assert.All(item.OutputFilePaths!, path => Assert.True(File.Exists(path))));
             Assert.True(File.Exists(result.LogFilePath));
 
-            var firstOutputPath = result.Items[0].OutputFilePath;
-            Assert.NotNull(firstOutputPath);
+            var firstInvoicePath = result.Items[0].OutputFilePaths!
+                .Single(path => Path.GetFileName(path).Contains("-invoice", StringComparison.OrdinalIgnoreCase));
+            var firstAllowancePath = result.Items[0].OutputFilePaths!
+                .Single(path => Path.GetFileName(path).Contains("-allowance", StringComparison.OrdinalIgnoreCase));
 
-            using var workbook = new XLWorkbook(firstOutputPath);
-            var sheet = workbook.Worksheet(1);
+            using var invoiceWorkbook = new XLWorkbook(firstInvoicePath);
+            using var allowanceWorkbook = new XLWorkbook(firstAllowancePath);
+            var sheet = invoiceWorkbook.Worksheet(1);
+            var allowanceSheet = allowanceWorkbook.Worksheet(1);
             var logLines = File.ReadAllLines(result.LogFilePath);
 
             Assert.Equal("原始發票", sheet.Name);
@@ -44,6 +51,7 @@ public class LocalBatchInvoiceDownloaderTests
             Assert.Equal("公司名稱", sheet.Cell(1, 2).GetString());
             Assert.Equal("發票號碼", sheet.Cell(1, 3).GetString());
             Assert.Equal("12345678", sheet.Cell(2, 1).GetString());
+            Assert.Equal("原始發票", allowanceSheet.Name);
             Assert.Equal("發票下載批次紀錄", logLines[0]);
             Assert.Contains("成功:", logLines[3]);
         }
@@ -104,13 +112,11 @@ public class LocalBatchInvoiceDownloaderTests
             Assert.All(result.Items, item => Assert.True(item.IsSuccess));
 
             var outputPaths = result.Items
-                .Select(item => item.OutputFilePath)
-                .Where(path => path is not null)
-                .Cast<string>()
+                .SelectMany(item => item.OutputFilePaths ?? [])
                 .ToArray();
 
-            Assert.Equal(2, outputPaths.Length);
-            Assert.Equal(2, outputPaths.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+            Assert.Equal(4, outputPaths.Length);
+            Assert.Equal(4, outputPaths.Distinct(StringComparer.OrdinalIgnoreCase).Count());
             Assert.All(outputPaths, path => Assert.True(File.Exists(path)));
         }
         finally

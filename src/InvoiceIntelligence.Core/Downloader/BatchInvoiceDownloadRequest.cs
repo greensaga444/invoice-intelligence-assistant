@@ -10,4 +10,6 @@ public sealed record BatchInvoiceDownloadRequest(
     string SessionToken,
     string? OfficialApiAppId = null,
     string? OfficialApiAccount = null,
-    string? OfficialApiPassword = null);
+    string? OfficialApiPassword = null,
+    string InvoiceFileSuffix = "invoice",
+    string AllowanceFileSuffix = "allowance");

@@ -6,6 +6,8 @@ public sealed record DownloaderIniSettings(
     string FolderBPath,
     string CustomerListFilePath,
     string FileNamingRule,
+    string InvoiceFileSuffix,
+    string AllowanceFileSuffix,
     string ProcessorFileNamingRule,
     string ProcessorKnowledgeRepositoryFile,
     string MofAccount,

@@ -32,6 +32,10 @@ public partial class App : Application
                 folderBPath,
                 folderCPath,
                 config.OutputNamingRule,
+                config.InvoiceOutputLabel,
+                config.AllowanceOutputLabel,
+                config.InvoiceFileSuffix,
+                config.AllowanceFileSuffix,
                 config.LowConfidenceThreshold,
                 knowledgeRepositoryPath);
 
@@ -66,11 +70,15 @@ public partial class App : Application
         string folderBPath,
         string folderCPath,
         string outputNamingRule,
+        string invoiceOutputLabel,
+        string allowanceOutputLabel,
+        string invoiceFileSuffix,
+        string allowanceFileSuffix,
         decimal lowConfidenceThreshold,
         string knowledgeRepositoryPath)
     {
         var reader = new FolderAInvoiceRecordReader();
-        var records = reader.ReadFromFolder(folderAPath);
+        var records = reader.ReadFromFolder(folderAPath, invoiceFileSuffix, allowanceFileSuffix);
         var knowledgeRepository = new JsonKnowledgeCaseRepository(knowledgeRepositoryPath);
         var feedbackService = new ManualKnowledgeFeedbackService(knowledgeRepository);
 
@@ -95,10 +103,28 @@ public partial class App : Application
             new LocalHeuristicLlmAnalyzer());
 
         var pipelineResult = pipeline.Process(records);
-        var (readyForFolderB, needManualReview) = SplitResultsByReviewThreshold(pipelineResult.Items, lowConfidenceThreshold);
+        var (readyForFolderB, needManualReview) = SplitResultsByReviewThreshold(
+            pipelineResult.Items,
+            lowConfidenceThreshold,
+            invoiceFileSuffix,
+            allowanceFileSuffix);
         var exporter = new FolderBEnhancedInvoiceExporter();
-        var folderBExportResult = exporter.Export(readyForFolderB, folderBPath, outputNamingRule);
-        var folderCExportResult = exporter.Export(needManualReview, folderCPath, outputNamingRule);
+        var folderBExportResult = exporter.Export(
+            readyForFolderB,
+            folderBPath,
+            outputNamingRule,
+            invoiceOutputLabel: invoiceOutputLabel,
+            allowanceOutputLabel: allowanceOutputLabel,
+            invoiceFileSuffix: invoiceFileSuffix,
+            allowanceFileSuffix: allowanceFileSuffix);
+        var folderCExportResult = exporter.Export(
+            needManualReview,
+            folderCPath,
+            outputNamingRule,
+            invoiceOutputLabel: invoiceOutputLabel,
+            allowanceOutputLabel: allowanceOutputLabel,
+            invoiceFileSuffix: invoiceFileSuffix,
+            allowanceFileSuffix: allowanceFileSuffix);
 
         var previewLines = pipelineResult.Items
             .Take(3)
@@ -121,7 +147,7 @@ public partial class App : Application
         var exportSummary =
             $"資料夾 B 匯出完成：檔案 {folderBExportResult.ExportedFileCount}，筆數 {folderBExportResult.ExportedRecordCount}。\n" +
             $"資料夾 C（人工覆核）匯出完成：檔案 {folderCExportResult.ExportedFileCount}，筆數 {folderCExportResult.ExportedRecordCount}。\n" +
-            $"覆核規則：同一公司來源群組（同檔名基底，-invoice/-allowance 視為同組）只要有任一筆信心度 < {lowConfidenceThreshold:0.00}，該群組檔案即匯出至資料夾 C。";
+            $"覆核規則：同一公司來源群組（同檔名基底，-{invoiceFileSuffix}/-{allowanceFileSuffix}/-allwance 視為同組）只要有任一筆信心度 < {lowConfidenceThreshold:0.00}，該群組檔案即匯出至資料夾 C。";
 
         if (folderBFilesPreview.Length > 0)
         {
@@ -149,13 +175,20 @@ public partial class App : Application
     private static (IReadOnlyList<InvoiceDecisionResult> ReadyForFolderB, IReadOnlyList<InvoiceDecisionResult> NeedManualReview)
         SplitResultsByReviewThreshold(
             IReadOnlyCollection<InvoiceDecisionResult> decisionResults,
-            decimal lowConfidenceThreshold)
+            decimal lowConfidenceThreshold,
+            string invoiceFileSuffix,
+            string allowanceFileSuffix)
     {
         var readyForFolderB = new List<InvoiceDecisionResult>(decisionResults.Count);
         var needManualReview = new List<InvoiceDecisionResult>();
 
         var groupedByReviewGroup = decisionResults
-            .GroupBy(item => BuildReviewGroupKey(item.Record.SourceFileName), StringComparer.OrdinalIgnoreCase);
+            .GroupBy(
+                item => FolderAFileCategoryHelper.BuildGroupKey(
+                    item.Record.SourceFileName,
+                    invoiceFileSuffix,
+                    allowanceFileSuffix),
+                StringComparer.OrdinalIgnoreCase);
 
         foreach (var group in groupedByReviewGroup)
         {
@@ -169,32 +202,6 @@ public partial class App : Application
         }
 
         return (readyForFolderB, needManualReview);
-    }
-
-    private static string BuildReviewGroupKey(string sourceFileName)
-    {
-        if (string.IsNullOrWhiteSpace(sourceFileName))
-        {
-            return string.Empty;
-        }
-
-        var normalizedFileName = Path.GetFileName(sourceFileName);
-        var baseName = Path.GetFileNameWithoutExtension(normalizedFileName);
-
-        foreach (var suffix in new[] { "-invoice", "-allowance", "-allwance" })
-        {
-            if (!baseName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            var trimmedBaseName = baseName[..^suffix.Length];
-            return string.IsNullOrWhiteSpace(trimmedBaseName)
-                ? normalizedFileName
-                : trimmedBaseName;
-        }
-
-        return baseName;
     }
 
     private static string ResolveConfigPath(string fileName)

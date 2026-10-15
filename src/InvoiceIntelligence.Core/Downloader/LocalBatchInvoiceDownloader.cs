@@ -59,16 +59,18 @@ public sealed class LocalBatchInvoiceDownloader : IBatchInvoiceDownloader
                     dateTo: customer.DateTo,
                     timestamp: batchTimestamp,
                     extension: ".xlsx");
-                var outputPath = OutputFileNameHelper.EnsureUniquePath(Path.Combine(request.FolderAPath, fileName));
+                var invoiceOutputPath = BuildOutputPath(request.FolderAPath, fileName, request.InvoiceFileSuffix);
+                var allowanceOutputPath = BuildOutputPath(request.FolderAPath, fileName, request.AllowanceFileSuffix);
 
-                WriteInvoiceWorkbook(outputPath, customer);
+                WriteInvoiceWorkbook(invoiceOutputPath, customer);
+                WriteInvoiceWorkbook(allowanceOutputPath, customer);
 
                 itemResults.Add(new BatchInvoiceDownloadItemResult(
                     Customer: customer,
                     IsSuccess: true,
                     Message: "下載成功。",
-                    OutputFilePath: outputPath,
-                    OutputFilePaths: [outputPath]));
+                    OutputFilePath: invoiceOutputPath,
+                    OutputFilePaths: [invoiceOutputPath, allowanceOutputPath]));
             }
             catch (Exception ex)
             {
@@ -85,6 +87,18 @@ public sealed class LocalBatchInvoiceDownloader : IBatchInvoiceDownloader
         WriteLogFile(logPath, itemResults, batchTimestamp);
 
         return new BatchInvoiceDownloadResult(itemResults, logPath);
+    }
+
+    private static string BuildOutputPath(string folderPath, string baseFileName, string fileSuffix)
+    {
+        var normalizedSuffix = fileSuffix.Trim().TrimStart('-');
+        var extension = Path.GetExtension(baseFileName);
+        var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(baseFileName);
+        var suffixedName = string.IsNullOrWhiteSpace(normalizedSuffix)
+            ? baseFileName
+            : $"{fileNameWithoutExtension}-{normalizedSuffix}{extension}";
+
+        return OutputFileNameHelper.EnsureUniquePath(Path.Combine(folderPath, suffixedName));
     }
 
     private static void WriteInvoiceWorkbook(string outputPath, CustomerRecord customer)

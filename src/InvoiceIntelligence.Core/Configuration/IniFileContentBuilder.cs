@@ -11,6 +11,8 @@ public static class IniFileContentBuilder
         string folderBPath,
         string customerListFilePath,
         string fileNamingRule,
+        string invoiceFileSuffix,
+        string allowanceFileSuffix,
         string mofAccount,
         string invoiceDownloadMode,
         string officialApiBaseUrl,
@@ -35,6 +37,8 @@ public static class IniFileContentBuilder
         builder.Append(lineBreak);
         builder.Append("[output]").Append(lineBreak);
         builder.Append("fileNamingRule = ").Append(fileNamingRule).Append(lineBreak);
+        builder.Append("invoiceFileSuffix = ").Append(invoiceFileSuffix).Append(lineBreak);
+        builder.Append("allowanceFileSuffix = ").Append(allowanceFileSuffix).Append(lineBreak);
         builder.Append(lineBreak);
         builder.Append("[mof]").Append(lineBreak);
         builder.Append("account = ").Append(mofAccount).Append(lineBreak);
@@ -53,11 +57,15 @@ public static class IniFileContentBuilder
         string folderBPath,
         string folderCPath,
         string fileNamingRule,
+        string invoiceFileSuffix,
+        string allowanceFileSuffix,
         decimal lowConfidenceThreshold,
         string knowledgeRepositoryFile,
         string mofAccount,
         string officialApiAppId,
-        string officialApiAppKey)
+        string officialApiAppKey,
+        string invoiceOutputLabel = "SalesInvoiceDetail-T3",
+        string allowanceOutputLabel = "PurchaseVoucherDetail-T4")
     {
         var resolvedOfficialApiAppId = ResolveOfficialApiAppId(officialApiAppId, officialApiAppKey);
         var resolvedOfficialApiAppKey = ResolveOfficialApiAppKey(officialApiAppId, officialApiAppKey);
@@ -74,6 +82,10 @@ public static class IniFileContentBuilder
         builder.Append(lineBreak);
         builder.Append("[output]").Append(lineBreak);
         builder.Append("fileNamingRule = ").Append(fileNamingRule).Append(lineBreak);
+        builder.Append("invoiceOutputLabel = ").Append(invoiceOutputLabel).Append(lineBreak);
+        builder.Append("allowanceOutputLabel = ").Append(allowanceOutputLabel).Append(lineBreak);
+        builder.Append("invoiceFileSuffix = ").Append(invoiceFileSuffix).Append(lineBreak);
+        builder.Append("allowanceFileSuffix = ").Append(allowanceFileSuffix).Append(lineBreak);
         builder.Append(lineBreak);
         builder.Append("[review]").Append(lineBreak);
         builder.Append("confidenceThreshold = ").Append(lowConfidenceThreshold.ToString("0.00", CultureInfo.InvariantCulture)).Append(lineBreak);

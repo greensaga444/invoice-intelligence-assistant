@@ -21,6 +21,10 @@ public partial class LauncherSettingsWindow : Window
         FolderCPathTextBox.Text = settings.FolderCPath;
         CustomerListFilePathTextBox.Text = settings.CustomerListFilePath;
         FileNamingRuleTextBox.Text = settings.FileNamingRule;
+        InvoiceFileSuffixTextBox.Text = settings.InvoiceFileSuffix;
+        AllowanceFileSuffixTextBox.Text = settings.AllowanceFileSuffix;
+        InvoiceOutputLabelTextBox.Text = settings.InvoiceOutputLabel;
+        AllowanceOutputLabelTextBox.Text = settings.AllowanceOutputLabel;
         ProcessorFileNamingRuleTextBox.Text = settings.ProcessorFileNamingRule;
         ProcessorKnowledgeRepositoryFileTextBox.Text = settings.ProcessorKnowledgeRepositoryFile;
         LowConfidenceThresholdTextBox.Text = settings.LowConfidenceThreshold.ToString("0.00", CultureInfo.InvariantCulture);
@@ -66,6 +70,10 @@ public partial class LauncherSettingsWindow : Window
         var folderCPath = FolderCPathTextBox.Text.Trim();
         var customerListFilePath = CustomerListFilePathTextBox.Text.Trim();
         var fileNamingRule = FileNamingRuleTextBox.Text.Trim();
+        var invoiceFileSuffix = InvoiceFileSuffixTextBox.Text.Trim();
+        var allowanceFileSuffix = AllowanceFileSuffixTextBox.Text.Trim();
+        var invoiceOutputLabel = InvoiceOutputLabelTextBox.Text.Trim();
+        var allowanceOutputLabel = AllowanceOutputLabelTextBox.Text.Trim();
         var processorFileNamingRule = ProcessorFileNamingRuleTextBox.Text.Trim();
         var processorKnowledgeRepositoryFile = ProcessorKnowledgeRepositoryFileTextBox.Text.Trim();
         var lowConfidenceThresholdText = LowConfidenceThresholdTextBox.Text.Trim();
@@ -82,6 +90,10 @@ public partial class LauncherSettingsWindow : Window
             || string.IsNullOrWhiteSpace(folderCPath)
             || string.IsNullOrWhiteSpace(customerListFilePath)
             || string.IsNullOrWhiteSpace(fileNamingRule)
+            || string.IsNullOrWhiteSpace(invoiceFileSuffix)
+            || string.IsNullOrWhiteSpace(allowanceFileSuffix)
+            || string.IsNullOrWhiteSpace(invoiceOutputLabel)
+            || string.IsNullOrWhiteSpace(allowanceOutputLabel)
             || string.IsNullOrWhiteSpace(processorFileNamingRule)
             || string.IsNullOrWhiteSpace(processorKnowledgeRepositoryFile)
             || string.IsNullOrWhiteSpace(mofAccount)
@@ -114,21 +126,25 @@ public partial class LauncherSettingsWindow : Window
         }
 
         SavedSettings = new LauncherIniSettings(
-            moduleName,
-            folderAPath,
-            folderBPath,
-            folderCPath,
-            customerListFilePath,
-            fileNamingRule,
-            processorFileNamingRule,
-            processorKnowledgeRepositoryFile,
-            lowConfidenceThreshold,
-            mofAccount,
-            invoiceDownloadMode,
-            officialApiBaseUrl,
-            officialApiAppId,
-            officialApiAppKey,
-            officialApiPassword);
+            ModuleName: moduleName,
+            FolderAPath: folderAPath,
+            FolderBPath: folderBPath,
+            FolderCPath: folderCPath,
+            CustomerListFilePath: customerListFilePath,
+            FileNamingRule: fileNamingRule,
+            InvoiceFileSuffix: invoiceFileSuffix,
+            AllowanceFileSuffix: allowanceFileSuffix,
+            InvoiceOutputLabel: invoiceOutputLabel,
+            AllowanceOutputLabel: allowanceOutputLabel,
+            ProcessorFileNamingRule: processorFileNamingRule,
+            ProcessorKnowledgeRepositoryFile: processorKnowledgeRepositoryFile,
+            LowConfidenceThreshold: lowConfidenceThreshold,
+            MofAccount: mofAccount,
+            InvoiceDownloadMode: invoiceDownloadMode,
+            OfficialApiBaseUrl: officialApiBaseUrl,
+            OfficialApiAppId: officialApiAppId,
+            OfficialApiAppKey: officialApiAppKey,
+            OfficialApiPassword: officialApiPassword);
 
         DialogResult = true;
         Close();

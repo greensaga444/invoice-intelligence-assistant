@@ -14,6 +14,10 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
     private const string DefaultCustomerListFilePath = "config\\company-list.xlsx";
     private const string DefaultFolderCPath = "data\\folder-c-review";
     private const decimal DefaultLowConfidenceThreshold = 0.80m;
+    private const string DefaultInvoiceOutputLabel = "SalesInvoiceDetail-T3";
+    private const string DefaultAllowanceOutputLabel = "PurchaseVoucherDetail-T4";
+    private const string DefaultInvoiceFileSuffix = "invoice";
+    private const string DefaultAllowanceFileSuffix = "allowance";
     private const string LocalDownloadMode = "local";
     private const string OfficialDownloadMode = "official";
 
@@ -37,6 +41,18 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
         var folderCPath = TrimOptional(iniData.GetOptional("paths", "folderC"))
             ?? DefaultFolderCPath;
         var outputNamingRule = iniData.GetRequired("output", "fileNamingRule");
+        var invoiceOutputLabel = TrimOptional(iniData.GetOptional("output", "invoiceOutputLabel"))
+            ?? DefaultInvoiceOutputLabel;
+        var allowanceOutputLabel = TrimOptional(iniData.GetOptional("output", "allowanceOutputLabel"))
+            ?? DefaultAllowanceOutputLabel;
+        var invoiceFileSuffix = ResolveFileSuffix(
+            iniData.GetOptional("output", "invoiceFileSuffix"),
+            DefaultInvoiceFileSuffix,
+            "output.invoiceFileSuffix");
+        var allowanceFileSuffix = ResolveFileSuffix(
+            iniData.GetOptional("output", "allowanceFileSuffix"),
+            DefaultAllowanceFileSuffix,
+            "output.allowanceFileSuffix");
         var mofAccount = iniData.GetRequired("mof", "account");
         var officialApiAppKey = iniData.GetRequired("mof", "appKey").Trim();
         var officialApiAppId = TrimOptional(iniData.GetOptional("mof", "appId")) ?? officialApiAppKey;
@@ -65,9 +81,45 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
             officialApiAppId,
             officialApiAppKey,
             officialApiPasswordEncrypted,
-                customerListFilePath,
-                folderCPath,
-                lowConfidenceThreshold);
+            customerListFilePath,
+            folderCPath,
+            lowConfidenceThreshold,
+            invoiceOutputLabel,
+            allowanceOutputLabel,
+            invoiceFileSuffix,
+            allowanceFileSuffix);
+    }
+
+    private static string ResolveFileSuffix(string? configuredValue, string fallback, string keyName)
+    {
+        var normalized = TrimOptional(configuredValue);
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return fallback;
+        }
+
+        var suffix = normalized;
+        if (suffix.StartsWith('-'))
+        {
+            suffix = suffix[1..];
+        }
+
+        if (string.IsNullOrWhiteSpace(suffix))
+        {
+            throw new InvalidDataException($"{keyName} 不可為空白。");
+        }
+
+        foreach (var character in suffix)
+        {
+            if (char.IsLetterOrDigit(character) || character == '-' || character == '_')
+            {
+                continue;
+            }
+
+            throw new InvalidDataException($"{keyName} 僅允許英數、'-'、'_' 字元。");
+        }
+
+        return suffix;
     }
 
     private static string NormalizeInvoiceDownloadMode(string? configuredMode)

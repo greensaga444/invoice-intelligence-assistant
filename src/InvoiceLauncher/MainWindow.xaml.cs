@@ -295,6 +295,10 @@ public partial class MainWindow : Window
             FolderCPath: ResolveConfiguredPath(processorConfiguration.FolderCPath),
             CustomerListFilePath: ResolveConfiguredPath(downloaderConfiguration.CustomerListFilePath),
             FileNamingRule: downloaderConfiguration.OutputNamingRule,
+            InvoiceFileSuffix: downloaderConfiguration.InvoiceFileSuffix,
+            AllowanceFileSuffix: downloaderConfiguration.AllowanceFileSuffix,
+            InvoiceOutputLabel: processorConfiguration.InvoiceOutputLabel,
+            AllowanceOutputLabel: processorConfiguration.AllowanceOutputLabel,
             ProcessorFileNamingRule: processorConfiguration.OutputNamingRule,
             ProcessorKnowledgeRepositoryFile: ResolveConfiguredPath(processorConfiguration.KnowledgeRepositoryPath),
             LowConfidenceThreshold: processorConfiguration.LowConfidenceThreshold,
@@ -338,7 +342,9 @@ public partial class MainWindow : Window
             OfficialApiBaseUrl: "https://service-mc.einvoice.nat.gov.tw/ptl/portal/api",
             OfficialApiAppId: "replace-with-official-app-id",
             OfficialApiAppKey: "replace-with-official-app-key",
-            CustomerListFilePath: "config\\company-list.xlsx");
+            CustomerListFilePath: "config\\company-list.xlsx",
+            InvoiceFileSuffix: "invoice",
+            AllowanceFileSuffix: "allowance");
     }
 
     private ModuleConfiguration CreateDefaultProcessorConfig()
@@ -354,7 +360,9 @@ public partial class MainWindow : Window
             KnowledgeRepositoryPath: "data\\knowledge\\knowledge-cases.json",
             LowConfidenceThreshold: 0.80m,
             OfficialApiAppId: "replace-with-official-app-id",
-            OfficialApiAppKey: "replace-with-official-app-key");
+            OfficialApiAppKey: "replace-with-official-app-key",
+            InvoiceFileSuffix: "invoice",
+            AllowanceFileSuffix: "allowance");
     }
 
     private string ResolveConfiguredPath(string configuredPath)

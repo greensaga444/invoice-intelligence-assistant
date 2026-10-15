@@ -191,10 +191,10 @@ public class MofOfficialHttpInvoiceApiClientTests
         Assert.Equal(InvoiceDocumentType.Allowance, record.DocumentType);
     }
 
-        [Fact]
-        public async Task QueryInvoicesAsync_Raw1ItemsPresent_MapsAllowanceDetailRow()
-        {
-                var responseJson = """
+    [Fact]
+    public async Task QueryInvoicesAsync_Raw1ItemsPresent_MapsAllowanceDetailRow()
+    {
+        var responseJson = """
                         {
                             "v": "1.0",
                             "code": "200",
@@ -232,44 +232,44 @@ public class MofOfficialHttpInvoiceApiClientTests
                         }
                         """;
 
-                var handler = new RecordingHttpMessageHandler(_ =>
-                        new HttpResponseMessage(HttpStatusCode.OK)
-                        {
-                                Content = new StringContent(responseJson, Encoding.UTF8, "application/json")
-                        });
+        var handler = new RecordingHttpMessageHandler(_ =>
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(responseJson, Encoding.UTF8, "application/json")
+                });
 
-                var client = new MofOfficialHttpInvoiceApiClient(new HttpClient(handler), "https://www-vc.einvoice.nat.gov.tw");
+        var client = new MofOfficialHttpInvoiceApiClient(new HttpClient(handler), "https://www-vc.einvoice.nat.gov.tw");
 
-                var request = new OfficialInvoicePageRequest(
-                        SessionToken: "unused-in-v1.9",
-                        TaxId: "54274765",
-                        DateFrom: new DateOnly(2026, 8, 1),
-                        DateTo: new DateOnly(2026, 8, 31),
-                        Direction: InvoiceDirection.Purchase,
-                        PageNumber: 1,
-                        PageSize: 200,
-                        DocumentType: InvoiceDocumentType.Allowance,
-                        OfficialApiAppId: "app-id-001",
-                        OfficialApiAccount: "merchant-account",
-                        OfficialApiPassword: "merchant-password");
+        var request = new OfficialInvoicePageRequest(
+                SessionToken: "unused-in-v1.9",
+                TaxId: "54274765",
+                DateFrom: new DateOnly(2026, 8, 1),
+                DateTo: new DateOnly(2026, 8, 31),
+                Direction: InvoiceDirection.Purchase,
+                PageNumber: 1,
+                PageSize: 200,
+                DocumentType: InvoiceDocumentType.Allowance,
+                OfficialApiAppId: "app-id-001",
+                OfficialApiAccount: "merchant-account",
+                OfficialApiPassword: "merchant-password");
 
-                var result = await client.QueryInvoicesAsync(request);
+        var result = await client.QueryInvoicesAsync(request);
 
-                Assert.Single(result.Items);
+        Assert.Single(result.Items);
 
-                var record = result.Items[0];
-                Assert.Equal("DN24749905", record.InvoiceNumber);
-                Assert.Equal(new DateOnly(2026, 8, 6), record.InvoiceDate);
-                Assert.Equal("83513625", record.SellerTaxId);
-                Assert.Equal("54274765", record.BuyerTaxId);
-                Assert.Equal(357m, record.NetAmount);
-                Assert.Equal(18m, record.TaxAmount);
-                Assert.Equal(375m, record.TotalAmount);
-                Assert.Equal(InvoiceDocumentType.Allowance, record.DocumentType);
-                Assert.NotNull(record.Raw1Items);
-                Assert.Single(record.Raw1Items!);
-                Assert.Equal("2026080718487658", record.Raw1Items![0]["allowanceNo"]);
-        }
+        var record = result.Items[0];
+        Assert.Equal("DN24749905", record.InvoiceNumber);
+        Assert.Equal(new DateOnly(2026, 8, 6), record.InvoiceDate);
+        Assert.Equal("83513625", record.SellerTaxId);
+        Assert.Equal("54274765", record.BuyerTaxId);
+        Assert.Equal(357m, record.NetAmount);
+        Assert.Equal(18m, record.TaxAmount);
+        Assert.Equal(375m, record.TotalAmount);
+        Assert.Equal(InvoiceDocumentType.Allowance, record.DocumentType);
+        Assert.NotNull(record.Raw1Items);
+        Assert.Single(record.Raw1Items!);
+        Assert.Equal("2026080718487658", record.Raw1Items![0]["allowanceNo"]);
+    }
 
     private sealed class RecordingHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFactory)
         : HttpMessageHandler

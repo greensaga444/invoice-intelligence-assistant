@@ -40,11 +40,15 @@ internal static class ProcessorIniFileWriter
             folderBPath: folderBPath,
             folderCPath: existingConfig.FolderCPath,
             fileNamingRule: processorFileNamingRule,
+            invoiceFileSuffix: existingConfig.InvoiceFileSuffix,
+            allowanceFileSuffix: existingConfig.AllowanceFileSuffix,
             lowConfidenceThreshold: existingConfig.LowConfidenceThreshold,
             knowledgeRepositoryFile: processorKnowledgeRepositoryFile,
             mofAccount: processorMofAccount,
             officialApiAppId: officialApiAppId,
-            officialApiAppKey: officialApiAppKey);
+            officialApiAppKey: officialApiAppKey,
+            invoiceOutputLabel: existingConfig.InvoiceOutputLabel,
+            allowanceOutputLabel: existingConfig.AllowanceOutputLabel);
 
         File.WriteAllText(iniPath, content, System.Text.Encoding.UTF8);
     }

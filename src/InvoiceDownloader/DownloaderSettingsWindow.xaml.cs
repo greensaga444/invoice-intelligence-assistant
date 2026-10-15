@@ -6,6 +6,8 @@ namespace InvoiceDownloader;
 public partial class DownloaderSettingsWindow : Window
 {
     private readonly string _customerListFilePath;
+    private readonly string _invoiceFileSuffix;
+    private readonly string _allowanceFileSuffix;
 
     public DownloaderSettingsWindow(DownloaderIniSettings settings)
     {
@@ -17,6 +19,8 @@ public partial class DownloaderSettingsWindow : Window
         FolderAPathTextBox.Text = settings.FolderAPath;
         FolderBPathTextBox.Text = settings.FolderBPath;
         _customerListFilePath = settings.CustomerListFilePath;
+        _invoiceFileSuffix = settings.InvoiceFileSuffix;
+        _allowanceFileSuffix = settings.AllowanceFileSuffix;
         FileNamingRuleTextBox.Text = settings.FileNamingRule;
         ProcessorFileNamingRuleTextBox.Text = settings.ProcessorFileNamingRule;
         ProcessorKnowledgeRepositoryFileTextBox.Text = settings.ProcessorKnowledgeRepositoryFile;
@@ -94,6 +98,8 @@ public partial class DownloaderSettingsWindow : Window
             folderBPath,
             _customerListFilePath,
             fileNamingRule,
+            _invoiceFileSuffix,
+            _allowanceFileSuffix,
             processorFileNamingRule,
             processorKnowledgeRepositoryFile,
             mofAccount,

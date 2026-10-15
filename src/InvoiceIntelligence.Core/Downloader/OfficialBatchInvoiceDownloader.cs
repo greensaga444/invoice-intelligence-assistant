@@ -106,14 +106,14 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
 
             if (_includeSalesInvoices || _includePurchaseInvoices)
             {
-                var invoiceOutputPath = BuildOutputPath(batchRequest, customer, batchTimestamp, "invoice");
+                var invoiceOutputPath = BuildOutputPath(batchRequest, customer, batchTimestamp, batchRequest.InvoiceFileSuffix);
                 await _exporter.ExportAsync(invoices, invoiceOutputPath, cancellationToken);
                 outputPaths.Add(invoiceOutputPath);
             }
 
             if (_includeSalesAllowances || _includePurchaseAllowances)
             {
-                var allowanceOutputPath = BuildOutputPath(batchRequest, customer, batchTimestamp, "allowance");
+                var allowanceOutputPath = BuildOutputPath(batchRequest, customer, batchTimestamp, batchRequest.AllowanceFileSuffix);
                 await _exporter.ExportAsync(allowances, allowanceOutputPath, cancellationToken);
                 outputPaths.Add(allowanceOutputPath);
             }
@@ -154,7 +154,7 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
         BatchInvoiceDownloadRequest batchRequest,
         CustomerRecord customer,
         DateTimeOffset batchTimestamp,
-        string fileCategory)
+        string fileSuffix)
     {
         var fileName = OutputFileNameHelper.BuildFileName(
             namingRule: batchRequest.OutputNamingRule,
@@ -165,21 +165,27 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
             timestamp: batchTimestamp,
             extension: ".xlsx");
 
-        fileName = AppendFileCategoryBeforeExtension(fileName, fileCategory);
+        fileName = AppendFileCategoryBeforeExtension(fileName, fileSuffix);
 
         return OutputFileNameHelper.EnsureUniquePath(Path.Combine(batchRequest.FolderAPath, fileName));
     }
 
-    private static string AppendFileCategoryBeforeExtension(string fileName, string fileCategory)
+    private static string AppendFileCategoryBeforeExtension(string fileName, string fileSuffix)
     {
-        if (string.IsNullOrWhiteSpace(fileCategory))
+        if (string.IsNullOrWhiteSpace(fileSuffix))
+        {
+            return fileName;
+        }
+
+        var normalizedSuffix = fileSuffix.Trim().TrimStart('-');
+        if (normalizedSuffix.Length == 0)
         {
             return fileName;
         }
 
         var extension = Path.GetExtension(fileName);
         var nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
-        return $"{nameWithoutExtension}-{fileCategory}{extension}";
+        return $"{nameWithoutExtension}-{normalizedSuffix}{extension}";
     }
 
     private static BatchInvoiceDownloadItemResult CreateSuccessResult(

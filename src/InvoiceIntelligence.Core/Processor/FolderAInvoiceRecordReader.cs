@@ -34,7 +34,10 @@ public sealed class FolderAInvoiceRecordReader
 
     private const string OfficialFallbackItemName = "官方下載資料";
 
-    public IReadOnlyList<InvoiceAnalysisRecord> ReadFromFolder(string folderAPath)
+    public IReadOnlyList<InvoiceAnalysisRecord> ReadFromFolder(
+        string folderAPath,
+        string invoiceFileSuffix = "invoice",
+        string allowanceFileSuffix = "allowance")
     {
         if (string.IsNullOrWhiteSpace(folderAPath))
         {
@@ -46,10 +49,19 @@ public sealed class FolderAInvoiceRecordReader
             return [];
         }
 
-        var invoiceFiles = Directory
+        var candidateFiles = Directory
             .EnumerateFiles(folderAPath, "*.xlsx", SearchOption.TopDirectoryOnly)
             .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
             .ToArray();
+
+        var invoiceFiles = candidateFiles
+            .Where(path => FolderAFileCategoryHelper.IsPreferredSourceFile(path, invoiceFileSuffix, allowanceFileSuffix))
+            .ToArray();
+
+        if (invoiceFiles.Length == 0)
+        {
+            invoiceFiles = candidateFiles;
+        }
 
         var allRecords = new List<InvoiceAnalysisRecord>();
 

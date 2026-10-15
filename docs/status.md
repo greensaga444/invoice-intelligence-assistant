@@ -13,9 +13,9 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: TDD test-first checklist refinement
+Work Item Name: Processor output format and settings alignment
 
-Description: Refresh the TDD test-first checklist with project-specific traceability and verification commands so future work items follow a consistent Red-Green-Refactor flow.
+Description: Align downloader/processor suffix and output-label behavior so Folder A reads/writes invoice+allowance pairs and settings UI can edit all four related keys.
 
 ---
 
@@ -250,10 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-Refined the TDD checklist with project scope guardrails and deterministic local verification commands.
-Added Red/Green evidence expectations for per-slice traceability.
-Executed verification gates (build/test/format) and resolved one formatter whitespace issue.
-Validated 57 core tests passing locally before delivery.
+Implemented suffix-based split flow end-to-end: downloader outputs invoice/allowance files and processor reads/groups by configurable suffix keys.
+Implemented processor dual-export naming with configurable output labels and preserved default/legacy compatibility.
+Extended unified launcher settings UI to edit invoiceFileSuffix, allowanceFileSuffix, invoiceOutputLabel, and allowanceOutputLabel.
+Validated clean/build/test/format gates locally and prepared direct-to-main delivery per policy.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 
@@ -261,7 +261,7 @@ Validated 57 core tests passing locally before delivery.
 
 ## Next Action
 
-TDD checklist refinement delivered to main by direct-push policy; no PR required because main branch is unprotected.
+Processor output format alignment delivered to main by direct-push policy; no PR required because main is unprotected.
 
 ---
 

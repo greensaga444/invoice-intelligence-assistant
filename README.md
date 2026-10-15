@@ -109,6 +109,7 @@ AI 與檢索：
 - 共用核心：src/InvoiceIntelligence.Core
 - 設定檔範本：config/downloader.ini、config/processor.ini
 - 主控台（InvoiceLauncher）提供統一設定視窗：可集中編輯根目錄 config 下的 downloader.ini 與 processor.ini。
+- 主控台設定視窗可調整輸出分流關鍵欄位：invoiceFileSuffix、allowanceFileSuffix、invoiceOutputLabel、allowanceOutputLabel。
 - 子模組（Downloader / Processor）獨立執行時不提供設定 UI。
 - Downloader 已支援客戶清單 Excel 匯入、MOF 驗證，以及批次下載原始發票 Excel 至原始發票資料夾（Folder A）並輸出下載記錄。
 - AI Processor 已支援原始發票資料夾（Folder A）原始發票讀取、分階段 AI 決策流程（Rule Engine -> Case Cache -> RAG -> LLM），並可將保留原始欄位且附加 AI 欄位的強化 Excel 匯出至 AI 分析結果資料夾（Folder B）。

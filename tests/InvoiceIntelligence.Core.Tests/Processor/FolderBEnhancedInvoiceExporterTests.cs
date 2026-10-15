@@ -7,13 +7,13 @@ namespace InvoiceIntelligence.Core.Tests.Processor;
 public class FolderBEnhancedInvoiceExporterTests
 {
     [Fact]
-    public void Export_ValidDecisionResults_WritesEnhancedWorkbookWithPreservedAndAiColumns()
+    public void Export_ValidDecisionResults_WritesTableThreeAndTableFourWorkbooks()
     {
         var folderBPath = CreateTempDirectory();
         var results = new[]
         {
             CreateResult(
-                sourceFileName: "raw-a.xlsx",
+                sourceFileName: "raw-a-invoice.xlsx",
                 invoiceNumber: "INV-001",
                 itemName: "辦公文具",
                 invoiceDate: new DateOnly(2026, 1, 15),
@@ -24,7 +24,17 @@ public class FolderBEnhancedInvoiceExporterTests
                 references:
                 [
                     new RetrievedReferenceCase("KB-001", "文具案例", "可抵稅", "辦公用品費", 0.87m)
-                ])
+                ]),
+            CreateResult(
+                sourceFileName: "raw-a-allwance.xlsx",
+                invoiceNumber: "ALW-001",
+                itemName: "折讓測試",
+                invoiceDate: new DateOnly(2026, 1, 15),
+                deductibleStatus: "不可抵稅",
+                deductionReason: "折讓示意資料。",
+                accountingCategory: "交際費",
+                confidenceScore: 0.88m,
+                references: [])
         };
 
         var exporter = new FolderBEnhancedInvoiceExporter();
@@ -37,45 +47,44 @@ public class FolderBEnhancedInvoiceExporterTests
                 "{taxId}_{companyName}_{dateFrom}_{dateTo}.xlsx",
                 new DateTimeOffset(2026, 1, 31, 8, 30, 0, TimeSpan.Zero));
 
-            Assert.Equal(1, exportResult.ExportedFileCount);
-            Assert.Equal(1, exportResult.ExportedRecordCount);
-            Assert.Single(exportResult.Files);
+            Assert.Equal(2, exportResult.ExportedFileCount);
+            Assert.Equal(2, exportResult.ExportedRecordCount);
+            Assert.Equal(2, exportResult.Files.Count);
 
-            var outputPath = exportResult.Files[0].OutputFilePath;
-            Assert.True(File.Exists(outputPath));
+            var tableThreePath = exportResult.Files
+                .Single(file => Path.GetFileName(file.OutputFilePath).Contains("SalesInvoiceDetail-T3", StringComparison.Ordinal))
+                .OutputFilePath;
+            var tableFourPath = exportResult.Files
+                .Single(file => Path.GetFileName(file.OutputFilePath).Contains("PurchaseVoucherDetail-T4", StringComparison.Ordinal))
+                .OutputFilePath;
 
-            using var workbook = new XLWorkbook(outputPath);
-            var sheet = workbook.Worksheet(1);
+            Assert.True(File.Exists(tableThreePath));
+            Assert.True(File.Exists(tableFourPath));
 
-            Assert.Equal("統編", sheet.Cell(1, 1).GetString());
-            Assert.Equal("公司名稱", sheet.Cell(1, 2).GetString());
-            Assert.Equal("發票號碼", sheet.Cell(1, 3).GetString());
-            Assert.Equal("發票日期", sheet.Cell(1, 4).GetString());
-            Assert.Equal("廠商統編", sheet.Cell(1, 5).GetString());
-            Assert.Equal("品名", sheet.Cell(1, 6).GetString());
-            Assert.Equal("未稅金額", sheet.Cell(1, 7).GetString());
-            Assert.Equal("稅額", sheet.Cell(1, 8).GetString());
-            Assert.Equal("含稅金額", sheet.Cell(1, 9).GetString());
-            Assert.Equal("AI_可抵稅", sheet.Cell(1, 10).GetString());
-            Assert.Equal("AI_判定原因", sheet.Cell(1, 11).GetString());
-            Assert.Equal("AI_建議科目", sheet.Cell(1, 12).GetString());
-            Assert.Equal("AI_信心度", sheet.Cell(1, 13).GetString());
-            Assert.Equal("AI_參考案例", sheet.Cell(1, 14).GetString());
+            using (var workbook = new XLWorkbook(tableThreePath))
+            {
+                var sheet = workbook.Worksheet(1);
 
-            Assert.Equal("12345678", sheet.Cell(2, 1).GetString());
-            Assert.Equal("Alpha Co", sheet.Cell(2, 2).GetString());
-            Assert.Equal("INV-001", sheet.Cell(2, 3).GetString());
-            Assert.Equal("2026-01-15", sheet.Cell(2, 4).GetString());
-            Assert.Equal("87654321", sheet.Cell(2, 5).GetString());
-            Assert.Equal("辦公文具", sheet.Cell(2, 6).GetString());
-            Assert.Equal(1000m, sheet.Cell(2, 7).GetValue<decimal>());
-            Assert.Equal(50m, sheet.Cell(2, 8).GetValue<decimal>());
-            Assert.Equal(1050m, sheet.Cell(2, 9).GetValue<decimal>());
-            Assert.Equal("可抵稅", sheet.Cell(2, 10).GetString());
-            Assert.Equal("符合辦公用品用途。", sheet.Cell(2, 11).GetString());
-            Assert.Equal("辦公用品費", sheet.Cell(2, 12).GetString());
-            Assert.Equal(0.91m, sheet.Cell(2, 13).GetValue<decimal>());
-            Assert.Equal("KB-001:可抵稅/辦公用品費(0.87)", sheet.Cell(2, 14).GetString());
+                Assert.Equal("銷項發票明細檔(表三)", sheet.Name);
+                Assert.Equal("送件年月 [1]", sheet.Cell(1, 1).GetString());
+                Assert.Equal("發票號碼 [5]", sheet.Cell(1, 6).GetString());
+                Assert.Equal("INV-001", sheet.Cell(2, 6).GetString());
+                Assert.Equal(1000m, sheet.Cell(2, 8).GetValue<decimal>());
+                Assert.Equal("5", sheet.Cell(2, 9).GetString());
+                Assert.Equal(50m, sheet.Cell(2, 10).GetValue<decimal>());
+            }
+
+            using (var workbook = new XLWorkbook(tableFourPath))
+            {
+                var sheet = workbook.Worksheet(1);
+
+                Assert.Equal("進項憑證明細檔(表四)", sheet.Name);
+                Assert.Equal("送件年月 [1]", sheet.Cell(1, 1).GetString());
+                Assert.Equal("發票號碼&繳納證號碼 [16]", sheet.Cell(1, 19).GetString());
+                Assert.Equal("ALW-001", sheet.Cell(2, 19).GetString());
+                Assert.Equal("N", sheet.Cell(2, 8).GetString());
+                Assert.Equal(1000m, sheet.Cell(2, 11).GetValue<decimal>());
+            }
         }
         finally
         {
@@ -96,7 +105,7 @@ public class FolderBEnhancedInvoiceExporterTests
             var exportResult = exporter.Export(
                 [
                     CreateResult(
-                        sourceFileName: "source.xlsx",
+                        sourceFileName: "source-invoice.xlsx",
                         invoiceNumber: "INV-900",
                         itemName: "雲端服務",
                         invoiceDate: new DateOnly(2026, 2, 1),
@@ -113,7 +122,7 @@ public class FolderBEnhancedInvoiceExporterTests
             Assert.Single(exportResult.Files);
 
             var outputFileName = Path.GetFileName(exportResult.Files[0].OutputFilePath);
-            Assert.Equal("12345678_Alpha Co_20260210120544.xlsx", outputFileName);
+            Assert.Equal("12345678_Alpha Co_20260210120544-SalesInvoiceDetail-T3.xlsx", outputFileName);
         }
         finally
         {
@@ -131,7 +140,7 @@ public class FolderBEnhancedInvoiceExporterTests
         var results = new[]
         {
             CreateResult(
-                sourceFileName: "raw-a.xlsx",
+                sourceFileName: "raw-a-invoice.xlsx",
                 invoiceNumber: "INV-A01",
                 itemName: "項目A",
                 invoiceDate: new DateOnly(2026, 3, 1),
@@ -141,7 +150,7 @@ public class FolderBEnhancedInvoiceExporterTests
                 confidenceScore: 0.95m,
                 references: []),
             CreateResult(
-                sourceFileName: "raw-b.xlsx",
+                sourceFileName: "raw-b-invoice.xlsx",
                 invoiceNumber: "INV-B01",
                 itemName: "項目B",
                 invoiceDate: new DateOnly(2026, 3, 1),
@@ -168,8 +177,63 @@ public class FolderBEnhancedInvoiceExporterTests
                 .ToArray();
 
             Assert.Equal(2, outputFileNames.Distinct(StringComparer.OrdinalIgnoreCase).Count());
-            Assert.Contains("12345678_20260301.xlsx", outputFileNames);
-            Assert.Contains("12345678_20260301-2.xlsx", outputFileNames);
+            Assert.Contains("12345678_20260301-SalesInvoiceDetail-T3.xlsx", outputFileNames);
+            Assert.Contains("12345678_20260301-SalesInvoiceDetail-T3-2.xlsx", outputFileNames);
+        }
+        finally
+        {
+            DeleteDirectory(folderBPath);
+        }
+    }
+
+    [Fact]
+    public void Export_CustomOutputLabels_UsesConfiguredSuffixes()
+    {
+        var folderBPath = CreateTempDirectory();
+        var timestamp = new DateTimeOffset(2026, 4, 10, 10, 30, 0, TimeSpan.Zero);
+        var exporter = new FolderBEnhancedInvoiceExporter();
+
+        var results = new[]
+        {
+            CreateResult(
+                sourceFileName: "source-invoice.xlsx",
+                invoiceNumber: "INV-CUSTOM",
+                itemName: "測試項目",
+                invoiceDate: new DateOnly(2026, 4, 1),
+                deductibleStatus: "可抵稅",
+                deductionReason: "測試",
+                accountingCategory: "辦公用品費",
+                confidenceScore: 0.90m,
+                references: []),
+            CreateResult(
+                sourceFileName: "source-allowance.xlsx",
+                invoiceNumber: "ALW-CUSTOM",
+                itemName: "折讓測試",
+                invoiceDate: new DateOnly(2026, 4, 1),
+                deductibleStatus: "不可抵稅",
+                deductionReason: "測試",
+                accountingCategory: "交際費",
+                confidenceScore: 0.90m,
+                references: [])
+        };
+
+        try
+        {
+            var exportResult = exporter.Export(
+                results,
+                folderBPath,
+                "{taxId}_{dateFrom}.xlsx",
+                timestamp,
+                invoiceOutputLabel: "InvoiceReadable",
+                allowanceOutputLabel: "AllowanceReadable");
+
+            var outputFileNames = exportResult.Files
+                .Select(file => Path.GetFileName(file.OutputFilePath))
+                .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            Assert.Contains("12345678_20260401-InvoiceReadable.xlsx", outputFileNames);
+            Assert.Contains("12345678_20260401-AllowanceReadable.xlsx", outputFileNames);
         }
         finally
         {

@@ -28,11 +28,15 @@ internal static class ProcessorIniFileWriter
             folderBPath: settings.FolderBPath,
             folderCPath: settings.FolderCPath,
             fileNamingRule: settings.ProcessorFileNamingRule,
+            invoiceFileSuffix: settings.InvoiceFileSuffix,
+            allowanceFileSuffix: settings.AllowanceFileSuffix,
             lowConfidenceThreshold: settings.LowConfidenceThreshold,
             knowledgeRepositoryFile: settings.ProcessorKnowledgeRepositoryFile,
             mofAccount: settings.MofAccount,
             officialApiAppId: settings.OfficialApiAppId,
-            officialApiAppKey: settings.OfficialApiAppKey);
+            officialApiAppKey: settings.OfficialApiAppKey,
+            invoiceOutputLabel: settings.InvoiceOutputLabel,
+            allowanceOutputLabel: settings.AllowanceOutputLabel);
 
         File.WriteAllText(iniPath, content, System.Text.Encoding.UTF8);
     }

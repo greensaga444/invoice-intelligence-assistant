@@ -41,7 +41,7 @@ public class LocalizationAndQualityGateTests
                 new DateTimeOffset(2026, 10, 12, 0, 0, 0, TimeSpan.Zero));
 
             using var workbook = new XLWorkbook(exportResult.Files[0].OutputFilePath);
-            Assert.Equal("增強發票", workbook.Worksheet(1).Name);
+            Assert.Equal("銷項發票明細檔(表三)", workbook.Worksheet(1).Name);
         }
         finally
         {

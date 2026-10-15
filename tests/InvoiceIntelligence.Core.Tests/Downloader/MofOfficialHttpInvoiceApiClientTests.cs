@@ -56,13 +56,14 @@ public class MofOfficialHttpInvoiceApiClientTests
         Assert.False(result.HasMore);
 
         var record = result.Items[0];
-        Assert.Equal("STAT-20250907", record.InvoiceNumber);
+        Assert.Equal("STAT-20250907-S-INV", record.InvoiceNumber);
         Assert.Equal(new DateOnly(2025, 9, 7), record.InvoiceDate);
         Assert.Equal("12345678", record.SellerTaxId);
         Assert.Equal(150m, record.TotalAmount);
         Assert.Equal(150m, record.NetAmount);
         Assert.Equal(0m, record.TaxAmount);
         Assert.Equal(InvoiceDirection.Sales, record.Direction);
+        Assert.Equal(InvoiceDocumentType.Invoice, record.DocumentType);
 
         Assert.NotNull(handler.LastRequest);
         Assert.Equal(HttpMethod.Post, handler.LastRequest!.Method);
@@ -137,6 +138,57 @@ public class MofOfficialHttpInvoiceApiClientTests
             PageSize: 200);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => client.QueryInvoicesAsync(request));
+    }
+
+    [Fact]
+    public async Task QueryInvoicesAsync_AllowanceFieldsPresent_MapsAllowanceAmountAndType()
+    {
+        var responseJson = """
+            {
+              "v": "1.0",
+              "code": "200",
+              "msg": "執行成功",
+              "invoiceDateS": "20250907",
+              "invoiceDateE": "20250910",
+              "details": [
+                {
+                  "invoiceDate": "2025/09/07",
+                  "b2bAllwAvgAmount": "80",
+                  "b2cAllwAvgAmount": "20"
+                }
+              ]
+            }
+            """;
+
+        var handler = new RecordingHttpMessageHandler(_ =>
+            new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(responseJson, Encoding.UTF8, "application/json")
+            });
+
+        var httpClient = new HttpClient(handler);
+        var client = new MofOfficialHttpInvoiceApiClient(httpClient, "https://www-vc.einvoice.nat.gov.tw");
+
+        var request = new OfficialInvoicePageRequest(
+            SessionToken: "unused-in-v1.9",
+            TaxId: "12345678",
+            DateFrom: new DateOnly(2025, 9, 7),
+            DateTo: new DateOnly(2025, 9, 10),
+            Direction: InvoiceDirection.Sales,
+            PageNumber: 1,
+            PageSize: 200,
+            DocumentType: InvoiceDocumentType.Allowance,
+            OfficialApiAppId: "app-id-001",
+            OfficialApiAccount: "merchant-account",
+            OfficialApiPassword: "merchant-password");
+
+        var result = await client.QueryInvoicesAsync(request);
+
+        Assert.Single(result.Items);
+        var record = result.Items[0];
+        Assert.Equal("STAT-20250907-S-ALW", record.InvoiceNumber);
+        Assert.Equal(100m, record.TotalAmount);
+        Assert.Equal(InvoiceDocumentType.Allowance, record.DocumentType);
     }
 
     private sealed class RecordingHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFactory)

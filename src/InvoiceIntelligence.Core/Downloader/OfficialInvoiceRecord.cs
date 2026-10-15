@@ -12,4 +12,5 @@ public sealed record OfficialInvoiceRecord(
     decimal TaxAmount,
     decimal TotalAmount,
     InvoiceDirection Direction,
+    InvoiceDocumentType DocumentType = InvoiceDocumentType.Invoice,
     string? Currency = null);

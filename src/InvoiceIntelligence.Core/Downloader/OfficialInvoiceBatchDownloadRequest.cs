@@ -13,4 +13,6 @@ public sealed record OfficialInvoiceBatchDownloadRequest(
     OfficialInvoiceDownloadOptions? Options = null,
     string? OfficialApiAppId = null,
     string? OfficialApiAccount = null,
-    string? OfficialApiPassword = null);
+    string? OfficialApiPassword = null,
+    bool IncludeSalesAllowances = true,
+    bool IncludePurchaseAllowances = true);

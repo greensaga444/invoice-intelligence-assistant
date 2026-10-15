@@ -5,6 +5,8 @@ namespace InvoiceIntelligence.Core.Downloader;
 /// </summary>
 public sealed class OfficialInvoiceBatchDownloader
 {
+    private sealed record QueryScope(InvoiceDirection Direction, InvoiceDocumentType DocumentType);
+
     private readonly IMofOfficialInvoiceApiClient _apiClient;
     private readonly Func<TimeSpan, CancellationToken, Task> _delayAsync;
 
@@ -31,10 +33,8 @@ public sealed class OfficialInvoiceBatchDownloader
         var totalRetryCount = 0;
         var rawInvoiceCount = 0;
 
-        // Spec reference: 電子發票營業人應用 API 規格 V1.9 (PDF fileId=5161), method 5 ODS374I.
-        // ODS374I currently behaves as a statistics query, but this loop keeps paging-compatible flow.
-        // Query sales/purchase directions separately, then merge into one final result set.
-        foreach (var direction in ResolveDirections(request))
+        // Query each enabled direction/type scope separately, then merge into one final result set.
+        foreach (var scope in ResolveQueryScopes(request))
         {
             var hasMorePages = true;
 
@@ -42,7 +42,12 @@ public sealed class OfficialInvoiceBatchDownloader
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var pageRequest = BuildPageRequest(request, direction, pageNumber, options.PageSize);
+                var pageRequest = BuildPageRequest(
+                    request,
+                    scope.Direction,
+                    scope.DocumentType,
+                    pageNumber,
+                    options.PageSize);
 
                 var (pageResult, retryCount) = await QueryPageWithRetryAsync(pageRequest, options, cancellationToken);
                 totalRetryCount += retryCount;
@@ -56,7 +61,7 @@ public sealed class OfficialInvoiceBatchDownloader
             if (hasMorePages)
             {
                 throw new InvalidOperationException(
-                    $"{direction} 查詢超過單向最大頁數 {options.MaxPagesPerDirection}，請縮小區間或調整設定。");
+                    $"{scope.Direction}/{scope.DocumentType} 查詢超過單向最大頁數 {options.MaxPagesPerDirection}，請縮小區間或調整設定。");
             }
         }
 
@@ -93,16 +98,26 @@ public sealed class OfficialInvoiceBatchDownloader
         }
     }
 
-    private static IEnumerable<InvoiceDirection> ResolveDirections(OfficialInvoiceBatchDownloadRequest request)
+    private static IEnumerable<QueryScope> ResolveQueryScopes(OfficialInvoiceBatchDownloadRequest request)
     {
         if (request.IncludeSalesInvoices)
         {
-            yield return InvoiceDirection.Sales;
+            yield return new QueryScope(InvoiceDirection.Sales, InvoiceDocumentType.Invoice);
         }
 
         if (request.IncludePurchaseInvoices)
         {
-            yield return InvoiceDirection.Purchase;
+            yield return new QueryScope(InvoiceDirection.Purchase, InvoiceDocumentType.Invoice);
+        }
+
+        if (request.IncludeSalesAllowances)
+        {
+            yield return new QueryScope(InvoiceDirection.Sales, InvoiceDocumentType.Allowance);
+        }
+
+        if (request.IncludePurchaseAllowances)
+        {
+            yield return new QueryScope(InvoiceDirection.Purchase, InvoiceDocumentType.Allowance);
         }
     }
 
@@ -123,9 +138,12 @@ public sealed class OfficialInvoiceBatchDownloader
             throw new InvalidOperationException("MOF 工作階段無效，請重新驗證後再查詢。");
         }
 
-        if (!request.IncludeSalesInvoices && !request.IncludePurchaseInvoices)
+        if (!request.IncludeSalesInvoices
+            && !request.IncludePurchaseInvoices
+            && !request.IncludeSalesAllowances
+            && !request.IncludePurchaseAllowances)
         {
-            throw new InvalidOperationException("請至少指定一種發票方向(進項或銷項)。");
+            throw new InvalidOperationException("請至少指定一種查詢類型(銷項/進項發票、銷貨/進貨折讓)。");
         }
     }
 
@@ -170,6 +188,7 @@ public sealed class OfficialInvoiceBatchDownloader
     private static OfficialInvoicePageRequest BuildPageRequest(
         OfficialInvoiceBatchDownloadRequest request,
         InvoiceDirection direction,
+        InvoiceDocumentType documentType,
         int pageNumber,
         int pageSize)
     {
@@ -181,6 +200,7 @@ public sealed class OfficialInvoiceBatchDownloader
             Direction: direction,
             PageNumber: pageNumber,
             PageSize: pageSize,
+            DocumentType: documentType,
             OfficialApiAppId: request.OfficialApiAppId,
             OfficialApiAccount: request.OfficialApiAccount,
             OfficialApiPassword: request.OfficialApiPassword);
@@ -211,6 +231,7 @@ public sealed class OfficialInvoiceBatchDownloader
         return string.Join(
             '|',
             invoice.Direction.ToString(),
+            invoice.DocumentType.ToString(),
             invoice.InvoiceNumber,
             invoice.InvoiceDate.ToString("yyyyMMdd"),
             invoice.SellerTaxId,

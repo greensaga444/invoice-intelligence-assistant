@@ -45,9 +45,9 @@ public class OfficialInvoiceCsvExporterTests
             var lines = await File.ReadAllLinesAsync(outputPath);
 
             Assert.Equal(3, lines.Length);
-            Assert.Equal("Direction,InvoiceNumber,InvoiceDate,SellerTaxId,BuyerTaxId,NetAmount,TaxAmount,TotalAmount,Currency", lines[0]);
-            Assert.Contains("Sales,AA12345678,2026-09-01,12345678,87654321,1000,50,1050,TWD", lines[1]);
-            Assert.Contains("Purchase,BB00000001,2026-09-02,22345678,97654321,2000,100,2100,TWD", lines[2]);
+            Assert.Equal("Direction,DocumentType,InvoiceNumber,InvoiceDate,SellerTaxId,BuyerTaxId,NetAmount,TaxAmount,TotalAmount,Currency", lines[0]);
+            Assert.Contains("Sales,Invoice,AA12345678,2026-09-01,12345678,87654321,1000,50,1050,TWD", lines[1]);
+            Assert.Contains("Purchase,Invoice,BB00000001,2026-09-02,22345678,97654321,2000,100,2100,TWD", lines[2]);
         }
         finally
         {

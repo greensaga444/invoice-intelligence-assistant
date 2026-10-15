@@ -41,7 +41,7 @@ public class OfficialBatchInvoiceDownloaderIntegrationTests
             var logLines = File.ReadAllLines(result.LogFilePath);
 
             Assert.True(csvLines.Length >= 2);
-            Assert.Equal("Direction,InvoiceNumber,InvoiceDate,SellerTaxId,BuyerTaxId,NetAmount,TaxAmount,TotalAmount,Currency", csvLines[0]);
+            Assert.Equal("Direction,DocumentType,InvoiceNumber,InvoiceDate,SellerTaxId,BuyerTaxId,NetAmount,TaxAmount,TotalAmount,Currency", csvLines[0]);
             Assert.Contains("發票下載批次紀錄", logLines[0]);
             Assert.Contains("成功:", logLines[3]);
         }
@@ -71,6 +71,7 @@ public class OfficialBatchInvoiceDownloaderIntegrationTests
                 TaxAmount: taxAmount,
                 TotalAmount: totalAmount,
                 Direction: request.Direction,
+                DocumentType: request.DocumentType,
                 Currency: "TWD");
 
             return Task.FromResult(new OfficialInvoicePageResult([record], false));

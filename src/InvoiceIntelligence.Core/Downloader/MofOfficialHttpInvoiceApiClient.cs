@@ -35,13 +35,6 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (request.Direction == InvoiceDirection.Purchase)
-        {
-            throw new InvalidOperationException(
-                "目前官方模式依 V1.9 規格對齊『營業人電子發票統計查詢』(ODS374I)，僅支援銷項資料。請關閉進項下載。"
-            );
-        }
-
         if (string.IsNullOrWhiteSpace(request.OfficialApiAppId)
             || string.IsNullOrWhiteSpace(request.OfficialApiAccount)
             || string.IsNullOrWhiteSpace(request.OfficialApiPassword))
@@ -119,7 +112,7 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
                     isTransient: false);
             }
 
-            var items = ParseItems(root, request.TaxId, request.Direction);
+            var items = ParseItems(root, request.TaxId, request.Direction, request.DocumentType);
 
             // Spec/PDF method 5 response does not define multi-page controls; treat result as single page.
             // ODS374I is not paged by page/pageSize; always return a single page.
@@ -138,7 +131,8 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
     private static IReadOnlyList<OfficialInvoiceRecord> ParseItems(
         JsonElement root,
         string taxId,
-        InvoiceDirection direction)
+        InvoiceDirection direction,
+        InvoiceDocumentType documentType)
     {
         var detailsElement = TryGetProperty(root, "details");
         if (detailsElement is null || detailsElement.Value.ValueKind != JsonValueKind.Array)
@@ -151,13 +145,11 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
         foreach (var item in detailsElement.Value.EnumerateArray())
         {
             var invoiceDate = ReadRequiredDate(item, "invoiceDate");
-            var b2bAmount = ReadDecimal(item, "b2bCrtAvgAmount") ?? 0m;
-            var b2cAmount = ReadDecimal(item, "b2cCrtAvgAmount") ?? 0m;
-            var totalAmount = b2bAmount + b2cAmount;
+            var totalAmount = ResolveTotalAmount(item, direction, documentType);
 
             // ODS374I returns daily statistics only, so we synthesize a stable key-like invoice number.
             records.Add(new OfficialInvoiceRecord(
-                InvoiceNumber: $"STAT-{invoiceDate:yyyyMMdd}",
+                InvoiceNumber: BuildStatisticInvoiceNumber(invoiceDate, direction, documentType),
                 InvoiceDate: invoiceDate,
                 SellerTaxId: taxId,
                 BuyerTaxId: string.Empty,
@@ -165,10 +157,99 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
                 TaxAmount: 0m,
                 TotalAmount: totalAmount,
                 Direction: direction,
+                DocumentType: documentType,
                 Currency: "TWD"));
         }
 
         return records;
+    }
+
+    private static string BuildStatisticInvoiceNumber(
+        DateOnly invoiceDate,
+        InvoiceDirection direction,
+        InvoiceDocumentType documentType)
+    {
+        var directionToken = direction == InvoiceDirection.Sales ? "S" : "P";
+        var documentTypeToken = documentType == InvoiceDocumentType.Invoice ? "INV" : "ALW";
+
+        return $"STAT-{invoiceDate:yyyyMMdd}-{directionToken}-{documentTypeToken}";
+    }
+
+    private static decimal ResolveTotalAmount(
+        JsonElement item,
+        InvoiceDirection direction,
+        InvoiceDocumentType documentType)
+    {
+        // Prefer scope-specific fields when present.
+        if (TryResolveScopeAmount(item, direction, documentType, out var scopedAmount))
+        {
+            return scopedAmount;
+        }
+
+        // Fallback to the documented ODS374I issuance fields so each selected scope still has a stable output row.
+        return ResolveFallbackInvoiceAmount(item);
+    }
+
+    private static bool TryResolveScopeAmount(
+        JsonElement item,
+        InvoiceDirection direction,
+        InvoiceDocumentType documentType,
+        out decimal amount)
+    {
+        string[] candidateFields = (direction, documentType) switch
+        {
+            (InvoiceDirection.Sales, InvoiceDocumentType.Invoice) =>
+            [
+                "b2bCrtAvgAmount", "b2cCrtAvgAmount"
+            ],
+            (InvoiceDirection.Purchase, InvoiceDocumentType.Invoice) =>
+            [
+                "b2bPurAvgAmount", "b2cPurAvgAmount",
+                "b2bBuyAvgAmount", "b2cBuyAvgAmount",
+                "b2bInAvgAmount", "b2cInAvgAmount",
+                "b2bRcvAvgAmount", "b2cRcvAvgAmount"
+            ],
+            (InvoiceDirection.Sales, InvoiceDocumentType.Allowance) =>
+            [
+                "b2bAllwAvgAmount", "b2cAllwAvgAmount",
+                "b2bAllowAvgAmount", "b2cAllowAvgAmount",
+                "b2bRtnAvgAmount", "b2cRtnAvgAmount",
+                "b2bDedAvgAmount", "b2cDedAvgAmount"
+            ],
+            (InvoiceDirection.Purchase, InvoiceDocumentType.Allowance) =>
+            [
+                "b2bPurAllwAvgAmount", "b2cPurAllwAvgAmount",
+                "b2bPurAllowAvgAmount", "b2cPurAllowAvgAmount",
+                "b2bInAllwAvgAmount", "b2cInAllwAvgAmount",
+                "b2bInAllowAvgAmount", "b2cInAllowAvgAmount",
+                "b2bPurRtnAvgAmount", "b2cPurRtnAvgAmount"
+            ],
+            _ => []
+        };
+
+        amount = 0m;
+        var hasAnyField = false;
+
+        foreach (var field in candidateFields)
+        {
+            var value = ReadDecimal(item, field);
+            if (!value.HasValue)
+            {
+                continue;
+            }
+
+            hasAnyField = true;
+            amount += value.Value;
+        }
+
+        return hasAnyField;
+    }
+
+    private static decimal ResolveFallbackInvoiceAmount(JsonElement item)
+    {
+        var b2bAmount = ReadDecimal(item, "b2bCrtAvgAmount") ?? 0m;
+        var b2cAmount = ReadDecimal(item, "b2cCrtAvgAmount") ?? 0m;
+        return b2bAmount + b2cAmount;
     }
 
     private static string? ReadString(JsonElement element, params string[] names)

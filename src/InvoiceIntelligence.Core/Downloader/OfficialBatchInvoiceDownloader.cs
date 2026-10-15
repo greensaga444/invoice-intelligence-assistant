@@ -12,19 +12,25 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
     private readonly OfficialInvoiceDownloadOptions _options;
     private readonly bool _includeSalesInvoices;
     private readonly bool _includePurchaseInvoices;
+    private readonly bool _includeSalesAllowances;
+    private readonly bool _includePurchaseAllowances;
 
     public OfficialBatchInvoiceDownloader(
         OfficialInvoiceBatchDownloader officialDownloader,
         IOfficialInvoiceExporter exporter,
         OfficialInvoiceDownloadOptions? options = null,
         bool includeSalesInvoices = true,
-        bool includePurchaseInvoices = true)
+        bool includePurchaseInvoices = true,
+        bool includeSalesAllowances = true,
+        bool includePurchaseAllowances = true)
     {
         _officialDownloader = officialDownloader ?? throw new ArgumentNullException(nameof(officialDownloader));
         _exporter = exporter ?? throw new ArgumentNullException(nameof(exporter));
         _options = options ?? OfficialInvoiceDownloadOptions.Default;
         _includeSalesInvoices = includeSalesInvoices;
         _includePurchaseInvoices = includePurchaseInvoices;
+        _includeSalesAllowances = includeSalesAllowances;
+        _includePurchaseAllowances = includePurchaseAllowances;
     }
 
     public async Task<BatchInvoiceDownloadResult> DownloadAsync(
@@ -48,9 +54,12 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
             throw new ArgumentException("資料夾 A 路徑不可為空白。", nameof(request));
         }
 
-        if (!_includeSalesInvoices && !_includePurchaseInvoices)
+        if (!_includeSalesInvoices
+            && !_includePurchaseInvoices
+            && !_includeSalesAllowances
+            && !_includePurchaseAllowances)
         {
-            throw new InvalidOperationException("官方下載模式至少需啟用進項或銷項其中一種方向。");
+            throw new InvalidOperationException("官方下載模式至少需啟用銷項/進項發票或銷貨/進貨折讓其中一種查詢類型。");
         }
 
         NamingRuleValidator.Validate(request.OutputNamingRule);
@@ -118,7 +127,9 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
             Options: _options,
             OfficialApiAppId: batchRequest.OfficialApiAppId,
             OfficialApiAccount: batchRequest.OfficialApiAccount,
-            OfficialApiPassword: batchRequest.OfficialApiPassword);
+            OfficialApiPassword: batchRequest.OfficialApiPassword,
+            IncludeSalesAllowances: _includeSalesAllowances,
+            IncludePurchaseAllowances: _includePurchaseAllowances);
     }
 
     private static string BuildOutputPath(

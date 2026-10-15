@@ -9,7 +9,9 @@ public class OfficialInvoiceBatchDownloaderTests
     {
         var client = new RecordingOfficialInvoiceApiClient(request =>
         {
-            if (request.Direction == InvoiceDirection.Sales && request.PageNumber == 1)
+            if (request.Direction == InvoiceDirection.Sales
+                && request.DocumentType == InvoiceDocumentType.Invoice
+                && request.PageNumber == 1)
             {
                 return Task.FromResult(new OfficialInvoicePageResult(
                     Items:
@@ -19,7 +21,9 @@ public class OfficialInvoiceBatchDownloaderTests
                     HasMore: true));
             }
 
-            if (request.Direction == InvoiceDirection.Sales && request.PageNumber == 2)
+            if (request.Direction == InvoiceDirection.Sales
+                && request.DocumentType == InvoiceDocumentType.Invoice
+                && request.PageNumber == 2)
             {
                 return Task.FromResult(new OfficialInvoicePageResult(
                     Items:
@@ -29,7 +33,9 @@ public class OfficialInvoiceBatchDownloaderTests
                     HasMore: false));
             }
 
-            if (request.Direction == InvoiceDirection.Purchase && request.PageNumber == 1)
+            if (request.Direction == InvoiceDirection.Purchase
+                && request.DocumentType == InvoiceDocumentType.Invoice
+                && request.PageNumber == 1)
             {
                 return Task.FromResult(new OfficialInvoicePageResult(
                     Items:
@@ -50,7 +56,9 @@ public class OfficialInvoiceBatchDownloaderTests
             SessionToken: "session-token",
             IncludeSalesInvoices: true,
             IncludePurchaseInvoices: true,
-            Options: new OfficialInvoiceDownloadOptions(200, 3, TimeSpan.FromMilliseconds(10), 100));
+            Options: new OfficialInvoiceDownloadOptions(200, 3, TimeSpan.FromMilliseconds(10), 100),
+            IncludeSalesAllowances: false,
+            IncludePurchaseAllowances: false);
 
         var result = await downloader.DownloadAsync(request);
 
@@ -63,6 +71,54 @@ public class OfficialInvoiceBatchDownloaderTests
     }
 
     [Fact]
+    public async Task DownloadAsync_AllFourScopesEnabled_QueriesEachDirectionAndDocumentType()
+    {
+        var client = new RecordingOfficialInvoiceApiClient(request =>
+        {
+            var invoiceNumber = request.Direction == InvoiceDirection.Sales
+                ? request.DocumentType == InvoiceDocumentType.Invoice ? "S-INV" : "S-ALW"
+                : request.DocumentType == InvoiceDocumentType.Invoice ? "P-INV" : "P-ALW";
+
+            return Task.FromResult(new OfficialInvoicePageResult(
+                Items:
+                [
+                    CreateInvoice(
+                        invoiceNumber,
+                        new DateOnly(2026, 8, 1),
+                        request.Direction,
+                        1000m,
+                        request.DocumentType)
+                ],
+                HasMore: false));
+        });
+
+        var downloader = new OfficialInvoiceBatchDownloader(client, (_, _) => Task.CompletedTask);
+        var request = new OfficialInvoiceBatchDownloadRequest(
+            TaxId: "12345678",
+            DateFrom: new DateOnly(2026, 8, 1),
+            DateTo: new DateOnly(2026, 8, 31),
+            SessionToken: "session-token",
+            IncludeSalesInvoices: true,
+            IncludePurchaseInvoices: true,
+            Options: new OfficialInvoiceDownloadOptions(200, 3, TimeSpan.FromMilliseconds(10), 100),
+            IncludeSalesAllowances: true,
+            IncludePurchaseAllowances: true);
+
+        var result = await downloader.DownloadAsync(request);
+
+        Assert.Equal(4, result.TotalApiCalls);
+        Assert.Equal(4, result.Invoices.Count);
+        Assert.Contains(result.Invoices, invoice =>
+            invoice.Direction == InvoiceDirection.Sales && invoice.DocumentType == InvoiceDocumentType.Invoice);
+        Assert.Contains(result.Invoices, invoice =>
+            invoice.Direction == InvoiceDirection.Purchase && invoice.DocumentType == InvoiceDocumentType.Invoice);
+        Assert.Contains(result.Invoices, invoice =>
+            invoice.Direction == InvoiceDirection.Sales && invoice.DocumentType == InvoiceDocumentType.Allowance);
+        Assert.Contains(result.Invoices, invoice =>
+            invoice.Direction == InvoiceDirection.Purchase && invoice.DocumentType == InvoiceDocumentType.Allowance);
+    }
+
+    [Fact]
     public async Task DownloadAsync_TransientError_RetriesAndSucceeds()
     {
         var salesPage1Attempts = 0;
@@ -70,7 +126,9 @@ public class OfficialInvoiceBatchDownloaderTests
 
         var client = new RecordingOfficialInvoiceApiClient(request =>
         {
-            if (request.Direction != InvoiceDirection.Sales || request.PageNumber != 1)
+            if (request.Direction != InvoiceDirection.Sales
+                || request.DocumentType != InvoiceDocumentType.Invoice
+                || request.PageNumber != 1)
             {
                 throw new InvalidOperationException("Unexpected request.");
             }
@@ -104,7 +162,9 @@ public class OfficialInvoiceBatchDownloaderTests
             SessionToken: "session-token",
             IncludeSalesInvoices: true,
             IncludePurchaseInvoices: false,
-            Options: new OfficialInvoiceDownloadOptions(200, 3, TimeSpan.FromMilliseconds(50), 100));
+            Options: new OfficialInvoiceDownloadOptions(200, 3, TimeSpan.FromMilliseconds(50), 100),
+            IncludeSalesAllowances: false,
+            IncludePurchaseAllowances: false);
 
         var result = await downloader.DownloadAsync(request);
 
@@ -136,7 +196,9 @@ public class OfficialInvoiceBatchDownloaderTests
             SessionToken: "session-token",
             IncludeSalesInvoices: true,
             IncludePurchaseInvoices: false,
-            Options: new OfficialInvoiceDownloadOptions(200, 2, TimeSpan.FromMilliseconds(25), 100));
+            Options: new OfficialInvoiceDownloadOptions(200, 2, TimeSpan.FromMilliseconds(25), 100),
+            IncludeSalesAllowances: false,
+            IncludePurchaseAllowances: false);
 
         await Assert.ThrowsAsync<MofOfficialInvoiceApiException>(() => downloader.DownloadAsync(request));
         Assert.Single(delays);
@@ -158,7 +220,9 @@ public class OfficialInvoiceBatchDownloaderTests
             SessionToken: "session-token",
             IncludeSalesInvoices: false,
             IncludePurchaseInvoices: false,
-            Options: null);
+            Options: null,
+            IncludeSalesAllowances: false,
+            IncludePurchaseAllowances: false);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => downloader.DownloadAsync(request));
     }
@@ -167,7 +231,8 @@ public class OfficialInvoiceBatchDownloaderTests
         string invoiceNumber,
         DateOnly invoiceDate,
         InvoiceDirection direction,
-        decimal totalAmount)
+        decimal totalAmount,
+        InvoiceDocumentType documentType = InvoiceDocumentType.Invoice)
     {
         var netAmount = decimal.Round(totalAmount / 1.05m, 2, MidpointRounding.AwayFromZero);
         var taxAmount = totalAmount - netAmount;
@@ -181,6 +246,7 @@ public class OfficialInvoiceBatchDownloaderTests
             TaxAmount: taxAmount,
             TotalAmount: totalAmount,
             Direction: direction,
+                DocumentType: documentType,
             Currency: "TWD");
     }
 

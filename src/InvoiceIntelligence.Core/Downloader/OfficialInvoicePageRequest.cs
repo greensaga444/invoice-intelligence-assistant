@@ -11,6 +11,7 @@ public sealed record OfficialInvoicePageRequest(
     InvoiceDirection Direction,
     int PageNumber,
     int PageSize,
+    InvoiceDocumentType DocumentType = InvoiceDocumentType.Invoice,
     string? OfficialApiAppId = null,
     string? OfficialApiAccount = null,
     string? OfficialApiPassword = null);

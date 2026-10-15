@@ -277,7 +277,9 @@ public partial class MainWindow : Window
             officialDownloader,
             exporter,
             includeSalesInvoices: true,
-            includePurchaseInvoices: false);
+            includePurchaseInvoices: true,
+            includeSalesAllowances: true,
+            includePurchaseAllowances: true);
 
         return (batchDownloader, httpClient);
     }

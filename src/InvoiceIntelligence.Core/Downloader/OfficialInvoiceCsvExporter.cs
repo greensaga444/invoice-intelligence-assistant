@@ -35,7 +35,7 @@ public sealed class OfficialInvoiceCsvExporter : IOfficialInvoiceExporter
             useAsync: true);
         await using var writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
 
-        await writer.WriteLineAsync("Direction,InvoiceNumber,InvoiceDate,SellerTaxId,BuyerTaxId,NetAmount,TaxAmount,TotalAmount,Currency");
+        await writer.WriteLineAsync("Direction,DocumentType,InvoiceNumber,InvoiceDate,SellerTaxId,BuyerTaxId,NetAmount,TaxAmount,TotalAmount,Currency");
 
         foreach (var invoice in invoices)
         {
@@ -44,6 +44,7 @@ public sealed class OfficialInvoiceCsvExporter : IOfficialInvoiceExporter
             var line = string.Join(
                 ',',
                 EscapeCsv(invoice.Direction.ToString()),
+                EscapeCsv(invoice.DocumentType.ToString()),
                 EscapeCsv(invoice.InvoiceNumber),
                 EscapeCsv(invoice.InvoiceDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
                 EscapeCsv(invoice.SellerTaxId),

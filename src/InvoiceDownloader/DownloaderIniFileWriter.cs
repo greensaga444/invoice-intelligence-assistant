@@ -24,6 +24,7 @@ internal static class DownloaderIniFileWriter
             moduleName: settings.ModuleName,
             folderAPath: settings.FolderAPath,
             folderBPath: settings.FolderBPath,
+            customerListFilePath: settings.CustomerListFilePath,
             fileNamingRule: settings.FileNamingRule,
             mofAccount: settings.MofAccount,
             invoiceDownloadMode: settings.InvoiceDownloadMode,

@@ -43,6 +43,46 @@ public class IniModuleConfigurationLoaderTests
             Assert.Equal("sample-secret", config.OfficialApiAppId);
             Assert.Equal("sample-secret", config.OfficialApiAppKey);
             Assert.Null(config.OfficialApiPasswordEncrypted);
+            Assert.Equal("config\\company-list.xlsx", config.CustomerListFilePath);
+            Assert.Equal("data\\folder-c-review", config.FolderCPath);
+            Assert.Equal(0.80m, config.LowConfidenceThreshold);
+        }
+        finally
+        {
+            File.Delete(iniPath);
+        }
+    }
+
+    [Fact]
+    public void Load_InputCustomerListFileProvided_UsesConfiguredPath()
+    {
+        const string iniContent = """
+            [module]
+            name = Downloader
+
+            [paths]
+            folderA = C:\Data\FolderA
+            folderB = C:\Data\FolderB
+
+            [input]
+            customerListFile = data\import\customer-list.xlsx
+
+            [output]
+            fileNamingRule = {taxId}_{companyName}_{timestamp}.xlsx
+
+            [mof]
+            account = sample-account
+            appKey = sample-secret
+            """;
+
+        var iniPath = WriteTempIni(iniContent);
+        var loader = new IniModuleConfigurationLoader();
+
+        try
+        {
+            var config = loader.Load(iniPath);
+
+            Assert.Equal("data\\import\\customer-list.xlsx", config.CustomerListFilePath);
         }
         finally
         {
@@ -80,6 +120,80 @@ public class IniModuleConfigurationLoaderTests
             var config = loader.Load(iniPath);
 
             Assert.Equal("D:\\Knowledge\\cases.json", config.KnowledgeRepositoryPath);
+        }
+        finally
+        {
+            File.Delete(iniPath);
+        }
+    }
+
+    [Fact]
+    public void Load_ProcessorReviewSettingsProvided_UsesConfiguredValues()
+    {
+        const string iniContent = """
+            [module]
+            name = Processor
+
+            [paths]
+            folderA = C:\Data\FolderA
+            folderB = C:\Data\FolderB
+            folderC = C:\Data\FolderC
+
+            [output]
+            fileNamingRule = {taxId}_{companyName}_{timestamp}.xlsx
+
+            [review]
+            confidenceThreshold = 0.72
+
+            [mof]
+            account = sample-account
+            appKey = sample-secret
+            """;
+
+        var iniPath = WriteTempIni(iniContent);
+        var loader = new IniModuleConfigurationLoader();
+
+        try
+        {
+            var config = loader.Load(iniPath);
+
+            Assert.Equal("C:\\Data\\FolderC", config.FolderCPath);
+            Assert.Equal(0.72m, config.LowConfidenceThreshold);
+        }
+        finally
+        {
+            File.Delete(iniPath);
+        }
+    }
+
+    [Fact]
+    public void Load_InvalidConfidenceThreshold_ThrowsInvalidDataException()
+    {
+        const string iniContent = """
+            [module]
+            name = Processor
+
+            [paths]
+            folderA = C:\Data\FolderA
+            folderB = C:\Data\FolderB
+
+            [output]
+            fileNamingRule = {taxId}_{companyName}_{timestamp}.xlsx
+
+            [review]
+            confidenceThreshold = 1.50
+
+            [mof]
+            account = sample-account
+            appKey = sample-secret
+            """;
+
+        var iniPath = WriteTempIni(iniContent);
+        var loader = new IniModuleConfigurationLoader();
+
+        try
+        {
+            Assert.Throws<InvalidDataException>(() => loader.Load(iniPath));
         }
         finally
         {

@@ -292,15 +292,18 @@ public partial class MainWindow : Window
             ModuleName: downloaderConfiguration.ModuleName,
             FolderAPath: ResolveConfiguredPath(downloaderConfiguration.FolderAPath),
             FolderBPath: ResolveConfiguredPath(downloaderConfiguration.FolderBPath),
+            FolderCPath: ResolveConfiguredPath(processorConfiguration.FolderCPath),
+            CustomerListFilePath: ResolveConfiguredPath(downloaderConfiguration.CustomerListFilePath),
             FileNamingRule: downloaderConfiguration.OutputNamingRule,
             ProcessorFileNamingRule: processorConfiguration.OutputNamingRule,
             ProcessorKnowledgeRepositoryFile: ResolveConfiguredPath(processorConfiguration.KnowledgeRepositoryPath),
+            LowConfidenceThreshold: processorConfiguration.LowConfidenceThreshold,
             MofAccount: downloaderConfiguration.MofAccount,
             InvoiceDownloadMode: downloaderConfiguration.InvoiceDownloadMode,
             OfficialApiBaseUrl: downloaderConfiguration.OfficialApiBaseUrl ?? string.Empty,
             OfficialApiAppId: downloaderConfiguration.OfficialApiAppId ?? string.Empty,
-                OfficialApiAppKey: downloaderConfiguration.OfficialApiAppKey ?? string.Empty,
-                OfficialApiPassword: officialApiPassword);
+            OfficialApiAppKey: downloaderConfiguration.OfficialApiAppKey ?? string.Empty,
+            OfficialApiPassword: officialApiPassword);
     }
 
     private ModuleConfiguration LoadConfigurationOrDefault(string configPath, ModuleConfiguration fallback)
@@ -334,7 +337,8 @@ public partial class MainWindow : Window
             InvoiceDownloadMode: "local",
             OfficialApiBaseUrl: "https://service-mc.einvoice.nat.gov.tw/ptl/portal/api",
             OfficialApiAppId: "replace-with-official-app-id",
-            OfficialApiAppKey: "replace-with-official-app-key");
+            OfficialApiAppKey: "replace-with-official-app-key",
+            CustomerListFilePath: "config\\company-list.xlsx");
     }
 
     private ModuleConfiguration CreateDefaultProcessorConfig()
@@ -343,10 +347,12 @@ public partial class MainWindow : Window
             ModuleName: "InvoiceAiProcessor",
             FolderAPath: "data\\folder-a",
             FolderBPath: "data\\folder-b",
+            FolderCPath: "data\\folder-c-review",
             OutputNamingRule: "{taxId}_{companyName}_{dateFrom}_{dateTo}.xlsx",
             MofAccount: "replace-with-mof-account",
             MofCredentialKey: "replace-with-official-app-key",
             KnowledgeRepositoryPath: "data\\knowledge\\knowledge-cases.json",
+            LowConfidenceThreshold: 0.80m,
             OfficialApiAppId: "replace-with-official-app-id",
             OfficialApiAppKey: "replace-with-official-app-key");
     }

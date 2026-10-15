@@ -1,4 +1,6 @@
 using Microsoft.Win32;
+using System.Globalization;
+using System.IO;
 using System.Windows;
 
 namespace InvoiceLauncher;
@@ -14,9 +16,12 @@ public partial class LauncherSettingsWindow : Window
         ModuleNameTextBox.Text = settings.ModuleName;
         FolderAPathTextBox.Text = settings.FolderAPath;
         FolderBPathTextBox.Text = settings.FolderBPath;
+        FolderCPathTextBox.Text = settings.FolderCPath;
+        CustomerListFilePathTextBox.Text = settings.CustomerListFilePath;
         FileNamingRuleTextBox.Text = settings.FileNamingRule;
         ProcessorFileNamingRuleTextBox.Text = settings.ProcessorFileNamingRule;
         ProcessorKnowledgeRepositoryFileTextBox.Text = settings.ProcessorKnowledgeRepositoryFile;
+        LowConfidenceThresholdTextBox.Text = settings.LowConfidenceThreshold.ToString("0.00", CultureInfo.InvariantCulture);
         MofAccountTextBox.Text = settings.MofAccount;
         InvoiceDownloadModeTextBox.Text = settings.InvoiceDownloadMode;
         OfficialApiBaseUrlTextBox.Text = settings.OfficialApiBaseUrl;
@@ -41,14 +46,27 @@ public partial class LauncherSettingsWindow : Window
         PickFolderFor(FolderBPathTextBox, "選擇 Folder B 路徑");
     }
 
+    private void PickFolderCButton_Click(object sender, RoutedEventArgs e)
+    {
+        PickFolderFor(FolderCPathTextBox, "選擇 Folder C 路徑");
+    }
+
+    private void PickCustomerListFileButton_Click(object sender, RoutedEventArgs e)
+    {
+        PickFileFor(CustomerListFilePathTextBox, "選擇客戶清單 Excel 檔案", "Excel 檔案 (*.xlsx)|*.xlsx");
+    }
+
     private void SaveButton_Click(object sender, RoutedEventArgs e)
     {
         var moduleName = ModuleNameTextBox.Text.Trim();
         var folderAPath = FolderAPathTextBox.Text.Trim();
         var folderBPath = FolderBPathTextBox.Text.Trim();
+        var folderCPath = FolderCPathTextBox.Text.Trim();
+        var customerListFilePath = CustomerListFilePathTextBox.Text.Trim();
         var fileNamingRule = FileNamingRuleTextBox.Text.Trim();
         var processorFileNamingRule = ProcessorFileNamingRuleTextBox.Text.Trim();
         var processorKnowledgeRepositoryFile = ProcessorKnowledgeRepositoryFileTextBox.Text.Trim();
+        var lowConfidenceThresholdText = LowConfidenceThresholdTextBox.Text.Trim();
         var mofAccount = MofAccountTextBox.Text.Trim();
         var invoiceDownloadMode = InvoiceDownloadModeTextBox.Text.Trim();
         var officialApiBaseUrl = OfficialApiBaseUrlTextBox.Text.Trim();
@@ -59,6 +77,8 @@ public partial class LauncherSettingsWindow : Window
         if (string.IsNullOrWhiteSpace(moduleName)
             || string.IsNullOrWhiteSpace(folderAPath)
             || string.IsNullOrWhiteSpace(folderBPath)
+            || string.IsNullOrWhiteSpace(folderCPath)
+            || string.IsNullOrWhiteSpace(customerListFilePath)
             || string.IsNullOrWhiteSpace(fileNamingRule)
             || string.IsNullOrWhiteSpace(processorFileNamingRule)
             || string.IsNullOrWhiteSpace(processorKnowledgeRepositoryFile)
@@ -68,6 +88,12 @@ public partial class LauncherSettingsWindow : Window
             || string.IsNullOrWhiteSpace(officialApiAppKey))
         {
             MessageBox.Show(this, "請完整填寫所有欄位。", "設定驗證", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (!TryParseLowConfidenceThreshold(lowConfidenceThresholdText, out var lowConfidenceThreshold))
+        {
+            MessageBox.Show(this, "低信心門檻必須為 0 到 1 之間的小數。例：0.80", "設定驗證", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
@@ -89,9 +115,12 @@ public partial class LauncherSettingsWindow : Window
             moduleName,
             folderAPath,
             folderBPath,
+            folderCPath,
+            customerListFilePath,
             fileNamingRule,
             processorFileNamingRule,
             processorKnowledgeRepositoryFile,
+            lowConfidenceThreshold,
             mofAccount,
             invoiceDownloadMode,
             officialApiBaseUrl,
@@ -122,5 +151,64 @@ public partial class LauncherSettingsWindow : Window
         {
             targetTextBox.Text = dialog.FolderName;
         }
+    }
+
+    private static void PickFileFor(System.Windows.Controls.TextBox targetTextBox, string title, string filter)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Multiselect = false,
+            CheckFileExists = true,
+            Title = title,
+            Filter = filter
+        };
+
+        var configuredPath = targetTextBox.Text.Trim();
+        if (!string.IsNullOrWhiteSpace(configuredPath))
+        {
+            if (Directory.Exists(configuredPath))
+            {
+                dialog.InitialDirectory = configuredPath;
+            }
+            else
+            {
+                var directoryPath = Path.GetDirectoryName(configuredPath);
+                if (!string.IsNullOrWhiteSpace(directoryPath) && Directory.Exists(directoryPath))
+                {
+                    dialog.InitialDirectory = directoryPath;
+                    dialog.FileName = Path.GetFileName(configuredPath);
+                }
+            }
+        }
+
+        if (dialog.ShowDialog() == true)
+        {
+            targetTextBox.Text = dialog.FileName;
+        }
+    }
+
+    private static bool TryParseLowConfidenceThreshold(string thresholdText, out decimal threshold)
+    {
+        threshold = 0m;
+
+        if (string.IsNullOrWhiteSpace(thresholdText))
+        {
+            return false;
+        }
+
+        var normalized = thresholdText.Trim();
+        if (!decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.InvariantCulture, out threshold)
+            && !decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.CurrentCulture, out threshold))
+        {
+            return false;
+        }
+
+        if (threshold is < 0m or > 1m)
+        {
+            return false;
+        }
+
+        threshold = decimal.Round(threshold, 2, MidpointRounding.AwayFromZero);
+        return true;
     }
 }

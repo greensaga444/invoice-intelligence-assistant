@@ -1,4 +1,5 @@
 using System.IO;
+using System.Globalization;
 
 namespace InvoiceIntelligence.Core.Configuration;
 
@@ -10,6 +11,9 @@ public interface IModuleConfigurationLoader
 public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
 {
     private const string DefaultKnowledgeRepositoryPath = "data\\knowledge\\knowledge-cases.json";
+    private const string DefaultCustomerListFilePath = "config\\company-list.xlsx";
+    private const string DefaultFolderCPath = "data\\folder-c-review";
+    private const decimal DefaultLowConfidenceThreshold = 0.80m;
     private const string LocalDownloadMode = "local";
     private const string OfficialDownloadMode = "official";
 
@@ -30,6 +34,8 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
         var moduleName = iniData.GetRequired("module", "name");
         var folderAPath = iniData.GetRequired("paths", "folderA");
         var folderBPath = iniData.GetRequired("paths", "folderB");
+        var folderCPath = TrimOptional(iniData.GetOptional("paths", "folderC"))
+            ?? DefaultFolderCPath;
         var outputNamingRule = iniData.GetRequired("output", "fileNamingRule");
         var mofAccount = iniData.GetRequired("mof", "account");
         var officialApiAppKey = iniData.GetRequired("mof", "appKey").Trim();
@@ -37,9 +43,12 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
         var mofCredentialKey = officialApiAppKey;
         var knowledgeRepositoryPath = iniData.GetOptional("knowledge", "repositoryFile")
             ?? DefaultKnowledgeRepositoryPath;
+        var customerListFilePath = TrimOptional(iniData.GetOptional("input", "customerListFile"))
+            ?? DefaultCustomerListFilePath;
         var invoiceDownloadMode = NormalizeInvoiceDownloadMode(iniData.GetOptional("mof", "invoiceDownloadMode"));
         var officialApiBaseUrl = ResolveOfficialApiBaseUrl(invoiceDownloadMode, iniData.GetOptional("mof", "officialApiBaseUrl"));
         var officialApiPasswordEncrypted = TrimOptional(iniData.GetOptional("mof", "passwordEncrypted"));
+        var lowConfidenceThreshold = ResolveLowConfidenceThreshold(iniData.GetOptional("review", "confidenceThreshold"));
 
         NamingRuleValidator.Validate(outputNamingRule);
 
@@ -54,8 +63,11 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
             invoiceDownloadMode,
             officialApiBaseUrl,
             officialApiAppId,
-                officialApiAppKey,
-                officialApiPasswordEncrypted);
+            officialApiAppKey,
+            officialApiPasswordEncrypted,
+                customerListFilePath,
+                folderCPath,
+                lowConfidenceThreshold);
     }
 
     private static string NormalizeInvoiceDownloadMode(string? configuredMode)
@@ -98,5 +110,28 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
         }
 
         return normalized;
+    }
+
+    private static decimal ResolveLowConfidenceThreshold(string? configuredThreshold)
+    {
+        if (string.IsNullOrWhiteSpace(configuredThreshold))
+        {
+            return DefaultLowConfidenceThreshold;
+        }
+
+        var normalized = configuredThreshold.Trim();
+
+        if (!decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.InvariantCulture, out var threshold)
+            && !decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.CurrentCulture, out threshold))
+        {
+            throw new InvalidDataException("review.confidenceThreshold 必須為 0 到 1 之間的小數。例：0.80");
+        }
+
+        if (threshold is < 0m or > 1m)
+        {
+            throw new InvalidDataException("review.confidenceThreshold 必須介於 0 與 1 之間。");
+        }
+
+        return decimal.Round(threshold, 2, MidpointRounding.AwayFromZero);
     }
 }

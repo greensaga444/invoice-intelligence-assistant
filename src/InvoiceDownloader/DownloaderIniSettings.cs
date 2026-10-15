@@ -4,6 +4,7 @@ public sealed record DownloaderIniSettings(
     string ModuleName,
     string FolderAPath,
     string FolderBPath,
+    string CustomerListFilePath,
     string FileNamingRule,
     string ProcessorFileNamingRule,
     string ProcessorKnowledgeRepositoryFile,

@@ -112,6 +112,7 @@ AI 與檢索：
 - 子模組（Downloader / Processor）獨立執行時不提供設定 UI。
 - Downloader 已支援客戶清單 Excel 匯入、MOF 驗證，以及批次下載原始發票 Excel 至 Folder A 並輸出下載記錄。
 - AI Processor 已支援 Folder A 原始發票讀取、分階段 AI 決策流程（Rule Engine -> Case Cache -> RAG -> LLM），並可將保留原始欄位且附加 AI 欄位的強化 Excel 匯出至 Folder B。
+- AI Processor 已支援低信心人工覆核流程：可設定信心門檻，低於門檻的公司來源群組（同檔名基底，`-invoice` / `-allowance` 視為同組）會匯出至 Folder C，待人工覆核後可再複製回 Folder B。
 - AI Processor 已支援手動知識回饋：可勾選人工核准紀錄並更新本地知識庫，且後續執行會將已核准案例載入 RAG 檢索。
 - 目前版本已完成在地化與品質閘道：使用者可見訊息與輸出欄位維持繁體中文，且已加入離線 AI 驗證與目標規模效能測試。
 

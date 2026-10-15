@@ -56,6 +56,8 @@ public partial class MainWindow : Window
             return;
         }
 
+        CustomerFilePathTextBox.Text = ResolveConfiguredPath(_configuration.CustomerListFilePath);
+
         MofAccountValueText.Text = _configuration.MofAccount;
         MofApiKeyValueText.Text = MaskApiKey(GetEffectiveMofApiKey());
 
@@ -74,6 +76,8 @@ public partial class MainWindow : Window
 
     private void BrowseCustomerFileButton_Click(object sender, RoutedEventArgs e)
     {
+        var configuredPath = CustomerFilePathTextBox.Text.Trim();
+
         var dialog = new OpenFileDialog
         {
             Filter = "Excel 檔案 (*.xlsx)|*.xlsx",
@@ -81,6 +85,32 @@ public partial class MainWindow : Window
             Multiselect = false,
             Title = "選擇客戶清單檔案"
         };
+
+        if (string.IsNullOrWhiteSpace(configuredPath))
+        {
+            var defaultConfigFolderPath = Path.Combine(_solutionRootPath, "config");
+            if (Directory.Exists(defaultConfigFolderPath))
+            {
+                dialog.InitialDirectory = defaultConfigFolderPath;
+            }
+        }
+        else
+        {
+            var resolvedPath = ResolveConfiguredPath(configuredPath);
+            if (Directory.Exists(resolvedPath))
+            {
+                dialog.InitialDirectory = resolvedPath;
+            }
+            else
+            {
+                var directoryPath = Path.GetDirectoryName(resolvedPath);
+                if (!string.IsNullOrWhiteSpace(directoryPath) && Directory.Exists(directoryPath))
+                {
+                    dialog.InitialDirectory = directoryPath;
+                    dialog.FileName = Path.GetFileName(resolvedPath);
+                }
+            }
+        }
 
         if (dialog.ShowDialog() == true)
         {
@@ -90,12 +120,14 @@ public partial class MainWindow : Window
 
     private void ImportCustomerFileButton_Click(object sender, RoutedEventArgs e)
     {
-        var filePath = CustomerFilePathTextBox.Text.Trim();
-        if (string.IsNullOrWhiteSpace(filePath))
+        var configuredPath = CustomerFilePathTextBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(configuredPath))
         {
             ImportResultText.Text = "請先選擇客戶清單 Excel 檔案。";
             return;
         }
+
+        var filePath = ResolveConfiguredPath(configuredPath);
 
         try
         {
@@ -103,6 +135,7 @@ public partial class MainWindow : Window
             _loadedCustomers = result.Records;
             CustomerDataGrid.ItemsSource = _loadedCustomers;
             StartBatchDownloadButton.IsEnabled = HasActiveSession();
+            CustomerFilePathTextBox.Text = filePath;
 
             ImportResultText.Text = $"匯入成功，共載入 {_loadedCustomers.Count} 筆客戶資料。";
         }

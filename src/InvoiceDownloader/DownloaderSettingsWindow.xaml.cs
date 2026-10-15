@@ -5,6 +5,8 @@ namespace InvoiceDownloader;
 
 public partial class DownloaderSettingsWindow : Window
 {
+    private readonly string _customerListFilePath;
+
     public DownloaderSettingsWindow(DownloaderIniSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
@@ -14,6 +16,7 @@ public partial class DownloaderSettingsWindow : Window
         ModuleNameTextBox.Text = settings.ModuleName;
         FolderAPathTextBox.Text = settings.FolderAPath;
         FolderBPathTextBox.Text = settings.FolderBPath;
+        _customerListFilePath = settings.CustomerListFilePath;
         FileNamingRuleTextBox.Text = settings.FileNamingRule;
         ProcessorFileNamingRuleTextBox.Text = settings.ProcessorFileNamingRule;
         ProcessorKnowledgeRepositoryFileTextBox.Text = settings.ProcessorKnowledgeRepositoryFile;
@@ -89,6 +92,7 @@ public partial class DownloaderSettingsWindow : Window
             moduleName,
             folderAPath,
             folderBPath,
+            _customerListFilePath,
             fileNamingRule,
             processorFileNamingRule,
             processorKnowledgeRepositoryFile,

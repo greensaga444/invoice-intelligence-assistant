@@ -24,17 +24,22 @@ public partial class App : Application
             var config = loader.Load(configPath);
             var folderAPath = ResolveConfiguredPath(solutionRootPath, config.FolderAPath);
             var folderBPath = ResolveConfiguredPath(solutionRootPath, config.FolderBPath);
+            var folderCPath = ResolveConfiguredPath(solutionRootPath, config.FolderCPath);
             var knowledgeRepositoryPath = ResolveConfiguredPath(solutionRootPath, config.KnowledgeRepositoryPath);
 
             var pipelineState = BuildPipelineState(
                 folderAPath,
                 folderBPath,
+                folderCPath,
                 config.OutputNamingRule,
+                config.LowConfidenceThreshold,
                 knowledgeRepositoryPath);
 
             var message = $"載入成功: {config.ModuleName}\n" +
                           $"資料夾 A: {folderAPath}\n" +
                           $"資料夾 B: {folderBPath}\n" +
+                          $"資料夾 C: {folderCPath}\n" +
+                          $"人工覆核門檻: {config.LowConfidenceThreshold:0.00}\n" +
                           $"命名規則: {config.OutputNamingRule}\n" +
                           $"知識庫檔案: {knowledgeRepositoryPath}\n" +
                           pipelineState.StatusMessage;
@@ -59,7 +64,9 @@ public partial class App : Application
     private static ProcessorStartupState BuildPipelineState(
         string folderAPath,
         string folderBPath,
+        string folderCPath,
         string outputNamingRule,
+        decimal lowConfidenceThreshold,
         string knowledgeRepositoryPath)
     {
         var reader = new FolderAInvoiceRecordReader();
@@ -88,8 +95,10 @@ public partial class App : Application
             new LocalHeuristicLlmAnalyzer());
 
         var pipelineResult = pipeline.Process(records);
+        var (readyForFolderB, needManualReview) = SplitResultsByReviewThreshold(pipelineResult.Items, lowConfidenceThreshold);
         var exporter = new FolderBEnhancedInvoiceExporter();
-        var exportResult = exporter.Export(pipelineResult.Items, folderBPath, outputNamingRule);
+        var folderBExportResult = exporter.Export(readyForFolderB, folderBPath, outputNamingRule);
+        var folderCExportResult = exporter.Export(needManualReview, folderCPath, outputNamingRule);
 
         var previewLines = pipelineResult.Items
             .Take(3)
@@ -97,18 +106,32 @@ public partial class App : Application
                 $"- {item.Record.InvoiceNumber}: {item.Decision.DeductibleStatus}/{item.Decision.AccountingCategory} ({item.Decision.ConfidenceScore:0.00})（來源：{ToStageDisplayName(item.ResolvedBy)}）")
             .ToArray();
 
-        var exportedFilesPreview = exportResult.Files
+        var folderBFilesPreview = folderBExportResult.Files
+            .Take(3)
+            .Select(file =>
+                $"- {Path.GetFileName(file.OutputFilePath)} ({file.RecordCount} 筆)")
+            .ToArray();
+
+        var folderCFilesPreview = folderCExportResult.Files
             .Take(3)
             .Select(file =>
                 $"- {Path.GetFileName(file.OutputFilePath)} ({file.RecordCount} 筆)")
             .ToArray();
 
         var exportSummary =
-            $"資料夾 B 匯出完成：檔案 {exportResult.ExportedFileCount}，筆數 {exportResult.ExportedRecordCount}。";
+            $"資料夾 B 匯出完成：檔案 {folderBExportResult.ExportedFileCount}，筆數 {folderBExportResult.ExportedRecordCount}。\n" +
+            $"資料夾 C（人工覆核）匯出完成：檔案 {folderCExportResult.ExportedFileCount}，筆數 {folderCExportResult.ExportedRecordCount}。\n" +
+            $"覆核規則：同一公司來源群組（同檔名基底，-invoice/-allowance 視為同組）只要有任一筆信心度 < {lowConfidenceThreshold:0.00}，該群組檔案即匯出至資料夾 C。";
 
-        if (exportedFilesPreview.Length > 0)
+        if (folderBFilesPreview.Length > 0)
         {
-            exportSummary += $"\n輸出預覽:\n{string.Join("\n", exportedFilesPreview)}";
+            exportSummary += $"\n資料夾 B 輸出預覽:\n{string.Join("\n", folderBFilesPreview)}";
+        }
+
+        if (folderCFilesPreview.Length > 0)
+        {
+            exportSummary += $"\n資料夾 C 輸出預覽:\n{string.Join("\n", folderCFilesPreview)}\n" +
+                             "請完成人工覆核後，將檔案複製回資料夾 B。";
         }
 
         var statusMessage =
@@ -121,6 +144,57 @@ public partial class App : Application
             statusMessage,
             pipelineResult.Items,
             feedbackService);
+    }
+
+    private static (IReadOnlyList<InvoiceDecisionResult> ReadyForFolderB, IReadOnlyList<InvoiceDecisionResult> NeedManualReview)
+        SplitResultsByReviewThreshold(
+            IReadOnlyCollection<InvoiceDecisionResult> decisionResults,
+            decimal lowConfidenceThreshold)
+    {
+        var readyForFolderB = new List<InvoiceDecisionResult>(decisionResults.Count);
+        var needManualReview = new List<InvoiceDecisionResult>();
+
+        var groupedByReviewGroup = decisionResults
+            .GroupBy(item => BuildReviewGroupKey(item.Record.SourceFileName), StringComparer.OrdinalIgnoreCase);
+
+        foreach (var group in groupedByReviewGroup)
+        {
+            if (group.Any(item => item.Decision.ConfidenceScore < lowConfidenceThreshold))
+            {
+                needManualReview.AddRange(group);
+                continue;
+            }
+
+            readyForFolderB.AddRange(group);
+        }
+
+        return (readyForFolderB, needManualReview);
+    }
+
+    private static string BuildReviewGroupKey(string sourceFileName)
+    {
+        if (string.IsNullOrWhiteSpace(sourceFileName))
+        {
+            return string.Empty;
+        }
+
+        var normalizedFileName = Path.GetFileName(sourceFileName);
+        var baseName = Path.GetFileNameWithoutExtension(normalizedFileName);
+
+        foreach (var suffix in new[] { "-invoice", "-allowance", "-allwance" })
+        {
+            if (!baseName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var trimmedBaseName = baseName[..^suffix.Length];
+            return string.IsNullOrWhiteSpace(trimmedBaseName)
+                ? normalizedFileName
+                : trimmedBaseName;
+        }
+
+        return baseName;
     }
 
     private static string ResolveConfigPath(string fileName)

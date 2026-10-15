@@ -1,4 +1,5 @@
 using System.Text;
+using System.Globalization;
 
 namespace InvoiceIntelligence.Core.Configuration;
 
@@ -8,6 +9,7 @@ public static class IniFileContentBuilder
         string moduleName,
         string folderAPath,
         string folderBPath,
+        string customerListFilePath,
         string fileNamingRule,
         string mofAccount,
         string invoiceDownloadMode,
@@ -28,6 +30,9 @@ public static class IniFileContentBuilder
         builder.Append("folderA = ").Append(folderAPath).Append(lineBreak);
         builder.Append("folderB = ").Append(folderBPath).Append(lineBreak);
         builder.Append(lineBreak);
+        builder.Append("[input]").Append(lineBreak);
+        builder.Append("customerListFile = ").Append(customerListFilePath).Append(lineBreak);
+        builder.Append(lineBreak);
         builder.Append("[output]").Append(lineBreak);
         builder.Append("fileNamingRule = ").Append(fileNamingRule).Append(lineBreak);
         builder.Append(lineBreak);
@@ -46,7 +51,9 @@ public static class IniFileContentBuilder
         string moduleName,
         string folderAPath,
         string folderBPath,
+        string folderCPath,
         string fileNamingRule,
+        decimal lowConfidenceThreshold,
         string knowledgeRepositoryFile,
         string mofAccount,
         string officialApiAppId,
@@ -63,9 +70,13 @@ public static class IniFileContentBuilder
         builder.Append("[paths]").Append(lineBreak);
         builder.Append("folderA = ").Append(folderAPath).Append(lineBreak);
         builder.Append("folderB = ").Append(folderBPath).Append(lineBreak);
+        builder.Append("folderC = ").Append(folderCPath).Append(lineBreak);
         builder.Append(lineBreak);
         builder.Append("[output]").Append(lineBreak);
         builder.Append("fileNamingRule = ").Append(fileNamingRule).Append(lineBreak);
+        builder.Append(lineBreak);
+        builder.Append("[review]").Append(lineBreak);
+        builder.Append("confidenceThreshold = ").Append(lowConfidenceThreshold.ToString("0.00", CultureInfo.InvariantCulture)).Append(lineBreak);
         builder.Append(lineBreak);
         builder.Append("[knowledge]").Append(lineBreak);
         builder.Append("repositoryFile = ").Append(knowledgeRepositoryFile).Append(lineBreak);

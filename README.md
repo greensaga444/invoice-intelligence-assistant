@@ -24,20 +24,20 @@
 - 讀取統編、公司名稱與日期區間。
 - 與 MOF 服務進行驗證。
 - 批次下載發票檔案。
-- 將原始檔案匯出到 Folder A。
+- 將原始檔案匯出到原始發票資料夾（Folder A）。
 
 ### 模組 B：發票 AI 處理器
 
-- 從 Folder A 讀取原始檔案。
+- 從原始發票資料夾（Folder A）讀取原始檔案。
 - 優先執行規則引擎。
 - 透過案例快取重用歷史判定。
 - 執行 RAG 檢索取得脈絡案例。
 - 對未解決紀錄使用本地 LLM 推理。
-- 將強化檔案匯出到 Folder B。
+- 將強化檔案匯出到 AI 分析結果資料夾（Folder B）。
 
 決策流程：
 
-客戶清單 -> 發票下載器 -> Folder A -> 規則引擎 -> 案例快取 -> RAG -> LLM -> Folder B -> 人工知識回饋
+客戶清單 -> 發票下載器 -> 原始發票資料夾 -> 規則引擎 -> 案例快取 -> RAG -> LLM -> AI 分析結果資料夾 -> 人工知識回饋
 
 ## 技術堆疊
 
@@ -110,9 +110,9 @@ AI 與檢索：
 - 設定檔範本：config/downloader.ini、config/processor.ini
 - 主控台（InvoiceLauncher）提供統一設定視窗：可集中編輯根目錄 config 下的 downloader.ini 與 processor.ini。
 - 子模組（Downloader / Processor）獨立執行時不提供設定 UI。
-- Downloader 已支援客戶清單 Excel 匯入、MOF 驗證，以及批次下載原始發票 Excel 至 Folder A 並輸出下載記錄。
-- AI Processor 已支援 Folder A 原始發票讀取、分階段 AI 決策流程（Rule Engine -> Case Cache -> RAG -> LLM），並可將保留原始欄位且附加 AI 欄位的強化 Excel 匯出至 Folder B。
-- AI Processor 已支援低信心人工覆核流程：可設定信心門檻，低於門檻的公司來源群組（同檔名基底，`-invoice` / `-allowance` 視為同組）會匯出至 Folder C，待人工覆核後可再複製回 Folder B。
+- Downloader 已支援客戶清單 Excel 匯入、MOF 驗證，以及批次下載原始發票 Excel 至原始發票資料夾（Folder A）並輸出下載記錄。
+- AI Processor 已支援原始發票資料夾（Folder A）原始發票讀取、分階段 AI 決策流程（Rule Engine -> Case Cache -> RAG -> LLM），並可將保留原始欄位且附加 AI 欄位的強化 Excel 匯出至 AI 分析結果資料夾（Folder B）。
+- AI Processor 已支援低信心人工覆核流程：可設定信心門檻，低於門檻的公司來源群組（同檔名基底，`-invoice` / `-allowance` 視為同組）會匯出至人工覆核資料夾（Folder C），待人工覆核後可再複製回 AI 分析結果資料夾（Folder B）。
 - AI Processor 已支援手動知識回饋：可勾選人工核准紀錄並更新本地知識庫，且後續執行會將已核准案例載入 RAG 檢索。
 - 目前版本已完成在地化與品質閘道：使用者可見訊息與輸出欄位維持繁體中文，且已加入離線 AI 驗證與目標規模效能測試。
 
@@ -277,10 +277,10 @@ flowchart LR
 
 1. 執行 `scripts/publish-downloader.ps1`。
 2. 交付 `build/deploy/InvoiceIntelligence` 整個資料夾給客戶端（包含 `downloader` 與 `config`）。
-3. 確認 `config/downloader.ini` 參數（folderA、folderB、mof.account、mof.appId、mof.appKey、mof.passwordEncrypted）。
+3. 確認 `config/downloader.ini` 參數（folderA=原始發票資料夾、folderB=AI 分析結果資料夾、mof.account、mof.appId、mof.appKey、mof.passwordEncrypted）。
 4. 若採官方 API，設定 `mof.invoiceDownloadMode=official` 與 `mof.officialApiBaseUrl`。
 5. 客戶端執行 `downloader/InvoiceDownloader.exe`。
-6. 驗證是否成功輸出檔案到 Folder A，並產生下載紀錄 `.log`。
+6. 驗證是否成功輸出檔案到原始發票資料夾（Folder A），並產生下載紀錄 `.log`。
 	- local 模式：每個客戶產生 1 個 `.xlsx`。
 	- official 模式：每個客戶同時產生 2 個 `.xlsx`（`-invoice` 與 `-allowance`）。
 7. 此模式不提供設定 UI，請直接編輯 `config/downloader.ini`。
@@ -290,7 +290,7 @@ flowchart LR
 ```mermaid
 flowchart LR
 		A[客戶清單 Excel] --> B[InvoiceDownloader.exe]
-		B --> C[Folder A 原始檔]
+		B --> C[原始發票資料夾原始檔]
 		B --> D[下載紀錄 log]
 ```
 
@@ -300,31 +300,31 @@ flowchart LR
 
 1. 執行 `scripts/publish-processor.ps1`。
 2. 交付 `build/deploy/InvoiceIntelligence` 整個資料夾給客戶端（包含 `processor` 與 `config`）。
-3. 確認 `config/processor.ini` 參數（folderA、folderB、output.fileNamingRule、knowledge.repositoryFile）。
-4. 將待分析原始檔放入 Folder A。
+3. 確認 `config/processor.ini` 參數（folderA=原始發票資料夾、folderB=AI 分析結果資料夾、output.fileNamingRule、knowledge.repositoryFile）。
+4. 將待分析原始檔放入原始發票資料夾（Folder A）。
 5. 客戶端執行 `processor/InvoiceAiProcessor.exe`。
-6. 驗證 Folder B 是否產生強化 Excel，並可選擇執行人工回饋更新知識庫。
+6. 驗證 AI 分析結果資料夾（Folder B）是否產生強化 Excel，並可選擇執行人工回饋更新知識庫。
 7. 此模式不提供設定 UI，請直接編輯 `config/processor.ini`。
 
 流程：
 
 ```mermaid
 flowchart LR
-		A[Folder A 原始檔] --> B[InvoiceAiProcessor.exe]
+		A[原始發票資料夾原始檔] --> B[InvoiceAiProcessor.exe]
 		B --> C[Rule Engine]
 		C --> D[Case Cache]
 		D --> E[RAG]
 		E --> F[LLM]
-		F --> G[Folder B 強化 Excel]
+		F --> G[AI 分析結果資料夾強化 Excel]
 		G --> H[人工核准回饋]
 		H --> I[knowledge-cases.json]
 ```
 
 ### 模組相依與格式注意事項
 
-- Processor 目前只會讀取 Folder A 下的 `.xlsx` 檔案。
+- Processor 目前只會讀取原始發票資料夾（Folder A）下的 `.xlsx` 檔案。
 - Downloader 在 local 與 official 模式皆輸出 `.xlsx`。
 - official 模式會分別輸出進銷項與折讓兩個檔案（檔名尾碼為 `-invoice`、`-allowance`）。
-- 若要將 Downloader 輸出直接餵給 Processor，請確保 Folder A 內容符合 Processor 期望的 `.xlsx` 欄位格式。
+- 若要將 Downloader 輸出直接餵給 Processor，請確保原始發票資料夾（Folder A）內容符合 Processor 期望的 `.xlsx` 欄位格式。
 
 兩個桌面模組會在啟動時讀取對應 INI 設定並驗證命名規則占位符；官方 API 憑證欄位採 appId/appKey。

@@ -37,11 +37,11 @@
                 <TextBlock Grid.Row="0" Grid.Column="0" Text="模組名稱" VerticalAlignment="Center" Margin="0,0,12,10" />
                 <TextBox x:Name="ModuleNameTextBox" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Height="32" Padding="8" Margin="0,0,0,10" />
 
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="Folder A 路徑" VerticalAlignment="Center" Margin="0,0,12,10" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="原始發票資料夾" VerticalAlignment="Center" Margin="0,0,12,10" />
                 <TextBox x:Name="FolderAPathTextBox" Grid.Row="1" Grid.Column="1" Height="32" Padding="8" Margin="0,0,8,10" />
                 <Button Grid.Row="1" Grid.Column="2" Content="選擇資料夾" Padding="12,6" Margin="0,0,0,10" Click="PickFolderAButton_Click" />
 
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="Folder B 路徑" VerticalAlignment="Center" Margin="0,0,12,10" />
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="AI 分析結果資料夾" VerticalAlignment="Center" Margin="0,0,12,10" />
                 <TextBox x:Name="FolderBPathTextBox" Grid.Row="2" Grid.Column="1" Height="32" Padding="8" Margin="0,0,8,10" />
                 <Button Grid.Row="2" Grid.Column="2" Content="選擇資料夾" Padding="12,6" Margin="0,0,0,10" Click="PickFolderBButton_Click" />
 

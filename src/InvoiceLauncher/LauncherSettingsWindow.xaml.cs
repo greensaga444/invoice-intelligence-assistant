@@ -7,13 +7,15 @@ namespace InvoiceLauncher;
 
 public partial class LauncherSettingsWindow : Window
 {
+    private readonly string _moduleName;
+
     public LauncherSettingsWindow(LauncherIniSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
 
         InitializeComponent();
 
-        ModuleNameTextBox.Text = settings.ModuleName;
+        _moduleName = settings.ModuleName;
         FolderAPathTextBox.Text = settings.FolderAPath;
         FolderBPathTextBox.Text = settings.FolderBPath;
         FolderCPathTextBox.Text = settings.FolderCPath;
@@ -38,17 +40,17 @@ public partial class LauncherSettingsWindow : Window
 
     private void PickFolderAButton_Click(object sender, RoutedEventArgs e)
     {
-        PickFolderFor(FolderAPathTextBox, "選擇 Folder A 路徑");
+        PickFolderFor(FolderAPathTextBox, "選擇原始發票資料夾");
     }
 
     private void PickFolderBButton_Click(object sender, RoutedEventArgs e)
     {
-        PickFolderFor(FolderBPathTextBox, "選擇 Folder B 路徑");
+        PickFolderFor(FolderBPathTextBox, "選擇 AI 分析結果資料夾");
     }
 
     private void PickFolderCButton_Click(object sender, RoutedEventArgs e)
     {
-        PickFolderFor(FolderCPathTextBox, "選擇 Folder C 路徑");
+        PickFolderFor(FolderCPathTextBox, "選擇人工覆核資料夾");
     }
 
     private void PickCustomerListFileButton_Click(object sender, RoutedEventArgs e)
@@ -58,7 +60,7 @@ public partial class LauncherSettingsWindow : Window
 
     private void SaveButton_Click(object sender, RoutedEventArgs e)
     {
-        var moduleName = ModuleNameTextBox.Text.Trim();
+        var moduleName = _moduleName;
         var folderAPath = FolderAPathTextBox.Text.Trim();
         var folderBPath = FolderBPathTextBox.Text.Trim();
         var folderCPath = FolderCPathTextBox.Text.Trim();

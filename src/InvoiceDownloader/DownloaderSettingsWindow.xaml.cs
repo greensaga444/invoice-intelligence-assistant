@@ -36,12 +36,12 @@ public partial class DownloaderSettingsWindow : Window
 
     private void PickFolderAButton_Click(object sender, RoutedEventArgs e)
     {
-        PickFolderFor(FolderAPathTextBox, "選擇 Folder A 路徑");
+        PickFolderFor(FolderAPathTextBox, "選擇原始發票資料夾");
     }
 
     private void PickFolderBButton_Click(object sender, RoutedEventArgs e)
     {
-        PickFolderFor(FolderBPathTextBox, "選擇 Folder B 路徑");
+        PickFolderFor(FolderBPathTextBox, "選擇 AI 分析結果資料夾");
     }
 
     private void SaveButton_Click(object sender, RoutedEventArgs e)

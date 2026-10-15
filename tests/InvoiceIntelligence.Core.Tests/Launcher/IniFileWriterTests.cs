@@ -51,8 +51,6 @@ public class IniFileWriterTests
             ModuleName = "SettingsModuleName",
             ProcessorKnowledgeRepositoryFile = "data/custom/repo.json",
             LowConfidenceThreshold = 0.72m,
-            OfficialApiAppId = "processor-app-id",
-            OfficialApiAppKey = "",
             InvoiceOutputLabel = "Invoice-Label",
             AllowanceOutputLabel = "Allowance-Label",
             InvoiceFileSuffix = "invoice-data",
@@ -88,8 +86,11 @@ public class IniFileWriterTests
             Assert.Equal(settings.AllowanceOutputLabel, config.AllowanceOutputLabel);
             Assert.Equal(settings.InvoiceFileSuffix, config.InvoiceFileSuffix);
             Assert.Equal(settings.AllowanceFileSuffix, config.AllowanceFileSuffix);
-            Assert.Equal("processor-app-id", config.OfficialApiAppId);
-            Assert.Equal("processor-app-id", config.OfficialApiAppKey);
+            Assert.Equal(string.Empty, config.OfficialApiAppId);
+            Assert.Equal(string.Empty, config.OfficialApiAppKey);
+
+            var processorIniContent = File.ReadAllText(iniPath);
+            Assert.DoesNotContain("[mof]", processorIniContent, StringComparison.Ordinal);
         }
         finally
         {

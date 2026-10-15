@@ -220,7 +220,7 @@ public partial class MainWindow : Window
             BatchDownloadResultText.Text =
                 $"批次下載完成：成功 {successCount} 筆，失敗 {failureCount} 筆。\n" +
                 $"模式: {GetDownloadModeLabel()}\n" +
-                $"資料夾 A: {folderAPath}\n" +
+                $"原始發票資料夾 (Folder A): {folderAPath}\n" +
                 $"下載記錄: {result.LogFilePath}";
         }
         catch (Exception ex)

@@ -327,4 +327,4 @@ flowchart LR
 - Downloader 會分別輸出進銷項與折讓兩個檔案（檔名尾碼為 `-invoice`、`-allowance`）。
 - 若要將 Downloader 輸出直接餵給 Processor，請確保原始發票資料夾（Folder A）內容符合 Processor 期望的 `.xlsx` 欄位格式。
 
-兩個桌面模組會在啟動時讀取對應 INI 設定並驗證命名規則占位符；官方 API 憑證欄位採 appId/appKey。
+兩個桌面模組會在啟動時讀取對應 INI 設定並驗證命名規則占位符；MOF 官方 API 憑證（appId/appKey/password）僅適用於 Downloader。

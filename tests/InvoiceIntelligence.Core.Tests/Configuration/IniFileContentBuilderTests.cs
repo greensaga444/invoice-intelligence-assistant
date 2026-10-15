@@ -56,7 +56,7 @@ public class IniFileContentBuilderTests
     }
 
     [Fact]
-    public void BuildProcessorContent_WhenAppKeyIsMissing_UsesAppIdForBothFields()
+    public void BuildProcessorContent_ExcludesMofSection()
     {
         var content = IniFileContentBuilder.BuildProcessorContent(
             moduleName: "Processor",
@@ -67,10 +67,7 @@ public class IniFileContentBuilderTests
             invoiceFileSuffix: "invoice",
             allowanceFileSuffix: "allowance",
             lowConfidenceThreshold: 0.75m,
-            knowledgeRepositoryFile: "D:\\Knowledge\\cases.json",
-            mofAccount: "sample-account",
-            officialApiAppId: "sample-app-id",
-            officialApiAppKey: "");
+            knowledgeRepositoryFile: "D:\\Knowledge\\cases.json");
 
         Assert.Contains("folderC = C:\\Data\\FolderC", content, StringComparison.Ordinal);
         Assert.Contains("invoiceOutputLabel = SalesInvoiceDetail-T3", content, StringComparison.Ordinal);
@@ -81,7 +78,8 @@ public class IniFileContentBuilderTests
         Assert.Contains("confidenceThreshold = 0.75", content, StringComparison.Ordinal);
         Assert.Contains("[knowledge]", content, StringComparison.Ordinal);
         Assert.Contains("repositoryFile = D:\\Knowledge\\cases.json", content, StringComparison.Ordinal);
-        Assert.Contains("appId = sample-app-id", content, StringComparison.Ordinal);
-        Assert.Contains("appKey = sample-app-id", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("[mof]", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("appId =", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("appKey =", content, StringComparison.Ordinal);
     }
 }

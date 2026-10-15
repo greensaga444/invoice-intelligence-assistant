@@ -23,8 +23,8 @@ public partial class App : Application
             config = loader.Load(configPath);
 
             message = $"載入成功: {config.ModuleName}\n" +
-                      $"資料夾 A: {config.FolderAPath}\n" +
-                      $"資料夾 B: {config.FolderBPath}\n" +
+                      $"原始發票資料夾 (Folder A): {config.FolderAPath}\n" +
+                      $"AI 分析結果資料夾 (Folder B): {config.FolderBPath}\n" +
                       $"命名規則: {config.OutputNamingRule}\n" +
                       "下載模式: 官方 API\n" +
                       "請先匯入客戶清單，再進行 MOF 驗證與批次下載。";

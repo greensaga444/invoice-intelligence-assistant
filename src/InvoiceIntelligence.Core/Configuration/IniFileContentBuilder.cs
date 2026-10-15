@@ -56,14 +56,9 @@ public static class IniFileContentBuilder
         string allowanceFileSuffix,
         decimal lowConfidenceThreshold,
         string knowledgeRepositoryFile,
-        string mofAccount,
-        string officialApiAppId,
-        string officialApiAppKey,
         string invoiceOutputLabel = ConfigurationDefaults.InvoiceOutputLabel,
         string allowanceOutputLabel = ConfigurationDefaults.AllowanceOutputLabel)
     {
-        var resolvedOfficialApiAppId = MofApiCredentialResolver.ResolveAppId(officialApiAppId, officialApiAppKey);
-        var resolvedOfficialApiAppKey = MofApiCredentialResolver.ResolveAppKey(officialApiAppId, officialApiAppKey);
         var builder = new IniSectionContentBuilder();
         builder.BeginSection("module")
             .Add("name", moduleName)
@@ -84,12 +79,7 @@ public static class IniFileContentBuilder
             .Add("confidenceThreshold", lowConfidenceThreshold.ToString("0.00", CultureInfo.InvariantCulture))
             .AddBlankLine()
             .BeginSection("knowledge")
-            .Add("repositoryFile", knowledgeRepositoryFile)
-            .AddBlankLine()
-            .BeginSection("mof")
-            .Add("account", mofAccount)
-            .Add("appId", resolvedOfficialApiAppId)
-            .Add("appKey", resolvedOfficialApiAppKey);
+            .Add("repositoryFile", knowledgeRepositoryFile);
 
         return builder.ToString();
     }

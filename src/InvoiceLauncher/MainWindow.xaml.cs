@@ -274,12 +274,12 @@ public partial class MainWindow : Window
             FolderBPath: "data\\folder-b",
             FolderCPath: ConfigurationDefaults.FolderCPath,
             OutputNamingRule: "{taxId}_{companyName}_{dateFrom}_{dateTo}.xlsx",
-            MofAccount: "replace-with-mof-account",
-            MofCredentialKey: "replace-with-official-app-key",
+            MofAccount: string.Empty,
+            MofCredentialKey: string.Empty,
             KnowledgeRepositoryPath: ConfigurationDefaults.KnowledgeRepositoryPath,
             LowConfidenceThreshold: ConfigurationDefaults.LowConfidenceThreshold,
-            OfficialApiAppId: "replace-with-official-app-id",
-            OfficialApiAppKey: "replace-with-official-app-key",
+            OfficialApiAppId: string.Empty,
+            OfficialApiAppKey: string.Empty,
             InvoiceFileSuffix: ConfigurationDefaults.InvoiceFileSuffix,
             AllowanceFileSuffix: ConfigurationDefaults.AllowanceFileSuffix);
     }

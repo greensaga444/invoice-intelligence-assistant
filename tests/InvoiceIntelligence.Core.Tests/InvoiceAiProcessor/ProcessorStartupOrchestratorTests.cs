@@ -38,10 +38,6 @@ public class ProcessorStartupOrchestratorTests
 
     [knowledge]
     repositoryFile = {Path.Combine(tempRoot, "knowledge", "cases.json")}
-
-    [mof]
-    account = sample-account
-    appKey = sample-key
     ";
 
         try
@@ -113,10 +109,6 @@ confidenceThreshold = 0.80
 
 [knowledge]
 repositoryFile = {Path.Combine(tempRoot, "knowledge", "cases.json")}
-
-[mof]
-account = sample-account
-appKey = sample-key
 ";
 
         try

@@ -29,6 +29,7 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
         var folderCPath = TrimOptional(iniData.GetOptional("paths", "folderC"))
             ?? ConfigurationDefaults.FolderCPath;
         var outputNamingRule = iniData.GetRequired("output", "fileNamingRule");
+        var isMofRequired = IsMofRequired(moduleName);
         var invoiceOutputLabel = TrimOptional(iniData.GetOptional("output", "invoiceOutputLabel"))
             ?? ConfigurationDefaults.InvoiceOutputLabel;
         var allowanceOutputLabel = TrimOptional(iniData.GetOptional("output", "allowanceOutputLabel"))
@@ -41,8 +42,12 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
             iniData.GetOptional("output", "allowanceFileSuffix"),
             ConfigurationDefaults.AllowanceFileSuffix,
             "output.allowanceFileSuffix");
-        var mofAccount = iniData.GetRequired("mof", "account");
-        var officialApiAppKey = iniData.GetRequired("mof", "appKey").Trim();
+        var mofAccount = isMofRequired
+            ? iniData.GetRequired("mof", "account")
+            : TrimOptional(iniData.GetOptional("mof", "account")) ?? string.Empty;
+        var officialApiAppKey = isMofRequired
+            ? iniData.GetRequired("mof", "appKey").Trim()
+            : TrimOptional(iniData.GetOptional("mof", "appKey")) ?? string.Empty;
         var officialApiAppId = MofApiCredentialResolver.ResolveAppId(
             iniData.GetOptional("mof", "appId"),
             officialApiAppKey);
@@ -52,10 +57,11 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
         var customerListFilePath = TrimOptional(iniData.GetOptional("input", "customerListFile"))
             ?? ConfigurationDefaults.CustomerListFilePath;
         var configuredInvoiceDownloadMode = iniData.GetOptional("mof", "invoiceDownloadMode");
-        var invoiceDownloadMode = NormalizeInvoiceDownloadMode(configuredInvoiceDownloadMode);
+        var invoiceDownloadMode = NormalizeInvoiceDownloadMode(configuredInvoiceDownloadMode, isMofRequired);
         var officialApiBaseUrl = ResolveOfficialApiBaseUrl(
             iniData.GetOptional("mof", "officialApiBaseUrl"),
-            isInvoiceDownloadModeExplicitlyConfigured: !string.IsNullOrWhiteSpace(configuredInvoiceDownloadMode));
+            isInvoiceDownloadModeExplicitlyConfigured: !string.IsNullOrWhiteSpace(configuredInvoiceDownloadMode),
+            isMofRequired: isMofRequired);
         var officialApiPasswordEncrypted = TrimOptional(iniData.GetOptional("mof", "passwordEncrypted"));
         var lowConfidenceThreshold = ResolveLowConfidenceThreshold(iniData.GetOptional("review", "confidenceThreshold"));
 
@@ -115,8 +121,15 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
         return suffix;
     }
 
-    private static string NormalizeInvoiceDownloadMode(string? configuredMode)
+    private static string NormalizeInvoiceDownloadMode(string? configuredMode, bool isMofRequired)
     {
+        if (!isMofRequired)
+        {
+            return string.IsNullOrWhiteSpace(configuredMode)
+                ? ConfigurationDefaults.OfficialDownloadMode
+                : configuredMode.Trim().ToLowerInvariant();
+        }
+
         if (string.IsNullOrWhiteSpace(configuredMode))
         {
             return ConfigurationDefaults.OfficialDownloadMode;
@@ -138,16 +151,17 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
 
     private static string ResolveOfficialApiBaseUrl(
         string? configuredBaseUrl,
-        bool isInvoiceDownloadModeExplicitlyConfigured)
+        bool isInvoiceDownloadModeExplicitlyConfigured,
+        bool isMofRequired)
     {
         if (string.IsNullOrWhiteSpace(configuredBaseUrl))
         {
-            if (isInvoiceDownloadModeExplicitlyConfigured)
+            if (isMofRequired && isInvoiceDownloadModeExplicitlyConfigured)
             {
                 throw new InvalidDataException("當 mof.invoiceDownloadMode=official 時，mof.officialApiBaseUrl 不可為空白。");
             }
 
-            return ConfigurationDefaults.OfficialApiBaseUrl;
+            return isMofRequired ? ConfigurationDefaults.OfficialApiBaseUrl : string.Empty;
         }
 
         var normalized = configuredBaseUrl.Trim();
@@ -157,6 +171,11 @@ public sealed class IniModuleConfigurationLoader : IModuleConfigurationLoader
         }
 
         return normalized;
+    }
+
+    private static bool IsMofRequired(string moduleName)
+    {
+        return moduleName.Contains("downloader", StringComparison.OrdinalIgnoreCase);
     }
 
     private static decimal ResolveLowConfidenceThreshold(string? configuredThreshold)

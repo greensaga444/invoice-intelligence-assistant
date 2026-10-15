@@ -2,8 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="主控台設定"
-        Width="760"
-        Height="680"
+        Width="820"
+        Height="700"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize">
     <Grid Margin="16">
@@ -12,90 +12,119 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="180" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
+        <TabControl Grid.Row="0">
+            <TabItem Header="1. 路徑">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="180" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="原始發票資料夾" VerticalAlignment="Center" Margin="0,0,12,10" />
-                <TextBox x:Name="FolderAPathTextBox" Grid.Row="0" Grid.Column="1" Height="32" Padding="8" Margin="0,0,8,10" />
-                <Button Grid.Row="0" Grid.Column="2" Content="選擇資料夾" Padding="12,6" Margin="0,0,0,10" Click="PickFolderAButton_Click" />
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Folder A (原始發票資料夾)" VerticalAlignment="Center" Margin="0,0,12,10" />
+                        <TextBox x:Name="FolderAPathTextBox" Grid.Row="0" Grid.Column="1" Height="32" Padding="8" Margin="0,0,8,10" />
+                        <Button Grid.Row="0" Grid.Column="2" Content="選擇資料夾" Padding="12,6" Margin="0,0,0,10" Click="PickFolderAButton_Click" />
 
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="AI 分析結果資料夾" VerticalAlignment="Center" Margin="0,0,12,10" />
-                <TextBox x:Name="FolderBPathTextBox" Grid.Row="1" Grid.Column="1" Height="32" Padding="8" Margin="0,0,8,10" />
-                <Button Grid.Row="1" Grid.Column="2" Content="選擇資料夾" Padding="12,6" Margin="0,0,0,10" Click="PickFolderBButton_Click" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Folder B (AI 分析結果資料夾)" VerticalAlignment="Center" Margin="0,0,12,10" />
+                        <TextBox x:Name="FolderBPathTextBox" Grid.Row="1" Grid.Column="1" Height="32" Padding="8" Margin="0,0,8,10" />
+                        <Button Grid.Row="1" Grid.Column="2" Content="選擇資料夾" Padding="12,6" Margin="0,0,0,10" Click="PickFolderBButton_Click" />
 
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="客戶清單 Excel" VerticalAlignment="Center" Margin="0,0,12,10" />
-                <TextBox x:Name="CustomerListFilePathTextBox" Grid.Row="2" Grid.Column="1" Height="32" Padding="8" Margin="0,0,8,10" />
-                <Button Grid.Row="2" Grid.Column="2" Content="選擇檔案" Padding="12,6" Margin="0,0,0,10" Click="PickCustomerListFileButton_Click" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Folder C (人工覆核資料夾)" VerticalAlignment="Center" Margin="0,0,12,10" />
+                        <TextBox x:Name="FolderCPathTextBox" Grid.Row="2" Grid.Column="1" Height="32" Padding="8" Margin="0,0,8,10" />
+                        <Button Grid.Row="2" Grid.Column="2" Content="選擇資料夾" Padding="12,6" Margin="0,0,0,10" Click="PickFolderCButton_Click" />
 
-                <TextBlock Grid.Row="3" Grid.Column="0" Text="下載器命名規則" VerticalAlignment="Center" Margin="0,0,12,10" />
-                <TextBox x:Name="FileNamingRuleTextBox" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Height="32" Padding="8" Margin="0,0,0,10" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="客戶清單 (Company List)" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <TextBox x:Name="CustomerListFilePathTextBox" Grid.Row="3" Grid.Column="1" Height="32" Padding="8" Margin="0,0,8,0" />
+                        <Button Grid.Row="3" Grid.Column="2" Content="選擇檔案" Padding="12,6" Click="PickCustomerListFileButton_Click" />
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
 
-                <TextBlock Grid.Row="4" Grid.Column="0" Text="發票來源後綴" VerticalAlignment="Center" Margin="0,0,12,10" />
-                <TextBox x:Name="InvoiceFileSuffixTextBox" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Height="32" Padding="8" Margin="0,0,0,10" />
+            <TabItem Header="2. 認證">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="180" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="5" Grid.Column="0" Text="折讓來源後綴" VerticalAlignment="Center" Margin="0,0,12,10" />
-                <TextBox x:Name="AllowanceFileSuffixTextBox" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Height="32" Padding="8" Margin="0,0,0,10" />
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="MOF 使用者" VerticalAlignment="Center" Margin="0,0,12,10" />
+                        <TextBox x:Name="MofAccountTextBox" Grid.Row="0" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
 
-                <TextBlock Grid.Row="6" Grid.Column="0" Text="發票輸出標籤" VerticalAlignment="Center" Margin="0,0,12,10" />
-                <TextBox x:Name="InvoiceOutputLabelTextBox" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Height="32" Padding="8" Margin="0,0,0,10" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="MOF 密碼" VerticalAlignment="Center" Margin="0,0,12,10" />
+                        <PasswordBox x:Name="OfficialApiPasswordBox" Grid.Row="1" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
 
-                <TextBlock Grid.Row="7" Grid.Column="0" Text="折讓輸出標籤" VerticalAlignment="Center" Margin="0,0,12,10" />
-                <TextBox x:Name="AllowanceOutputLabelTextBox" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" Height="32" Padding="8" Margin="0,0,0,10" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="MOF API Base URL" VerticalAlignment="Center" Margin="0,0,12,10" />
+                        <TextBox x:Name="OfficialApiBaseUrlTextBox" Grid.Row="2" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
 
-                <TextBlock Grid.Row="8" Grid.Column="0" Text="MOF 帳號" VerticalAlignment="Center" Margin="0,0,12,10" />
-                <TextBox x:Name="MofAccountTextBox" Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" Height="32" Padding="8" Margin="0,0,0,10" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="MOF App ID" VerticalAlignment="Center" Margin="0,0,12,10" />
+                        <TextBox x:Name="OfficialApiAppIdTextBox" Grid.Row="3" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
 
-                <TextBlock Grid.Row="9" Grid.Column="0" Text="MOF 密碼" VerticalAlignment="Center" Margin="0,0,12,10" />
-                <PasswordBox x:Name="OfficialApiPasswordBox" Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="2" Height="32" Padding="8" Margin="0,0,0,10" />
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="MOF App Key" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <TextBox x:Name="OfficialApiAppKeyTextBox" Grid.Row="4" Grid.Column="1" Height="32" Padding="8" />
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
 
-                <TextBlock Grid.Row="10" Grid.Column="0" Text="官方 API Base URL" VerticalAlignment="Center" Margin="0,0,12,10" />
-                <TextBox x:Name="OfficialApiBaseUrlTextBox" Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="2" Height="32" Padding="8" Margin="0,0,0,10" />
+            <TabItem Header="3. 其他">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="180" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="11" Grid.Column="0" Text="App ID" VerticalAlignment="Center" Margin="0,0,12,10" />
-                <TextBox x:Name="OfficialApiAppIdTextBox" Grid.Row="11" Grid.Column="1" Grid.ColumnSpan="2" Height="32" Padding="8" Margin="0,0,0,10" />
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="下載器命名規則" VerticalAlignment="Center" Margin="0,0,12,10" />
+                        <TextBox x:Name="FileNamingRuleTextBox" Grid.Row="0" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
 
-                <TextBlock Grid.Row="12" Grid.Column="0" Text="App Key" VerticalAlignment="Center" Margin="0,0,12,0" />
-                <TextBox x:Name="OfficialApiAppKeyTextBox" Grid.Row="12" Grid.Column="1" Grid.ColumnSpan="2" Height="32" Padding="8" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Processor 命名規則" VerticalAlignment="Center" Margin="0,0,12,10" />
+                        <TextBox x:Name="ProcessorFileNamingRuleTextBox" Grid.Row="1" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
 
-                <TextBlock Grid.Row="14" Grid.Column="0" Text="Processor 命名規則" VerticalAlignment="Center" Margin="0,10,12,0" />
-                <TextBox x:Name="ProcessorFileNamingRuleTextBox" Grid.Row="14" Grid.Column="1" Grid.ColumnSpan="2" Height="32" Padding="8" Margin="0,10,0,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="發票來源後綴" VerticalAlignment="Center" Margin="0,0,12,10" />
+                        <TextBox x:Name="InvoiceFileSuffixTextBox" Grid.Row="2" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
 
-                <TextBlock Grid.Row="15" Grid.Column="0" Text="Processor 知識庫檔案" VerticalAlignment="Center" Margin="0,10,12,0" />
-                <TextBox x:Name="ProcessorKnowledgeRepositoryFileTextBox" Grid.Row="15" Grid.Column="1" Grid.ColumnSpan="2" Height="32" Padding="8" Margin="0,10,0,0" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="折讓來源後綴" VerticalAlignment="Center" Margin="0,0,12,10" />
+                        <TextBox x:Name="AllowanceFileSuffixTextBox" Grid.Row="3" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
 
-                <TextBlock Grid.Row="16" Grid.Column="0" Text="人工覆核資料夾" VerticalAlignment="Center" Margin="0,10,12,0" />
-                <TextBox x:Name="FolderCPathTextBox" Grid.Row="16" Grid.Column="1" Height="32" Padding="8" Margin="0,10,8,0" />
-                <Button Grid.Row="16" Grid.Column="2" Content="選擇資料夾" Padding="12,6" Margin="0,10,0,0" Click="PickFolderCButton_Click" />
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="發票輸出標籤" VerticalAlignment="Center" Margin="0,0,12,10" />
+                        <TextBox x:Name="InvoiceOutputLabelTextBox" Grid.Row="4" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
 
-                <TextBlock Grid.Row="17" Grid.Column="0" Text="低信心門檻 (0~1)" VerticalAlignment="Center" Margin="0,10,12,0" />
-                <TextBox x:Name="LowConfidenceThresholdTextBox" Grid.Row="17" Grid.Column="1" Grid.ColumnSpan="2" Height="32" Padding="8" Margin="0,10,0,0" />
-            </Grid>
-        </ScrollViewer>
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="折讓輸出標籤" VerticalAlignment="Center" Margin="0,0,12,10" />
+                        <TextBox x:Name="AllowanceOutputLabelTextBox" Grid.Row="5" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
+
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="Processor 知識庫檔案" VerticalAlignment="Center" Margin="0,0,12,10" />
+                        <TextBox x:Name="ProcessorKnowledgeRepositoryFileTextBox" Grid.Row="6" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
+
+                        <TextBlock Grid.Row="7" Grid.Column="0" Text="低信心門檻 (0~1)" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <TextBox x:Name="LowConfidenceThresholdTextBox" Grid.Row="7" Grid.Column="1" Height="32" Padding="8" />
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
             <Button Content="取消" Padding="16,6" Margin="0,0,8,0" Click="CancelButton_Click" />

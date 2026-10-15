@@ -32,9 +32,6 @@ internal static class ProcessorIniFileWriter
             allowanceFileSuffix: settings.AllowanceFileSuffix,
             lowConfidenceThreshold: settings.LowConfidenceThreshold,
             knowledgeRepositoryFile: settings.ProcessorKnowledgeRepositoryFile,
-            mofAccount: settings.MofAccount,
-            officialApiAppId: settings.OfficialApiAppId,
-            officialApiAppKey: settings.OfficialApiAppKey,
             invoiceOutputLabel: settings.InvoiceOutputLabel,
             allowanceOutputLabel: settings.AllowanceOutputLabel);
 

@@ -171,6 +171,46 @@ public class IniModuleConfigurationLoaderTests
     }
 
     [Fact]
+    public void Load_ProcessorWithoutMofSection_UsesEmptyMofFields()
+    {
+        const string iniContent = """
+            [module]
+            name = InvoiceAiProcessor
+
+            [paths]
+            folderA = C:\Data\FolderA
+            folderB = C:\Data\FolderB
+
+            [output]
+            fileNamingRule = {taxId}_{companyName}_{timestamp}.xlsx
+
+            [review]
+            confidenceThreshold = 0.72
+
+            [knowledge]
+            repositoryFile = D:\Knowledge\cases.json
+            """;
+
+        var iniPath = WriteTempIni(iniContent);
+        var loader = new IniModuleConfigurationLoader();
+
+        try
+        {
+            var config = loader.Load(iniPath);
+
+            Assert.Equal("", config.MofAccount);
+            Assert.Equal("", config.MofCredentialKey);
+            Assert.Equal("", config.OfficialApiAppId);
+            Assert.Equal("", config.OfficialApiAppKey);
+            Assert.Equal("", config.OfficialApiBaseUrl);
+        }
+        finally
+        {
+            File.Delete(iniPath);
+        }
+    }
+
+    [Fact]
     public void Load_OutputLabelsProvided_UsesConfiguredValues()
     {
         const string iniContent = """
@@ -423,7 +463,7 @@ public class IniModuleConfigurationLoaderTests
     {
         const string iniContent = """
             [module]
-            name = Processor
+            name = Downloader
 
             [paths]
             folderA = C:\Data\FolderA
@@ -460,7 +500,7 @@ public class IniModuleConfigurationLoaderTests
     {
         const string iniContent = """
             [module]
-            name = Processor
+            name = Downloader
 
             [paths]
             folderA = C:\Data\FolderA

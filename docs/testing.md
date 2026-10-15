@@ -66,12 +66,13 @@ This document lists all current automated tests in the repository, grouped by te
 - Authenticate_PlaceholderAccount_ReturnsFailure
 - Authenticate_EmptyPassword_ReturnsFailure
 
-### B4. MofOfficialHttpInvoiceApiClientTests (4)
+### B4. MofOfficialHttpInvoiceApiClientTests (5)
 
 - QueryInvoicesAsync_ValidOfficialResponse_UsesOfficialEndpointAndMapsRecords
 - QueryInvoicesAsync_BusinessCodeNot200_ThrowsMofOfficialInvoiceApiException
 - QueryInvoicesAsync_MissingOfficialCredential_ThrowsInvalidOperationException
 - QueryInvoicesAsync_AllowanceFieldsPresent_MapsAllowanceAmountAndType
+- QueryInvoicesAsync_Raw1ItemsPresent_MapsAllowanceDetailRow
 
 ### B5. OfficialInvoiceBatchDownloaderTests (5)
 
@@ -81,10 +82,11 @@ This document lists all current automated tests in the repository, grouped by te
 - DownloadAsync_TransientErrorExceedsMaxRetry_Throws
 - DownloadAsync_NoDirectionSelected_ThrowsInvalidOperationException
 
-### B6. OfficialInvoiceFolderAExcelExporterTests (2)
+### B6. OfficialInvoiceFolderAExcelExporterTests (3)
 
 - ExportAsync_ValidInvoices_WritesOfficialTwoSheetWorkbook
 - ExportAsync_EmptyInvoices_WritesHeadersOnly
+- ExportAsync_Raw1AllowanceItems_WritesAllowanceSheet
 
 ## Category C: Processor Tests
 
@@ -130,5 +132,5 @@ This document lists all current automated tests in the repository, grouped by te
 ## Test Inventory Summary
 
 - Test classes: 16
-- Test cases: 60
+- Test cases: 62
 - Primary automated test project: tests/InvoiceIntelligence.Core.Tests

@@ -13,4 +13,5 @@ public sealed record OfficialInvoiceRecord(
     decimal TotalAmount,
     InvoiceDirection Direction,
     InvoiceDocumentType DocumentType = InvoiceDocumentType.Invoice,
-    string? Currency = null);
+    string? Currency = null,
+    IReadOnlyList<IReadOnlyDictionary<string, string>>? Raw1Items = null);

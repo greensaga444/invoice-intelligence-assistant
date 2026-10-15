@@ -94,6 +94,79 @@ public class OfficialInvoiceFolderAExcelExporterTests
         }
     }
 
+    [Fact]
+    public async Task ExportAsync_Raw1AllowanceItems_WritesAllowanceSheet()
+    {
+        var outputDirectory = CreateTempDirectory();
+        var outputPath = Path.Combine(outputDirectory, "official-allowance.xlsx");
+
+        var raw1Item = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["allowanceNo"] = "2026080718487658",
+            ["formatCode"] = "23",
+            ["allowanceStatus"] = "折讓已確認",
+            ["allowanceType"] = "進項",
+            ["invoiceNo"] = "DN24749905",
+            ["invoiceDate"] = "2026-08-06",
+            ["buyerTaxId"] = "54274765",
+            ["buyerName"] = "立璽科技股份有限公司",
+            ["sellerTaxId"] = "83513625",
+            ["sellerName"] = "客遊天下玩樂股份有限公司",
+            ["sendDate"] = "2026-08-07",
+            ["itemName"] = "綜合服務",
+            ["itemNetAmount"] = "357",
+            ["itemTaxAmount"] = "18",
+            ["netAmount"] = "357",
+            ["taxAmount"] = "18",
+            ["allowanceDate"] = "2026-08-07",
+            ["lastUpdatedTime"] = "2026-08-07 19:05:43",
+            ["migType"] = "G0401",
+            ["senderTaxId"] = "97025978",
+            ["senderName"] = "綠界科技股份有限公司"
+        };
+
+        var invoices = new[]
+        {
+            new OfficialInvoiceRecord(
+                InvoiceNumber: "DN24749905",
+                InvoiceDate: new DateOnly(2026, 8, 6),
+                SellerTaxId: "83513625",
+                BuyerTaxId: "54274765",
+                NetAmount: 357m,
+                TaxAmount: 18m,
+                TotalAmount: 375m,
+                Direction: InvoiceDirection.Purchase,
+                DocumentType: InvoiceDocumentType.Allowance,
+                Currency: "TWD",
+                Raw1Items: [raw1Item])
+        };
+
+        var exporter = new OfficialInvoiceFolderAExcelExporter();
+
+        try
+        {
+            await exporter.ExportAsync(invoices, outputPath);
+
+            Assert.True(File.Exists(outputPath));
+
+            using var workbook = new XLWorkbook(outputPath);
+            var allowanceSheet = workbook.Worksheet("allowance");
+
+            Assert.Equal("折讓單號碼", allowanceSheet.Cell(1, 1).GetString());
+            Assert.Equal("品項名稱", allowanceSheet.Cell(1, 12).GetString());
+            Assert.Equal("2026080718487658", allowanceSheet.Cell(2, 1).GetString());
+            Assert.Equal("DN24749905", allowanceSheet.Cell(2, 5).GetString());
+            Assert.Equal("綜合服務", allowanceSheet.Cell(2, 12).GetString());
+            Assert.Equal(357m, allowanceSheet.Cell(2, 13).GetValue<decimal>());
+            Assert.Equal(18m, allowanceSheet.Cell(2, 14).GetValue<decimal>());
+            Assert.Equal("G0401", allowanceSheet.Cell(2, 20).GetString());
+        }
+        finally
+        {
+            DeleteDirectory(outputDirectory);
+        }
+    }
+
     private static string CreateTempDirectory()
     {
         var path = Path.Combine(Path.GetTempPath(), $"invoice-intelligence-official-exporter-tests-{Guid.NewGuid():N}");

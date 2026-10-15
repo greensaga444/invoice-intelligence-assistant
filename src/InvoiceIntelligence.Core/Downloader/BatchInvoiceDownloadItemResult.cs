@@ -7,4 +7,5 @@ public sealed record BatchInvoiceDownloadItemResult(
     CustomerRecord Customer,
     bool IsSuccess,
     string Message,
-    string? OutputFilePath);
+    string? OutputFilePath,
+    IReadOnlyList<string>? OutputFilePaths = null);

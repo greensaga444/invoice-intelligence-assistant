@@ -67,7 +67,8 @@ public sealed class LocalBatchInvoiceDownloader : IBatchInvoiceDownloader
                     Customer: customer,
                     IsSuccess: true,
                     Message: "下載成功。",
-                    OutputFilePath: outputPath));
+                    OutputFilePath: outputPath,
+                    OutputFilePaths: [outputPath]));
             }
             catch (Exception ex)
             {
@@ -75,7 +76,8 @@ public sealed class LocalBatchInvoiceDownloader : IBatchInvoiceDownloader
                     Customer: customer,
                     IsSuccess: false,
                     Message: ex.Message,
-                    OutputFilePath: null));
+                    OutputFilePath: null,
+                    OutputFilePaths: null));
             }
         }
 
@@ -187,7 +189,10 @@ public sealed class LocalBatchInvoiceDownloader : IBatchInvoiceDownloader
             logLines.Add(
                 $"統編={result.Customer.TaxId}, 公司={result.Customer.CompanyName}, 起日={result.Customer.DateFrom:yyyy-MM-dd}, 迄日={result.Customer.DateTo:yyyy-MM-dd}");
             logLines.Add($"訊息={result.Message}");
-            logLines.Add($"輸出={result.OutputFilePath ?? "無"}");
+            var outputs = result.OutputFilePaths is { Count: > 0 }
+                ? string.Join(" | ", result.OutputFilePaths)
+                : result.OutputFilePath ?? "無";
+            logLines.Add($"輸出={outputs}");
             logLines.Add(string.Empty);
         }
 

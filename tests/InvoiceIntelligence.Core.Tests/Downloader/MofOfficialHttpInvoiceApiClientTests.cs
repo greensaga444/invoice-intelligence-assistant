@@ -191,6 +191,86 @@ public class MofOfficialHttpInvoiceApiClientTests
         Assert.Equal(InvoiceDocumentType.Allowance, record.DocumentType);
     }
 
+        [Fact]
+        public async Task QueryInvoicesAsync_Raw1ItemsPresent_MapsAllowanceDetailRow()
+        {
+                var responseJson = """
+                        {
+                            "v": "1.0",
+                            "code": "200",
+                            "msg": "執行成功",
+                            "details": [
+                                {
+                                    "invoiceDate": "2026/08/07",
+                                    "raw1": [
+                                        {
+                                            "allowanceNo": "2026080718487658",
+                                            "formatCode": "23",
+                                            "allowanceStatus": "折讓已確認",
+                                            "allowanceType": "進項",
+                                            "invoiceNo": "DN24749905",
+                                            "invoiceDate": "2026-08-06",
+                                            "buyerTaxId": "54274765",
+                                            "buyerName": "立璽科技股份有限公司",
+                                            "sellerTaxId": "83513625",
+                                            "sellerName": "客遊天下玩樂股份有限公司",
+                                            "sendDate": "2026-08-07",
+                                            "itemName": "綜合服務",
+                                            "itemNetAmount": "357",
+                                            "itemTaxAmount": "18",
+                                            "netAmount": "357",
+                                            "taxAmount": "18",
+                                            "allowanceDate": "2026-08-07",
+                                            "lastUpdatedTime": "2026-08-07 19:05:43",
+                                            "migType": "G0401",
+                                            "senderTaxId": "97025978",
+                                            "senderName": "綠界科技股份有限公司"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                        """;
+
+                var handler = new RecordingHttpMessageHandler(_ =>
+                        new HttpResponseMessage(HttpStatusCode.OK)
+                        {
+                                Content = new StringContent(responseJson, Encoding.UTF8, "application/json")
+                        });
+
+                var client = new MofOfficialHttpInvoiceApiClient(new HttpClient(handler), "https://www-vc.einvoice.nat.gov.tw");
+
+                var request = new OfficialInvoicePageRequest(
+                        SessionToken: "unused-in-v1.9",
+                        TaxId: "54274765",
+                        DateFrom: new DateOnly(2026, 8, 1),
+                        DateTo: new DateOnly(2026, 8, 31),
+                        Direction: InvoiceDirection.Purchase,
+                        PageNumber: 1,
+                        PageSize: 200,
+                        DocumentType: InvoiceDocumentType.Allowance,
+                        OfficialApiAppId: "app-id-001",
+                        OfficialApiAccount: "merchant-account",
+                        OfficialApiPassword: "merchant-password");
+
+                var result = await client.QueryInvoicesAsync(request);
+
+                Assert.Single(result.Items);
+
+                var record = result.Items[0];
+                Assert.Equal("DN24749905", record.InvoiceNumber);
+                Assert.Equal(new DateOnly(2026, 8, 6), record.InvoiceDate);
+                Assert.Equal("83513625", record.SellerTaxId);
+                Assert.Equal("54274765", record.BuyerTaxId);
+                Assert.Equal(357m, record.NetAmount);
+                Assert.Equal(18m, record.TaxAmount);
+                Assert.Equal(375m, record.TotalAmount);
+                Assert.Equal(InvoiceDocumentType.Allowance, record.DocumentType);
+                Assert.NotNull(record.Raw1Items);
+                Assert.Single(record.Raw1Items!);
+                Assert.Equal("2026080718487658", record.Raw1Items![0]["allowanceNo"]);
+        }
+
     private sealed class RecordingHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFactory)
         : HttpMessageHandler
     {

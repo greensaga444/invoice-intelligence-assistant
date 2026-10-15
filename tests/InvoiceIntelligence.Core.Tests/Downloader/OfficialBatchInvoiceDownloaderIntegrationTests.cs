@@ -18,7 +18,7 @@ public class OfficialBatchInvoiceDownloaderIntegrationTests
 
         var apiClient = new FakeOfficialApiClient();
         var pagedDownloader = new OfficialInvoiceBatchDownloader(apiClient, (_, _) => Task.CompletedTask);
-    var exporter = new OfficialInvoiceFolderAExcelExporter();
+        var exporter = new OfficialInvoiceFolderAExcelExporter();
         var downloader = new OfficialBatchInvoiceDownloader(pagedDownloader, exporter);
 
         var request = new BatchInvoiceDownloadRequest(
@@ -33,20 +33,29 @@ public class OfficialBatchInvoiceDownloaderIntegrationTests
 
             Assert.Equal(2, result.Items.Count);
             Assert.All(result.Items, item => Assert.True(item.IsSuccess));
-            Assert.All(result.Items, item => Assert.NotNull(item.OutputFilePath));
-            Assert.All(result.Items, item => Assert.True(File.Exists(item.OutputFilePath)));
+            Assert.All(result.Items, item => Assert.NotNull(item.OutputFilePaths));
+            Assert.All(result.Items, item => Assert.Equal(2, item.OutputFilePaths!.Count));
+            Assert.All(result.Items, item => Assert.All(item.OutputFilePaths!, path => Assert.True(File.Exists(path))));
             Assert.True(File.Exists(result.LogFilePath));
 
-            var firstWorkbookPath = result.Items[0].OutputFilePath!;
-            var logLines = File.ReadAllLines(result.LogFilePath);
-            using var workbook = new XLWorkbook(firstWorkbookPath);
-            var summarySheet = workbook.Worksheet("btb411w_xls1");
-            var detailSheet = workbook.Worksheet("btb411w_xls2");
+            var firstInvoiceWorkbookPath = result.Items[0].OutputFilePaths!
+                .Single(path => Path.GetFileName(path).Contains("-invoice", StringComparison.OrdinalIgnoreCase));
+            var firstAllowanceWorkbookPath = result.Items[0].OutputFilePaths!
+                .Single(path => Path.GetFileName(path).Contains("-allowance", StringComparison.OrdinalIgnoreCase));
 
-            Assert.Equal("發票號碼", summarySheet.Cell(1, 1).GetString());
-            Assert.Equal("發票日期", summarySheet.Cell(1, 5).GetString());
-            Assert.Equal("發票號碼", detailSheet.Cell(1, 1).GetString());
-            Assert.Equal("品名", detailSheet.Cell(1, 4).GetString());
+            var logLines = File.ReadAllLines(result.LogFilePath);
+            using var invoiceWorkbook = new XLWorkbook(firstInvoiceWorkbookPath);
+            using var allowanceWorkbook = new XLWorkbook(firstAllowanceWorkbookPath);
+            var invoiceSummarySheet = invoiceWorkbook.Worksheet("btb411w_xls1");
+            var invoiceDetailSheet = invoiceWorkbook.Worksheet("btb411w_xls2");
+            var allowanceSummarySheet = allowanceWorkbook.Worksheet("btb411w_xls1");
+
+            Assert.Equal("發票號碼", invoiceSummarySheet.Cell(1, 1).GetString());
+            Assert.Equal("發票日期", invoiceSummarySheet.Cell(1, 5).GetString());
+            Assert.Equal("發票號碼", invoiceDetailSheet.Cell(1, 1).GetString());
+            Assert.Equal("品名", invoiceDetailSheet.Cell(1, 4).GetString());
+            Assert.Equal("32", invoiceSummarySheet.Cell(2, 3).GetString());
+            Assert.Equal("35", allowanceSummarySheet.Cell(2, 3).GetString());
             Assert.Contains("發票下載批次紀錄", logLines[0]);
             Assert.Contains("成功:", logLines[3]);
         }

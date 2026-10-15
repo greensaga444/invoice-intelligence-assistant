@@ -95,12 +95,30 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
             var queryRequest = BuildQueryRequest(batchRequest, customer);
             var queryResult = await _officialDownloader.DownloadAsync(queryRequest, cancellationToken);
 
-            var outputPath = BuildOutputPath(batchRequest, customer, batchTimestamp);
+            var invoices = queryResult.Invoices
+                .Where(invoice => invoice.DocumentType == InvoiceDocumentType.Invoice)
+                .ToArray();
+            var allowances = queryResult.Invoices
+                .Where(invoice => invoice.DocumentType == InvoiceDocumentType.Allowance)
+                .ToArray();
 
-            // Persist one workbook per customer to Folder A for downstream processing.
-            await _exporter.ExportAsync(queryResult.Invoices, outputPath, cancellationToken);
+            var outputPaths = new List<string>(2);
 
-            return CreateSuccessResult(customer, queryResult, outputPath);
+            if (_includeSalesInvoices || _includePurchaseInvoices)
+            {
+                var invoiceOutputPath = BuildOutputPath(batchRequest, customer, batchTimestamp, "invoice");
+                await _exporter.ExportAsync(invoices, invoiceOutputPath, cancellationToken);
+                outputPaths.Add(invoiceOutputPath);
+            }
+
+            if (_includeSalesAllowances || _includePurchaseAllowances)
+            {
+                var allowanceOutputPath = BuildOutputPath(batchRequest, customer, batchTimestamp, "allowance");
+                await _exporter.ExportAsync(allowances, allowanceOutputPath, cancellationToken);
+                outputPaths.Add(allowanceOutputPath);
+            }
+
+            return CreateSuccessResult(customer, queryResult, outputPaths);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -135,7 +153,8 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
     private static string BuildOutputPath(
         BatchInvoiceDownloadRequest batchRequest,
         CustomerRecord customer,
-        DateTimeOffset batchTimestamp)
+        DateTimeOffset batchTimestamp,
+        string fileCategory)
     {
         var fileName = OutputFileNameHelper.BuildFileName(
             namingRule: batchRequest.OutputNamingRule,
@@ -146,19 +165,37 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
             timestamp: batchTimestamp,
             extension: ".xlsx");
 
+        fileName = AppendFileCategoryBeforeExtension(fileName, fileCategory);
+
         return OutputFileNameHelper.EnsureUniquePath(Path.Combine(batchRequest.FolderAPath, fileName));
+    }
+
+    private static string AppendFileCategoryBeforeExtension(string fileName, string fileCategory)
+    {
+        if (string.IsNullOrWhiteSpace(fileCategory))
+        {
+            return fileName;
+        }
+
+        var extension = Path.GetExtension(fileName);
+        var nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+        return $"{nameWithoutExtension}-{fileCategory}{extension}";
     }
 
     private static BatchInvoiceDownloadItemResult CreateSuccessResult(
         CustomerRecord customer,
         OfficialInvoiceBatchDownloadResult queryResult,
-        string outputPath)
+        IReadOnlyList<string> outputPaths)
     {
+        var invoiceCount = queryResult.Invoices.Count(invoice => invoice.DocumentType == InvoiceDocumentType.Invoice);
+        var allowanceCount = queryResult.Invoices.Count(invoice => invoice.DocumentType == InvoiceDocumentType.Allowance);
+
         return new BatchInvoiceDownloadItemResult(
             Customer: customer,
             IsSuccess: true,
-            Message: $"下載成功，筆數={queryResult.Invoices.Count}，API 呼叫={queryResult.TotalApiCalls}，重試={queryResult.TotalRetryCount}。",
-            OutputFilePath: outputPath);
+            Message: $"下載成功，進銷項筆數={invoiceCount}，折讓筆數={allowanceCount}，API 呼叫={queryResult.TotalApiCalls}，重試={queryResult.TotalRetryCount}。",
+            OutputFilePath: outputPaths.FirstOrDefault(),
+            OutputFilePaths: outputPaths);
     }
 
     private static BatchInvoiceDownloadItemResult CreateFailureResult(CustomerRecord customer, string message)
@@ -167,7 +204,8 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
             Customer: customer,
             IsSuccess: false,
             Message: message,
-            OutputFilePath: null);
+            OutputFilePath: null,
+            OutputFilePaths: null);
     }
 
     private static void WriteLogFile(
@@ -195,7 +233,10 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
             logLines.Add(
                 $"統編={result.Customer.TaxId}, 公司={result.Customer.CompanyName}, 起日={result.Customer.DateFrom:yyyy-MM-dd}, 迄日={result.Customer.DateTo:yyyy-MM-dd}");
             logLines.Add($"訊息={result.Message}");
-            logLines.Add($"輸出={result.OutputFilePath ?? "無"}");
+            var outputs = result.OutputFilePaths is { Count: > 0 }
+                ? string.Join(" | ", result.OutputFilePaths)
+                : result.OutputFilePath ?? "無";
+            logLines.Add($"輸出={outputs}");
             logLines.Add(string.Empty);
         }
 

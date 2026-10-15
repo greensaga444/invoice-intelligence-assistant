@@ -13,6 +13,75 @@ namespace InvoiceIntelligence.Core.Downloader;
 public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClient
 {
     private const string ApiVersion = "1.0";
+    private static readonly string[] Raw1InvoiceNumberFieldAliases =
+    [
+        "發票號碼",
+        "invoiceNo",
+        "invoiceNumber",
+        "invoiceNum"
+    ];
+
+    private static readonly string[] Raw1AllowanceNumberFieldAliases =
+    [
+        "折讓單號碼",
+        "allowanceNo",
+        "allowanceNumber"
+    ];
+
+    private static readonly string[] Raw1InvoiceDateFieldAliases =
+    [
+        "發票日期",
+        "invoiceDate"
+    ];
+
+    private static readonly string[] Raw1AllowanceDateFieldAliases =
+    [
+        "折讓單日期",
+        "allowanceDate"
+    ];
+
+    private static readonly string[] Raw1BuyerTaxIdFieldAliases =
+    [
+        "買方統一編號",
+        "buyerTaxId",
+        "buyerBan",
+        "buyerIdentifier"
+    ];
+
+    private static readonly string[] Raw1SellerTaxIdFieldAliases =
+    [
+        "賣方統一編號",
+        "sellerTaxId",
+        "sellerBan",
+        "sellerIdentifier"
+    ];
+
+    private static readonly string[] Raw1NetAmountFieldAliases =
+    [
+        "折讓金額(不含稅)",
+        "allowanceAmount",
+        "allowanceNetAmount",
+        "netAmount",
+        "itemNetAmount",
+        "品項折讓金額(不含稅)"
+    ];
+
+    private static readonly string[] Raw1TaxAmountFieldAliases =
+    [
+        "折讓稅額",
+        "allowanceTaxAmount",
+        "taxAmount",
+        "itemTaxAmount",
+        "品項折讓稅額"
+    ];
+
+    private static readonly string[] Raw1TotalAmountFieldAliases =
+    [
+        "折讓總額",
+        "totalAmount",
+        "allowanceTotalAmount"
+    ];
+
     private readonly HttpClient _httpClient;
     private readonly Uri _queryUri;
 
@@ -137,28 +206,107 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
         var detailsElement = TryGetProperty(root, "details");
         if (detailsElement is null || detailsElement.Value.ValueKind != JsonValueKind.Array)
         {
-            return [];
+            return BuildRecordsFromRaw1Items(ParseRaw1Items(root), taxId, direction, documentType);
         }
 
         var records = new List<OfficialInvoiceRecord>();
 
         foreach (var item in detailsElement.Value.EnumerateArray())
         {
-            var invoiceDate = ReadRequiredDate(item, "invoiceDate");
-            var totalAmount = ResolveTotalAmount(item, direction, documentType);
+            var raw1Items = ParseRaw1Items(item);
+            var invoiceDate = ResolveInvoiceDate(item, raw1Items);
+            var totalAmount = ResolveTotalAmount(item, direction, documentType, raw1Items);
+
+            var invoiceNumber = ResolveRaw1Value(raw1Items, Raw1InvoiceNumberFieldAliases)
+                ?? ResolveRaw1Value(raw1Items, Raw1AllowanceNumberFieldAliases)
+                ?? BuildStatisticInvoiceNumber(invoiceDate, direction, documentType);
+
+            var buyerTaxId = ResolveRaw1Value(raw1Items, Raw1BuyerTaxIdFieldAliases)
+                ?? (direction == InvoiceDirection.Purchase ? taxId : string.Empty);
+
+            var sellerTaxId = ResolveRaw1Value(raw1Items, Raw1SellerTaxIdFieldAliases)
+                ?? (direction == InvoiceDirection.Sales ? taxId : string.Empty);
+
+            var netAmount = ResolveRaw1Decimal(raw1Items, Raw1NetAmountFieldAliases) ?? totalAmount;
+            var taxAmount = ResolveRaw1Decimal(raw1Items, Raw1TaxAmountFieldAliases) ?? 0m;
+            var derivedTotalAmount = ResolveRaw1Decimal(raw1Items, Raw1TotalAmountFieldAliases) ?? (netAmount + taxAmount);
 
             // ODS374I returns daily statistics only, so we synthesize a stable key-like invoice number.
             records.Add(new OfficialInvoiceRecord(
-                InvoiceNumber: BuildStatisticInvoiceNumber(invoiceDate, direction, documentType),
+                InvoiceNumber: invoiceNumber,
                 InvoiceDate: invoiceDate,
-                SellerTaxId: taxId,
-                BuyerTaxId: string.Empty,
-                NetAmount: totalAmount,
-                TaxAmount: 0m,
+                SellerTaxId: sellerTaxId,
+                BuyerTaxId: buyerTaxId,
+                NetAmount: netAmount,
+                TaxAmount: taxAmount,
+                TotalAmount: derivedTotalAmount,
+                Direction: direction,
+                DocumentType: documentType,
+                Currency: "TWD",
+                Raw1Items: raw1Items.Count > 0 ? raw1Items : null));
+        }
+
+        if (records.Count == 0)
+        {
+            return BuildRecordsFromRaw1Items(ParseRaw1Items(root), taxId, direction, documentType);
+        }
+
+        var topLevelRaw1Items = ParseRaw1Items(root);
+        if (topLevelRaw1Items.Count > 0 && !HasAnyRaw1Items(records))
+        {
+            records[0] = records[0] with { Raw1Items = topLevelRaw1Items };
+        }
+
+        return records;
+    }
+
+    private static IReadOnlyList<OfficialInvoiceRecord> BuildRecordsFromRaw1Items(
+        IReadOnlyList<IReadOnlyDictionary<string, string>> raw1Items,
+        string taxId,
+        InvoiceDirection direction,
+        InvoiceDocumentType documentType)
+    {
+        if (raw1Items.Count == 0)
+        {
+            return [];
+        }
+
+        var records = new List<OfficialInvoiceRecord>(raw1Items.Count);
+
+        foreach (var raw1Item in raw1Items)
+        {
+            var singleRaw1List = new List<IReadOnlyDictionary<string, string>> { raw1Item };
+
+            var invoiceDate = ResolveRaw1Date(singleRaw1List, Raw1InvoiceDateFieldAliases)
+                ?? ResolveRaw1Date(singleRaw1List, Raw1AllowanceDateFieldAliases)
+                ?? DateOnly.FromDateTime(DateTime.Today);
+
+            var invoiceNumber = ResolveRaw1Value(singleRaw1List, Raw1InvoiceNumberFieldAliases)
+                ?? ResolveRaw1Value(singleRaw1List, Raw1AllowanceNumberFieldAliases)
+                ?? BuildStatisticInvoiceNumber(invoiceDate, direction, documentType);
+
+            var buyerTaxId = ResolveRaw1Value(singleRaw1List, Raw1BuyerTaxIdFieldAliases)
+                ?? (direction == InvoiceDirection.Purchase ? taxId : string.Empty);
+
+            var sellerTaxId = ResolveRaw1Value(singleRaw1List, Raw1SellerTaxIdFieldAliases)
+                ?? (direction == InvoiceDirection.Sales ? taxId : string.Empty);
+
+            var netAmount = ResolveRaw1Decimal(singleRaw1List, Raw1NetAmountFieldAliases) ?? 0m;
+            var taxAmount = ResolveRaw1Decimal(singleRaw1List, Raw1TaxAmountFieldAliases) ?? 0m;
+            var totalAmount = ResolveRaw1Decimal(singleRaw1List, Raw1TotalAmountFieldAliases) ?? (netAmount + taxAmount);
+
+            records.Add(new OfficialInvoiceRecord(
+                InvoiceNumber: invoiceNumber,
+                InvoiceDate: invoiceDate,
+                SellerTaxId: sellerTaxId,
+                BuyerTaxId: buyerTaxId,
+                NetAmount: netAmount,
+                TaxAmount: taxAmount,
                 TotalAmount: totalAmount,
                 Direction: direction,
                 DocumentType: documentType,
-                Currency: "TWD"));
+                Currency: "TWD",
+                Raw1Items: singleRaw1List));
         }
 
         return records;
@@ -178,7 +326,8 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
     private static decimal ResolveTotalAmount(
         JsonElement item,
         InvoiceDirection direction,
-        InvoiceDocumentType documentType)
+        InvoiceDocumentType documentType,
+        IReadOnlyList<IReadOnlyDictionary<string, string>> raw1Items)
     {
         // Prefer scope-specific fields when present.
         if (TryResolveScopeAmount(item, direction, documentType, out var scopedAmount))
@@ -187,7 +336,214 @@ public sealed class MofOfficialHttpInvoiceApiClient : IMofOfficialInvoiceApiClie
         }
 
         // Fallback to the documented ODS374I issuance fields so each selected scope still has a stable output row.
-        return ResolveFallbackInvoiceAmount(item);
+        var fallbackAmount = ResolveFallbackInvoiceAmount(item);
+        if (fallbackAmount != 0m)
+        {
+            return fallbackAmount;
+        }
+
+        var raw1TotalAmount = ResolveRaw1Decimal(raw1Items, Raw1TotalAmountFieldAliases);
+        if (raw1TotalAmount.HasValue)
+        {
+            return raw1TotalAmount.Value;
+        }
+
+        var raw1NetAmount = ResolveRaw1Decimal(raw1Items, Raw1NetAmountFieldAliases) ?? 0m;
+        var raw1TaxAmount = ResolveRaw1Decimal(raw1Items, Raw1TaxAmountFieldAliases) ?? 0m;
+        return raw1NetAmount + raw1TaxAmount;
+    }
+
+    private static DateOnly ResolveInvoiceDate(
+        JsonElement item,
+        IReadOnlyList<IReadOnlyDictionary<string, string>> raw1Items)
+    {
+        var raw1InvoiceDate = ResolveRaw1Date(raw1Items, Raw1InvoiceDateFieldAliases)
+            ?? ResolveRaw1Date(raw1Items, Raw1AllowanceDateFieldAliases);
+        if (raw1InvoiceDate.HasValue)
+        {
+            return raw1InvoiceDate.Value;
+        }
+
+        if (TryReadDate(item, out var invoiceDate, "invoiceDate"))
+        {
+            return invoiceDate;
+        }
+
+        throw new JsonException("缺少必要日期欄位: invoiceDate");
+    }
+
+    private static List<IReadOnlyDictionary<string, string>> ParseRaw1Items(JsonElement element)
+    {
+        var raw1Element = TryGetProperty(element, "raw1");
+        if (raw1Element is null || raw1Element.Value.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var raw1Items = new List<IReadOnlyDictionary<string, string>>();
+        foreach (var raw1ItemElement in raw1Element.Value.EnumerateArray())
+        {
+            if (raw1ItemElement.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            var raw1Item = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var property in raw1ItemElement.EnumerateObject())
+            {
+                raw1Item[property.Name] = ToRawString(property.Value);
+            }
+
+            if (raw1Item.Count > 0)
+            {
+                raw1Items.Add(raw1Item);
+            }
+        }
+
+        return raw1Items;
+    }
+
+    private static string ToRawString(JsonElement value)
+    {
+        if (value.ValueKind == JsonValueKind.String)
+        {
+            return value.GetString() ?? string.Empty;
+        }
+
+        if (value.ValueKind is JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False)
+        {
+            return value.ToString();
+        }
+
+        return string.Empty;
+    }
+
+    private static bool HasAnyRaw1Items(IReadOnlyList<OfficialInvoiceRecord> records)
+    {
+        foreach (var record in records)
+        {
+            if (record.Raw1Items is { Count: > 0 })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static string? ResolveRaw1Value(
+        IReadOnlyList<IReadOnlyDictionary<string, string>> raw1Items,
+        params string[] fieldNames)
+    {
+        foreach (var raw1Item in raw1Items)
+        {
+            foreach (var fieldName in fieldNames)
+            {
+                if (!raw1Item.TryGetValue(fieldName, out var rawValue)
+                    || string.IsNullOrWhiteSpace(rawValue))
+                {
+                    continue;
+                }
+
+                return rawValue.Trim();
+            }
+        }
+
+        return null;
+    }
+
+    private static decimal? ResolveRaw1Decimal(
+        IReadOnlyList<IReadOnlyDictionary<string, string>> raw1Items,
+        params string[] fieldNames)
+    {
+        var rawValue = ResolveRaw1Value(raw1Items, fieldNames);
+        if (string.IsNullOrWhiteSpace(rawValue))
+        {
+            return null;
+        }
+
+        if (decimal.TryParse(rawValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsedValue))
+        {
+            return parsedValue;
+        }
+
+        if (decimal.TryParse(rawValue, NumberStyles.Any, CultureInfo.CurrentCulture, out parsedValue))
+        {
+            return parsedValue;
+        }
+
+        return null;
+    }
+
+    private static DateOnly? ResolveRaw1Date(
+        IReadOnlyList<IReadOnlyDictionary<string, string>> raw1Items,
+        params string[] fieldNames)
+    {
+        var rawValue = ResolveRaw1Value(raw1Items, fieldNames);
+        if (string.IsNullOrWhiteSpace(rawValue))
+        {
+            return null;
+        }
+
+        if (DateOnly.TryParse(rawValue, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dateOnly))
+        {
+            return dateOnly;
+        }
+
+        if (DateOnly.TryParse(rawValue, CultureInfo.CurrentCulture, DateTimeStyles.None, out dateOnly))
+        {
+            return dateOnly;
+        }
+
+        if (DateTime.TryParse(rawValue, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var dateTime))
+        {
+            return DateOnly.FromDateTime(dateTime);
+        }
+
+        if (DateTime.TryParse(rawValue, CultureInfo.CurrentCulture, DateTimeStyles.AssumeLocal, out dateTime))
+        {
+            return DateOnly.FromDateTime(dateTime);
+        }
+
+        return null;
+    }
+
+    private static bool TryReadDate(JsonElement element, out DateOnly dateOnly, params string[] names)
+    {
+        dateOnly = default;
+
+        foreach (var name in names)
+        {
+            var raw = ReadString(element, name);
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                continue;
+            }
+
+            if (DateOnly.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.None, out dateOnly))
+            {
+                return true;
+            }
+
+            if (DateOnly.TryParse(raw, CultureInfo.CurrentCulture, DateTimeStyles.None, out dateOnly))
+            {
+                return true;
+            }
+
+            if (DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var dateTime))
+            {
+                dateOnly = DateOnly.FromDateTime(dateTime);
+                return true;
+            }
+
+            if (DateTime.TryParse(raw, CultureInfo.CurrentCulture, DateTimeStyles.AssumeLocal, out dateTime))
+            {
+                dateOnly = DateOnly.FromDateTime(dateTime);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool TryResolveScopeAmount(

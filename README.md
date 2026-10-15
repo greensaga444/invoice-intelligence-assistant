@@ -280,6 +280,8 @@ flowchart LR
 4. 若採官方 API，設定 `mof.invoiceDownloadMode=official` 與 `mof.officialApiBaseUrl`。
 5. 客戶端執行 `downloader/InvoiceDownloader.exe`。
 6. 驗證是否成功輸出檔案到 Folder A，並產生下載紀錄 `.log`。
+	- local 模式：每個客戶產生 1 個 `.xlsx`。
+	- official 模式：每個客戶同時產生 2 個 `.xlsx`（`-invoice` 與 `-allowance`）。
 7. 此模式不提供設定 UI，請直接編輯 `config/downloader.ini`。
 
 流程：
@@ -320,7 +322,8 @@ flowchart LR
 ### 模組相依與格式注意事項
 
 - Processor 目前只會讀取 Folder A 下的 `.xlsx` 檔案。
-- Downloader 在 local 模式輸出 `.xlsx`；official 模式輸出 `.csv`。
+- Downloader 在 local 與 official 模式皆輸出 `.xlsx`。
+- official 模式會分別輸出進銷項與折讓兩個檔案（檔名尾碼為 `-invoice`、`-allowance`）。
 - 若要將 Downloader 輸出直接餵給 Processor，請確保 Folder A 內容符合 Processor 期望的 `.xlsx` 欄位格式。
 
 兩個桌面模組會在啟動時讀取對應 INI 設定並驗證命名規則占位符；官方 API 憑證欄位採 appId/appKey。

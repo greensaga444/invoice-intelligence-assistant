@@ -70,8 +70,8 @@
                 <TextBlock Grid.Row="8" Grid.Column="0" Text="MOF 帳號" VerticalAlignment="Center" Margin="0,0,12,10" />
                 <TextBox x:Name="MofAccountTextBox" Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" Height="32" Padding="8" Margin="0,0,0,10" />
 
-                <TextBlock Grid.Row="9" Grid.Column="0" Text="下載模式" VerticalAlignment="Center" Margin="0,0,12,10" />
-                <TextBox x:Name="InvoiceDownloadModeTextBox" Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="2" Height="32" Padding="8" Margin="0,0,0,10" />
+                <TextBlock Grid.Row="9" Grid.Column="0" Text="MOF 密碼" VerticalAlignment="Center" Margin="0,0,12,10" />
+                <PasswordBox x:Name="OfficialApiPasswordBox" Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="2" Height="32" Padding="8" Margin="0,0,0,10" />
 
                 <TextBlock Grid.Row="10" Grid.Column="0" Text="官方 API Base URL" VerticalAlignment="Center" Margin="0,0,12,10" />
                 <TextBox x:Name="OfficialApiBaseUrlTextBox" Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="2" Height="32" Padding="8" Margin="0,0,0,10" />
@@ -81,9 +81,6 @@
 
                 <TextBlock Grid.Row="12" Grid.Column="0" Text="App Key" VerticalAlignment="Center" Margin="0,0,12,0" />
                 <TextBox x:Name="OfficialApiAppKeyTextBox" Grid.Row="12" Grid.Column="1" Grid.ColumnSpan="2" Height="32" Padding="8" />
-
-                <TextBlock Grid.Row="13" Grid.Column="0" Text="MOF 密碼" VerticalAlignment="Center" Margin="0,10,12,0" />
-                <PasswordBox x:Name="OfficialApiPasswordBox" Grid.Row="13" Grid.Column="1" Grid.ColumnSpan="2" Height="32" Padding="8" Margin="0,10,0,0" />
 
                 <TextBlock Grid.Row="14" Grid.Column="0" Text="Processor 命名規則" VerticalAlignment="Center" Margin="0,10,12,0" />
                 <TextBox x:Name="ProcessorFileNamingRuleTextBox" Grid.Row="14" Grid.Column="1" Grid.ColumnSpan="2" Height="32" Padding="8" Margin="0,10,0,0" />

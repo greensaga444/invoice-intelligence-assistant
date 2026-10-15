@@ -8,6 +8,7 @@ namespace InvoiceLauncher;
 public partial class LauncherSettingsWindow : Window
 {
     private readonly string _moduleName;
+    private readonly string _invoiceDownloadMode;
 
     public LauncherSettingsWindow(LauncherIniSettings settings)
     {
@@ -29,7 +30,7 @@ public partial class LauncherSettingsWindow : Window
         ProcessorKnowledgeRepositoryFileTextBox.Text = settings.ProcessorKnowledgeRepositoryFile;
         LowConfidenceThresholdTextBox.Text = settings.LowConfidenceThreshold.ToString("0.00", CultureInfo.InvariantCulture);
         MofAccountTextBox.Text = settings.MofAccount;
-        InvoiceDownloadModeTextBox.Text = settings.InvoiceDownloadMode;
+        _invoiceDownloadMode = settings.InvoiceDownloadMode;
         OfficialApiBaseUrlTextBox.Text = settings.OfficialApiBaseUrl;
         OfficialApiAppIdTextBox.Text = string.IsNullOrWhiteSpace(settings.OfficialApiAppId)
             ? settings.OfficialApiAppKey
@@ -78,7 +79,9 @@ public partial class LauncherSettingsWindow : Window
         var processorKnowledgeRepositoryFile = ProcessorKnowledgeRepositoryFileTextBox.Text.Trim();
         var lowConfidenceThresholdText = LowConfidenceThresholdTextBox.Text.Trim();
         var mofAccount = MofAccountTextBox.Text.Trim();
-        var invoiceDownloadMode = InvoiceDownloadModeTextBox.Text.Trim();
+        var invoiceDownloadMode = string.IsNullOrWhiteSpace(_invoiceDownloadMode)
+            ? "local"
+            : _invoiceDownloadMode.Trim();
         var officialApiBaseUrl = OfficialApiBaseUrlTextBox.Text.Trim();
         var officialApiAppId = OfficialApiAppIdTextBox.Text.Trim();
         var officialApiAppKey = OfficialApiAppKeyTextBox.Text.Trim();
@@ -97,7 +100,6 @@ public partial class LauncherSettingsWindow : Window
             || string.IsNullOrWhiteSpace(processorFileNamingRule)
             || string.IsNullOrWhiteSpace(processorKnowledgeRepositoryFile)
             || string.IsNullOrWhiteSpace(mofAccount)
-            || string.IsNullOrWhiteSpace(invoiceDownloadMode)
             || string.IsNullOrWhiteSpace(officialApiAppId)
             || string.IsNullOrWhiteSpace(officialApiAppKey))
         {

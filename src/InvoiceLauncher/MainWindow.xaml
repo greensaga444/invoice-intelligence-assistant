@@ -132,12 +132,12 @@
                             Margin="0,0,8,0"
                             Click="RunFullFlowButton_Click" />
                     <Button x:Name="LaunchDownloaderButton"
-                            Content="只開啟 Downloader"
+                            Content="開啟 Downloader"
                             Padding="14,6"
                             Margin="0,0,8,0"
                             Click="LaunchDownloaderButton_Click" />
                     <Button x:Name="LaunchProcessorButton"
-                            Content="只開啟 Processor"
+                            Content="開啟 Processor"
                             Padding="14,6"
                             Margin="0,0,8,0"
                             Click="LaunchProcessorButton_Click" />

@@ -271,6 +271,271 @@ public class MofOfficialHttpInvoiceApiClientTests
         Assert.Equal("2026080718487658", record.Raw1Items![0]["allowanceNo"]);
     }
 
+    [Fact]
+    public async Task QueryInvoicesAsync_HttpRequestExceptionWithStatusCode_ThrowsTransientDomainException()
+    {
+        var handler = new ThrowingHttpMessageHandler(_ =>
+            throw new HttpRequestException("gateway failed", null, HttpStatusCode.BadGateway));
+
+        var client = new MofOfficialHttpInvoiceApiClient(new HttpClient(handler), "https://www-vc.einvoice.nat.gov.tw");
+        var request = CreateBaseRequest();
+
+        var exception = await Assert.ThrowsAsync<MofOfficialInvoiceApiException>(() => client.QueryInvoicesAsync(request));
+
+        Assert.Equal(502, exception.StatusCode);
+        Assert.True(exception.IsTransient);
+    }
+
+    [Fact]
+    public async Task QueryInvoicesAsync_HttpRequestExceptionWithoutStatusCode_ThrowsTransientDomainException()
+    {
+        var handler = new ThrowingHttpMessageHandler(_ => throw new HttpRequestException("network unavailable"));
+
+        var client = new MofOfficialHttpInvoiceApiClient(new HttpClient(handler), "https://www-vc.einvoice.nat.gov.tw");
+        var request = CreateBaseRequest();
+
+        var exception = await Assert.ThrowsAsync<MofOfficialInvoiceApiException>(() => client.QueryInvoicesAsync(request));
+
+        Assert.Null(exception.StatusCode);
+        Assert.True(exception.IsTransient);
+    }
+
+    [Fact]
+    public async Task QueryInvoicesAsync_Timeout_ThrowsRequestTimeoutDomainException()
+    {
+        var handler = new ThrowingHttpMessageHandler(_ => throw new TaskCanceledException("timeout"));
+
+        var client = new MofOfficialHttpInvoiceApiClient(new HttpClient(handler), "https://www-vc.einvoice.nat.gov.tw");
+        var request = CreateBaseRequest();
+
+        var exception = await Assert.ThrowsAsync<MofOfficialInvoiceApiException>(() => client.QueryInvoicesAsync(request));
+
+        Assert.Equal(408, exception.StatusCode);
+        Assert.True(exception.IsTransient);
+    }
+
+    [Fact]
+    public async Task QueryInvoicesAsync_NonSuccessStatusWithBody_ThrowsWithResponseBodyAndNonTransientFlag()
+    {
+        var handler = new RecordingHttpMessageHandler(_ =>
+            new HttpResponseMessage(HttpStatusCode.BadRequest)
+            {
+                Content = new StringContent("{\"error\":\"bad request\"}", Encoding.UTF8, "application/json")
+            });
+
+        var client = new MofOfficialHttpInvoiceApiClient(new HttpClient(handler), "https://www-vc.einvoice.nat.gov.tw");
+        var request = CreateBaseRequest();
+
+        var exception = await Assert.ThrowsAsync<MofOfficialInvoiceApiException>(() => client.QueryInvoicesAsync(request));
+
+        Assert.Equal(400, exception.StatusCode);
+        Assert.False(exception.IsTransient);
+        Assert.Contains("bad request", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task QueryInvoicesAsync_NonSuccessStatus429_ThrowsTransientException()
+    {
+        var handler = new RecordingHttpMessageHandler(_ =>
+            new HttpResponseMessage((HttpStatusCode)429)
+            {
+                Content = new StringContent(string.Empty, Encoding.UTF8, "application/json")
+            });
+
+        var client = new MofOfficialHttpInvoiceApiClient(new HttpClient(handler), "https://www-vc.einvoice.nat.gov.tw");
+        var request = CreateBaseRequest();
+
+        var exception = await Assert.ThrowsAsync<MofOfficialInvoiceApiException>(() => client.QueryInvoicesAsync(request));
+
+        Assert.Equal(429, exception.StatusCode);
+        Assert.True(exception.IsTransient);
+    }
+
+    [Fact]
+    public async Task QueryInvoicesAsync_InvalidJson_ThrowsDomainException()
+    {
+        var handler = new RecordingHttpMessageHandler(_ =>
+            new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("{not-valid-json}", Encoding.UTF8, "application/json")
+            });
+
+        var client = new MofOfficialHttpInvoiceApiClient(new HttpClient(handler), "https://www-vc.einvoice.nat.gov.tw");
+        var request = CreateBaseRequest();
+
+        var exception = await Assert.ThrowsAsync<MofOfficialInvoiceApiException>(() => client.QueryInvoicesAsync(request));
+
+        Assert.Equal(200, exception.StatusCode);
+        Assert.False(exception.IsTransient);
+        Assert.Contains("JSON", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task QueryInvoicesAsync_MissingInvoiceDateAndRaw1Date_ThrowsDomainException()
+    {
+        var responseJson = """
+            {
+              "code": "200",
+              "msg": "OK",
+              "details": [
+                {
+                  "b2bCrtAvgAmount": "100"
+                }
+              ]
+            }
+            """;
+
+        var handler = new RecordingHttpMessageHandler(_ =>
+            new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(responseJson, Encoding.UTF8, "application/json")
+            });
+
+        var client = new MofOfficialHttpInvoiceApiClient(new HttpClient(handler), "https://www-vc.einvoice.nat.gov.tw");
+        var request = CreateBaseRequest();
+
+        var exception = await Assert.ThrowsAsync<MofOfficialInvoiceApiException>(() => client.QueryInvoicesAsync(request));
+
+        Assert.Equal(200, exception.StatusCode);
+        Assert.False(exception.IsTransient);
+        Assert.Contains("invoiceDate", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task QueryInvoicesAsync_DetailsMissing_UsesTopLevelRaw1FallbackToBuildRecords()
+    {
+        var responseJson = """
+            {
+              "code": "200",
+              "msg": "OK",
+              "raw1": [
+                {
+                  "invoiceNo": "RAW1-001",
+                  "invoiceDate": "2026-06-20",
+                  "buyerTaxId": "11111111",
+                  "sellerTaxId": "22222222",
+                  "netAmount": "100",
+                  "taxAmount": "5",
+                  "totalAmount": "105"
+                }
+              ]
+            }
+            """;
+
+        var handler = new RecordingHttpMessageHandler(_ =>
+            new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(responseJson, Encoding.UTF8, "application/json")
+            });
+
+        var client = new MofOfficialHttpInvoiceApiClient(new HttpClient(handler), "https://www-vc.einvoice.nat.gov.tw");
+        var request = CreateBaseRequest();
+
+        var result = await client.QueryInvoicesAsync(request);
+
+        Assert.Single(result.Items);
+        var record = result.Items[0];
+        Assert.Equal("RAW1-001", record.InvoiceNumber);
+        Assert.Equal(new DateOnly(2026, 6, 20), record.InvoiceDate);
+        Assert.Equal(105m, record.TotalAmount);
+        Assert.NotNull(record.Raw1Items);
+        Assert.Single(record.Raw1Items!);
+    }
+
+    [Fact]
+    public async Task QueryInvoicesAsync_TopLevelRaw1ExistsAndDetailsMissingRaw1_AttachesRaw1ToFirstRecord()
+    {
+        var responseJson = """
+            {
+              "code": "200",
+              "msg": "OK",
+              "details": [
+                {
+                  "invoiceDate": "2026-07-01",
+                  "b2bCrtAvgAmount": "80",
+                  "b2cCrtAvgAmount": "20"
+                }
+              ],
+              "raw1": [
+                {
+                  "invoiceNo": "RAW1-ATTACH",
+                  "itemName": "統計來源"
+                }
+              ]
+            }
+            """;
+
+        var handler = new RecordingHttpMessageHandler(_ =>
+            new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(responseJson, Encoding.UTF8, "application/json")
+            });
+
+        var client = new MofOfficialHttpInvoiceApiClient(new HttpClient(handler), "https://www-vc.einvoice.nat.gov.tw");
+        var request = CreateBaseRequest();
+
+        var result = await client.QueryInvoicesAsync(request);
+
+        Assert.Single(result.Items);
+        Assert.NotNull(result.Items[0].Raw1Items);
+        Assert.Single(result.Items[0].Raw1Items!);
+        Assert.Equal("RAW1-ATTACH", result.Items[0].Raw1Items![0]["invoiceNo"]);
+    }
+
+    [Fact]
+    public async Task QueryInvoicesAsync_PurchaseAllowanceScope_UsesPurchaseAllowanceAmountFields()
+    {
+        var responseJson = """
+            {
+              "code": "200",
+              "msg": "OK",
+              "details": [
+                {
+                  "invoiceDate": "2026-07-15",
+                  "b2bPurAllwAvgAmount": "120",
+                  "b2cPurAllwAvgAmount": "30"
+                }
+              ]
+            }
+            """;
+
+        var handler = new RecordingHttpMessageHandler(_ =>
+            new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(responseJson, Encoding.UTF8, "application/json")
+            });
+
+        var client = new MofOfficialHttpInvoiceApiClient(new HttpClient(handler), "https://www-vc.einvoice.nat.gov.tw");
+        var request = CreateBaseRequest(
+            direction: InvoiceDirection.Purchase,
+            documentType: InvoiceDocumentType.Allowance);
+
+        var result = await client.QueryInvoicesAsync(request);
+
+        Assert.Single(result.Items);
+        Assert.Equal(150m, result.Items[0].TotalAmount);
+        Assert.Equal(InvoiceDirection.Purchase, result.Items[0].Direction);
+        Assert.Equal(InvoiceDocumentType.Allowance, result.Items[0].DocumentType);
+    }
+
+    private static OfficialInvoicePageRequest CreateBaseRequest(
+        InvoiceDirection direction = InvoiceDirection.Sales,
+        InvoiceDocumentType documentType = InvoiceDocumentType.Invoice)
+    {
+        return new OfficialInvoicePageRequest(
+            SessionToken: "unused-in-v1.9",
+            TaxId: "12345678",
+            DateFrom: new DateOnly(2025, 9, 7),
+            DateTo: new DateOnly(2025, 9, 10),
+            Direction: direction,
+            PageNumber: 1,
+            PageSize: 200,
+            DocumentType: documentType,
+            OfficialApiAppId: "app-id-001",
+            OfficialApiAccount: "merchant-account",
+            OfficialApiPassword: "merchant-password");
+    }
+
     private sealed class RecordingHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFactory)
         : HttpMessageHandler
     {
@@ -289,6 +554,17 @@ public class MofOfficialHttpInvoiceApiClientTests
             }
 
             return _responseFactory(request);
+        }
+    }
+
+    private sealed class ThrowingHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> callback)
+        : HttpMessageHandler
+    {
+        private readonly Func<HttpRequestMessage, HttpResponseMessage> _callback = callback;
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(_callback(request));
         }
     }
 }

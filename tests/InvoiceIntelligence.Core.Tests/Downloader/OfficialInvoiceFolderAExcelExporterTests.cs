@@ -167,6 +167,91 @@ public class OfficialInvoiceFolderAExcelExporterTests
         }
     }
 
+    [Fact]
+    public async Task ExportAsync_AllowanceWithSparseRaw1_UsesRecordFallbackValues()
+    {
+        var outputDirectory = CreateTempDirectory();
+        var outputPath = Path.Combine(outputDirectory, "official-allowance-sparse.xlsx");
+
+        var raw1Item = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["allowanceNo"] = "ALW-RAW-001"
+        };
+
+        var invoices = new[]
+        {
+            new OfficialInvoiceRecord(
+                InvoiceNumber: "INV-FALLBACK-001",
+                InvoiceDate: new DateOnly(2026, 10, 5),
+                SellerTaxId: "24682468",
+                BuyerTaxId: "13571357",
+                NetAmount: 500m,
+                TaxAmount: 25m,
+                TotalAmount: 525m,
+                Direction: InvoiceDirection.Purchase,
+                DocumentType: InvoiceDocumentType.Allowance,
+                Currency: "TWD",
+                Raw1Items: [raw1Item])
+        };
+
+        var exporter = new OfficialInvoiceFolderAExcelExporter();
+
+        try
+        {
+            await exporter.ExportAsync(invoices, outputPath);
+
+            using var workbook = new XLWorkbook(outputPath);
+            var allowanceSheet = workbook.Worksheet("allowance");
+
+            Assert.Equal("ALW-RAW-001", allowanceSheet.Cell(2, 1).GetString());
+            Assert.Equal("INV-FALLBACK-001", allowanceSheet.Cell(2, 5).GetString());
+            Assert.Equal("13571357", allowanceSheet.Cell(2, 7).GetString());
+            Assert.Equal("24682468", allowanceSheet.Cell(2, 9).GetString());
+            Assert.Equal("進項折讓", allowanceSheet.Cell(2, 12).GetString());
+            Assert.Equal(500m, allowanceSheet.Cell(2, 15).GetValue<decimal>());
+            Assert.Equal(25m, allowanceSheet.Cell(2, 16).GetValue<decimal>());
+        }
+        finally
+        {
+            DeleteDirectory(outputDirectory);
+        }
+    }
+
+    [Fact]
+    public async Task ExportAsync_WhenCancellationRequested_ThrowsOperationCanceledException()
+    {
+        var outputDirectory = CreateTempDirectory();
+        var outputPath = Path.Combine(outputDirectory, "official-cancel.xlsx");
+
+        var invoices = new[]
+        {
+            new OfficialInvoiceRecord(
+                InvoiceNumber: "INV-CANCEL-001",
+                InvoiceDate: new DateOnly(2026, 9, 1),
+                SellerTaxId: "12345678",
+                BuyerTaxId: "87654321",
+                NetAmount: 100m,
+                TaxAmount: 5m,
+                TotalAmount: 105m,
+                Direction: InvoiceDirection.Sales,
+                Currency: "TWD")
+        };
+
+        var exporter = new OfficialInvoiceFolderAExcelExporter();
+        using var cancellationTokenSource = new CancellationTokenSource();
+        cancellationTokenSource.Cancel();
+
+        try
+        {
+            await Assert.ThrowsAsync<OperationCanceledException>(() =>
+                exporter.ExportAsync(invoices, outputPath, cancellationTokenSource.Token));
+        }
+        finally
+        {
+            DeleteDirectory(outputDirectory);
+        }
+    }
+
     private static string CreateTempDirectory()
     {
         var path = Path.Combine(Path.GetTempPath(), $"invoice-intelligence-official-exporter-tests-{Guid.NewGuid():N}");

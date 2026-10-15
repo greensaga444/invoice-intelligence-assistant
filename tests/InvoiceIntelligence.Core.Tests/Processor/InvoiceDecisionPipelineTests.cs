@@ -5,6 +5,79 @@ namespace InvoiceIntelligence.Core.Tests.Processor;
 public class InvoiceDecisionPipelineTests
 {
     [Fact]
+    public void Constructor_WithNullDependency_ThrowsArgumentNullException()
+    {
+        var ruleEngine = new StubRuleEngine(null, []);
+        var caseCache = new StubCaseCache(null, []);
+        var ragRetriever = new StubRagRetriever([], []);
+        var llmAnalyzer = new StubLlmAnalyzer(CreateDecision("可抵稅", "ok", "資訊服務費", 0.8m), []);
+
+        Assert.Throws<ArgumentNullException>(() => new InvoiceDecisionPipeline(null!, caseCache, ragRetriever, llmAnalyzer));
+        Assert.Throws<ArgumentNullException>(() => new InvoiceDecisionPipeline(ruleEngine, null!, ragRetriever, llmAnalyzer));
+        Assert.Throws<ArgumentNullException>(() => new InvoiceDecisionPipeline(ruleEngine, caseCache, null!, llmAnalyzer));
+        Assert.Throws<ArgumentNullException>(() => new InvoiceDecisionPipeline(ruleEngine, caseCache, ragRetriever, null!));
+    }
+
+    [Fact]
+    public void Constructor_WithNonPositiveMaxReferenceCases_ThrowsArgumentOutOfRangeException()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new InvoiceDecisionPipeline(
+            new StubRuleEngine(null, []),
+            new StubCaseCache(null, []),
+            new StubRagRetriever([], []),
+            new StubLlmAnalyzer(CreateDecision("可抵稅", "ok", "資訊服務費", 0.8m), []),
+            maxReferenceCases: 0));
+    }
+
+    [Fact]
+    public void Process_WithNullRecords_ThrowsArgumentNullException()
+    {
+        var pipeline = new InvoiceDecisionPipeline(
+            new StubRuleEngine(null, []),
+            new StubCaseCache(null, []),
+            new StubRagRetriever([], []),
+            new StubLlmAnalyzer(CreateDecision("可抵稅", "ok", "資訊服務費", 0.8m), []));
+
+        Assert.Throws<ArgumentNullException>(() => pipeline.Process(null!));
+    }
+
+    [Fact]
+    public void Process_WhenRagReturnsNull_TreatsReferencesAsEmpty()
+    {
+        var callLog = new List<string>();
+        var llmAnalyzer = new CapturingLlmAnalyzer(CreateDecision("可抵稅", "fallback", "營業費用", 0.75m), callLog);
+
+        var pipeline = new InvoiceDecisionPipeline(
+            new StubRuleEngine(null, callLog),
+            new StubCaseCache(null, callLog),
+            new NullRagRetriever(callLog),
+            llmAnalyzer);
+
+        var result = pipeline.Process([CreateRecord("未知支出")]);
+
+        Assert.Single(result.Items);
+        Assert.Equal(0, llmAnalyzer.LastReferenceCount);
+        Assert.Equal(["rule", "cache", "rag", "llm"], callLog);
+    }
+
+    [Fact]
+    public void Process_WhenLlmReturnsNull_ThrowsInvalidOperationException()
+    {
+        var callLog = new List<string>();
+
+        var pipeline = new InvoiceDecisionPipeline(
+            new StubRuleEngine(null, callLog),
+            new StubCaseCache(null, callLog),
+            new StubRagRetriever([], callLog),
+            new NullLlmAnalyzer(callLog));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            pipeline.Process([CreateRecord("未知支出")]));
+
+        Assert.Contains("LLM analyzer", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Process_RuleEngineResolvesRecord_SkipsCaseCacheRagAndLlm()
     {
         var callLog = new List<string>();
@@ -149,6 +222,36 @@ public class InvoiceDecisionPipelineTests
         public InvoiceDecision Analyze(InvoiceAnalysisRecord record, IReadOnlyList<RetrievedReferenceCase> referenceCases)
         {
             callLog.Add("llm");
+            return decision;
+        }
+    }
+
+    private sealed class NullRagRetriever(ICollection<string> callLog) : IRagRetriever
+    {
+        public IReadOnlyList<RetrievedReferenceCase> Retrieve(InvoiceAnalysisRecord record, int maxResults)
+        {
+            callLog.Add("rag");
+            return null!;
+        }
+    }
+
+    private sealed class NullLlmAnalyzer(ICollection<string> callLog) : ILocalLlmAnalyzer
+    {
+        public InvoiceDecision Analyze(InvoiceAnalysisRecord record, IReadOnlyList<RetrievedReferenceCase> referenceCases)
+        {
+            callLog.Add("llm");
+            return null!;
+        }
+    }
+
+    private sealed class CapturingLlmAnalyzer(InvoiceDecision decision, ICollection<string> callLog) : ILocalLlmAnalyzer
+    {
+        public int LastReferenceCount { get; private set; }
+
+        public InvoiceDecision Analyze(InvoiceAnalysisRecord record, IReadOnlyList<RetrievedReferenceCase> referenceCases)
+        {
+            callLog.Add("llm");
+            LastReferenceCount = referenceCases.Count;
             return decision;
         }
     }

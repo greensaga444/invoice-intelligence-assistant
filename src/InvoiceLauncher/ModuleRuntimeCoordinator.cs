@@ -6,28 +6,62 @@ namespace InvoiceLauncher;
 
 internal sealed class ModuleRuntimeCoordinator
 {
+    private readonly Func<string, bool> _fileExists;
+    private readonly Func<string, bool> _directoryExists;
+    private readonly Func<ProcessStartInfo, Process?> _startProcess;
+    private readonly Func<Window, string, string, MessageBoxButton, MessageBoxImage, MessageBoxResult> _showMessage;
+    private readonly Func<Process, Task> _waitForExitAsync;
+    private readonly Func<Process, int> _getExitCode;
+
+    public ModuleRuntimeCoordinator()
+        : this(
+            File.Exists,
+            Directory.Exists,
+            Process.Start,
+            (owner, message, caption, button, image) => MessageBox.Show(owner, message, caption, button, image),
+            process => process.WaitForExitAsync(),
+            process => process.ExitCode)
+    {
+    }
+
+    internal ModuleRuntimeCoordinator(
+        Func<string, bool> fileExists,
+        Func<string, bool> directoryExists,
+        Func<ProcessStartInfo, Process?> startProcess,
+        Func<Window, string, string, MessageBoxButton, MessageBoxImage, MessageBoxResult> showMessage,
+        Func<Process, Task> waitForExitAsync,
+        Func<Process, int> getExitCode)
+    {
+        _fileExists = fileExists ?? throw new ArgumentNullException(nameof(fileExists));
+        _directoryExists = directoryExists ?? throw new ArgumentNullException(nameof(directoryExists));
+        _startProcess = startProcess ?? throw new ArgumentNullException(nameof(startProcess));
+        _showMessage = showMessage ?? throw new ArgumentNullException(nameof(showMessage));
+        _waitForExitAsync = waitForExitAsync ?? throw new ArgumentNullException(nameof(waitForExitAsync));
+        _getExitCode = getExitCode ?? throw new ArgumentNullException(nameof(getExitCode));
+    }
+
     public bool EnsureModuleReady(Window owner, ModuleRuntimeDefinition module, Action<string> appendLog)
     {
         ArgumentNullException.ThrowIfNull(owner);
         ArgumentNullException.ThrowIfNull(module);
         ArgumentNullException.ThrowIfNull(appendLog);
 
-        if (!File.Exists(module.ExecutablePath))
+        if (!_fileExists(module.ExecutablePath))
         {
             var executableMessage = $"找不到 {module.DisplayName} 可執行檔：{module.ExecutablePath}";
             appendLog(executableMessage);
-            MessageBox.Show(owner, executableMessage, "模組未就緒", MessageBoxButton.OK, MessageBoxImage.Warning);
+            _showMessage(owner, executableMessage, "模組未就緒", MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
         }
 
-        if (File.Exists(module.ConfigPath))
+        if (_fileExists(module.ConfigPath))
         {
             return true;
         }
 
         var configMessage = $"找不到 {module.DisplayName} 設定檔：{module.ConfigPath}";
         appendLog(configMessage);
-        MessageBox.Show(owner, configMessage, "設定未就緒", MessageBoxButton.OK, MessageBoxImage.Warning);
+        _showMessage(owner, configMessage, "設定未就緒", MessageBoxButton.OK, MessageBoxImage.Warning);
         return false;
     }
 
@@ -35,7 +69,7 @@ internal sealed class ModuleRuntimeCoordinator
     {
         ArgumentNullException.ThrowIfNull(module);
 
-        var process = Process.Start(new ProcessStartInfo
+        var process = _startProcess(new ProcessStartInfo
         {
             FileName = module.ExecutablePath,
             WorkingDirectory = module.WorkingDirectory,
@@ -47,8 +81,8 @@ internal sealed class ModuleRuntimeCoordinator
             throw new InvalidOperationException($"無法啟動程序：{module.ExecutablePath}");
         }
 
-        await process.WaitForExitAsync();
-        return process.ExitCode;
+        await _waitForExitAsync(process);
+        return _getExitCode(process);
     }
 
     public void LaunchWithoutWaiting(Window owner, ModuleRuntimeDefinition module, Action<string> appendLog)
@@ -64,7 +98,7 @@ internal sealed class ModuleRuntimeCoordinator
 
         try
         {
-            Process.Start(new ProcessStartInfo
+            _startProcess(new ProcessStartInfo
             {
                 FileName = module.ExecutablePath,
                 WorkingDirectory = module.WorkingDirectory,
@@ -76,7 +110,7 @@ internal sealed class ModuleRuntimeCoordinator
         catch (Exception ex)
         {
             appendLog($"啟動 {module.DisplayName} 失敗：{ex.Message}");
-            MessageBox.Show(owner, ex.Message, "啟動失敗", MessageBoxButton.OK, MessageBoxImage.Error);
+            _showMessage(owner, ex.Message, "啟動失敗", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -86,14 +120,14 @@ internal sealed class ModuleRuntimeCoordinator
         ArgumentException.ThrowIfNullOrWhiteSpace(folderPath);
         ArgumentNullException.ThrowIfNull(appendLog);
 
-        if (!Directory.Exists(folderPath))
+        if (!_directoryExists(folderPath))
         {
             appendLog($"資料夾不存在：{folderPath}");
-            MessageBox.Show(owner, $"資料夾不存在：{folderPath}", "無法開啟", MessageBoxButton.OK, MessageBoxImage.Warning);
+            _showMessage(owner, $"資料夾不存在：{folderPath}", "無法開啟", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
-        Process.Start(new ProcessStartInfo
+        _startProcess(new ProcessStartInfo
         {
             FileName = folderPath,
             UseShellExecute = true

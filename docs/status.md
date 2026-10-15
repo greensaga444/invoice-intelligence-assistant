@@ -13,9 +13,9 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: Remove downloader local mode
+Work Item Name: Update testing coverage and app-layer validation
 
-Description: Enforce official-only downloader behavior, remove local-mode runtime path, and simplify downloader INI by dropping invoiceDownloadMode configuration.
+Description: Expand automated tests across core and app-layer workflows, close critical QA gaps, and improve runtime coordination testability for reliable delivery.
 
 ---
 
@@ -250,10 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-Removed local downloader execution and related tests, keeping only official API flow across loader/defaults/UI paths.
-Simplified downloader INI contract by removing invoiceDownloadMode from template and generated content.
-Updated docs and configuration tests to match official-only behavior and explicit rejection of local mode.
-Validated build/test gates locally for delivery.
+Expanded core and app-layer test coverage for downloader workflow, launcher settings/INI writers, parser/config utilities, and processor orchestration paths.
+Added test visibility plumbing for internal app services and validated orchestration paths with branch-focused tests.
+Refactored ModuleRuntimeCoordinator with internal seams to enable deterministic branch testing without UI/process side effects.
+Validated tests and coverage locally; branch is ready for delivery landing to main.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 

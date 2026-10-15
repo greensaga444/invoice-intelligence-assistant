@@ -69,6 +69,21 @@ public class OutputFileNameHelperTests
     }
 
     [Fact]
+    public void BuildFileName_WithWhitespaceSegments_UsesDefaultPlaceholderText()
+    {
+        var result = OutputFileNameHelper.BuildFileName(
+            namingRule: "{taxId}_{companyName}",
+            taxId: " ",
+            companyName: " ",
+            dateFrom: new DateOnly(2026, 1, 1),
+            dateTo: new DateOnly(2026, 1, 1),
+            timestamp: DateTimeOffset.UtcNow,
+            extension: "txt");
+
+        Assert.Equal("未提供_未提供.txt", result);
+    }
+
+    [Fact]
     public void EnsureUniquePath_WhenFileDoesNotExist_ReturnsSamePath()
     {
         var tempDirectory = Path.Combine(Path.GetTempPath(), $"invoice-intelligence-{Guid.NewGuid():N}");
@@ -108,6 +123,29 @@ public class OutputFileNameHelperTests
         }
         finally
         {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void EnsureUniquePath_WhenRelativePathHasNoDirectory_ReturnsIndexedRelativePath()
+    {
+        var tempDirectory = Path.Combine(Path.GetTempPath(), $"invoice-intelligence-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDirectory);
+        var originalCurrentDirectory = Environment.CurrentDirectory;
+
+        try
+        {
+            Environment.CurrentDirectory = tempDirectory;
+            File.WriteAllText("result.csv", "existing");
+
+            var uniquePath = OutputFileNameHelper.EnsureUniquePath("result.csv");
+
+            Assert.Equal("result-2.csv", uniquePath);
+        }
+        finally
+        {
+            Environment.CurrentDirectory = originalCurrentDirectory;
             Directory.Delete(tempDirectory, recursive: true);
         }
     }

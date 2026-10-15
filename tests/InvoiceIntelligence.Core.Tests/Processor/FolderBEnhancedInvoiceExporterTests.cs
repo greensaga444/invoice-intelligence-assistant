@@ -241,6 +241,104 @@ public class FolderBEnhancedInvoiceExporterTests
         }
     }
 
+    [Fact]
+    public void Export_SalesRecordWithZeroTax_WritesAsteriskTaxTypeAndExemptAmount()
+    {
+        var folderBPath = CreateTempDirectory();
+        var exporter = new FolderBEnhancedInvoiceExporter();
+
+        try
+        {
+            var exportResult = exporter.Export(
+            [
+                CreateResult(
+                    sourceFileName: "source-invoice.xlsx",
+                    invoiceNumber: "INV-ZERO-TAX",
+                    itemName: "免稅銷售測試",
+                    invoiceDate: new DateOnly(2026, 5, 1),
+                    deductibleStatus: "可抵稅",
+                    deductionReason: "測試",
+                    accountingCategory: "營業收入",
+                    confidenceScore: 0.90m,
+                    references: [],
+                    netAmount: 1000m,
+                    taxAmount: 0m,
+                    totalAmount: 1000m)
+            ],
+                folderBPath,
+                "{taxId}_{dateFrom}.xlsx",
+                new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero));
+
+            var salesPath = exportResult.Files.Single().OutputFilePath;
+            using var workbook = new XLWorkbook(salesPath);
+            var sheet = workbook.Worksheet(1);
+
+            Assert.Equal("*", sheet.Cell(2, 9).GetString());
+            Assert.Equal(1000m, sheet.Cell(2, 17).GetValue<decimal>());
+        }
+        finally
+        {
+            DeleteDirectory(folderBPath);
+        }
+    }
+
+    [Fact]
+    public void Export_AllowanceRecord_MapsDeductibleFlagAndVoucherCategoryBranches()
+    {
+        var folderBPath = CreateTempDirectory();
+        var exporter = new FolderBEnhancedInvoiceExporter();
+
+        var results = new[]
+        {
+            CreateResult(
+                sourceFileName: "source-allowance.xlsx",
+                invoiceNumber: "ALW-001",
+                itemName: "固定資產採購",
+                invoiceDate: new DateOnly(2026, 6, 1),
+                deductibleStatus: "可抵稅",
+                deductionReason: "測試",
+                accountingCategory: "固定資產",
+                confidenceScore: 0.9m,
+                references: []),
+            CreateResult(
+                sourceFileName: "source-allowance.xlsx",
+                invoiceNumber: "ALW-002",
+                itemName: "一般支出",
+                invoiceDate: new DateOnly(2026, 6, 1),
+                deductibleStatus: "待確認",
+                deductionReason: "測試",
+                accountingCategory: "其他",
+                confidenceScore: 0.9m,
+                references: [])
+        };
+
+        try
+        {
+            var exportResult = exporter.Export(
+                results,
+                folderBPath,
+                "{taxId}_{dateFrom}.xlsx",
+                new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero));
+
+            var purchasePath = exportResult.Files
+                .Single(file => Path.GetFileName(file.OutputFilePath).Contains("PurchaseVoucherDetail-T4", StringComparison.Ordinal));
+
+            using var workbook = new XLWorkbook(purchasePath.OutputFilePath);
+            var sheet = workbook.Worksheet(1);
+
+            Assert.Equal("Y", sheet.Cell(2, 8).GetString());
+            Assert.Equal("3", sheet.Cell(2, 10).GetString());
+            Assert.Equal("N", sheet.Cell(3, 8).GetString());
+            Assert.Equal("1", sheet.Cell(3, 10).GetString());
+            Assert.Equal("115", sheet.Cell(2, 3).GetString());
+            Assert.Equal("1150601", sheet.Cell(2, 14).GetString());
+        }
+        finally
+        {
+            DeleteDirectory(folderBPath);
+        }
+    }
+
     private static InvoiceDecisionResult CreateResult(
         string sourceFileName,
         string invoiceNumber,
@@ -250,7 +348,10 @@ public class FolderBEnhancedInvoiceExporterTests
         string deductionReason,
         string accountingCategory,
         decimal confidenceScore,
-        IReadOnlyList<RetrievedReferenceCase> references)
+        IReadOnlyList<RetrievedReferenceCase> references,
+        decimal netAmount = 1000m,
+        decimal taxAmount = 50m,
+        decimal totalAmount = 1050m)
     {
         var record = new InvoiceAnalysisRecord(
             InvoiceNumber: invoiceNumber,
@@ -259,9 +360,9 @@ public class FolderBEnhancedInvoiceExporterTests
             VendorTaxId: "87654321",
             ItemName: itemName,
             InvoiceDate: invoiceDate,
-            NetAmount: 1000m,
-            TaxAmount: 50m,
-            TotalAmount: 1050m,
+            NetAmount: netAmount,
+            TaxAmount: taxAmount,
+            TotalAmount: totalAmount,
             SourceFileName: sourceFileName);
 
         var decision = new InvoiceDecision(

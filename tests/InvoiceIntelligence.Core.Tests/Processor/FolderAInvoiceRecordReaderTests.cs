@@ -78,6 +78,67 @@ public class FolderAInvoiceRecordReaderTests
         }
     }
 
+    [Fact]
+    public void ReadFromFolder_OfficialWorkbookWithoutDetailSheet_UsesFallbackItemName()
+    {
+        var folderPath = CreateTempDirectory();
+        var filePath = Path.Combine(folderPath, "official-without-detail.xlsx");
+        CreateOfficialWorkbookWithoutDetail(filePath);
+
+        try
+        {
+            var reader = new FolderAInvoiceRecordReader();
+            var records = reader.ReadFromFolder(folderPath);
+
+            Assert.Single(records);
+            Assert.Equal("官方下載資料", records[0].ItemName);
+        }
+        finally
+        {
+            DeleteDirectory(folderPath);
+        }
+    }
+
+    [Fact]
+    public void ReadFromFolder_OfficialWorkbookWithDuplicateDetailItems_DeduplicatesMergedItemName()
+    {
+        var folderPath = CreateTempDirectory();
+        var filePath = Path.Combine(folderPath, "official-duplicate-items.xlsx");
+        CreateOfficialWorkbookWithDuplicateDetailItems(filePath);
+
+        try
+        {
+            var reader = new FolderAInvoiceRecordReader();
+            var records = reader.ReadFromFolder(folderPath);
+
+            Assert.Single(records);
+            Assert.Equal("品項A、品項B", records[0].ItemName);
+        }
+        finally
+        {
+            DeleteDirectory(folderPath);
+        }
+    }
+
+    [Fact]
+    public void ReadFromFolder_OfficialWorkbookInvalidDate_ThrowsInvalidDataException()
+    {
+        var folderPath = CreateTempDirectory();
+        var filePath = Path.Combine(folderPath, "official-invalid-date.xlsx");
+        CreateOfficialWorkbookInvalidDate(filePath);
+
+        try
+        {
+            var reader = new FolderAInvoiceRecordReader();
+
+            Assert.Throws<InvalidDataException>(() => reader.ReadFromFolder(folderPath));
+        }
+        finally
+        {
+            DeleteDirectory(folderPath);
+        }
+    }
+
     private static void CreateWorkbook(string filePath)
     {
         using var workbook = new XLWorkbook();
@@ -184,6 +245,89 @@ public class FolderAInvoiceRecordReaderTests
         detail.Cell(2, 3).Value = "001";
         detail.Cell(2, 4).Value = "官方進項品項";
         detail.Cell(2, 8).Value = 1050m;
+
+        workbook.SaveAs(filePath);
+    }
+
+    private static void CreateOfficialWorkbookWithoutDetail(string filePath)
+    {
+        using var workbook = new XLWorkbook();
+
+        var summary = workbook.Worksheets.Add("btb411w_xls1");
+        summary.Cell(1, 1).Value = "發票號碼";
+        summary.Cell(1, 5).Value = "發票日期";
+        summary.Cell(1, 6).Value = "買方統一編號";
+        summary.Cell(1, 8).Value = "賣方統一編號";
+        summary.Cell(1, 12).Value = "應稅銷售額";
+        summary.Cell(1, 15).Value = "營業稅";
+        summary.Cell(1, 16).Value = "總計";
+
+        summary.Cell(2, 1).Value = "AA00000001";
+        summary.Cell(2, 5).Value = "2026-09-01";
+        summary.Cell(2, 6).Value = "87654321";
+        summary.Cell(2, 8).Value = "12345678";
+        summary.Cell(2, 12).Value = 100m;
+        summary.Cell(2, 15).Value = 5m;
+        summary.Cell(2, 16).Value = 105m;
+
+        workbook.SaveAs(filePath);
+    }
+
+    private static void CreateOfficialWorkbookWithDuplicateDetailItems(string filePath)
+    {
+        using var workbook = new XLWorkbook();
+
+        var summary = workbook.Worksheets.Add("btb411w_xls1");
+        summary.Cell(1, 1).Value = "發票號碼";
+        summary.Cell(1, 5).Value = "發票日期";
+        summary.Cell(1, 6).Value = "買方統一編號";
+        summary.Cell(1, 8).Value = "賣方統一編號";
+        summary.Cell(1, 12).Value = "應稅銷售額";
+        summary.Cell(1, 15).Value = "營業稅";
+        summary.Cell(1, 16).Value = "總計";
+
+        summary.Cell(2, 1).Value = "AA00000002";
+        summary.Cell(2, 5).Value = "2026-09-02";
+        summary.Cell(2, 6).Value = "87654321";
+        summary.Cell(2, 8).Value = "12345678";
+        summary.Cell(2, 12).Value = 100m;
+        summary.Cell(2, 15).Value = 5m;
+        summary.Cell(2, 16).Value = 105m;
+
+        var detail = workbook.Worksheets.Add("btb411w_xls2");
+        detail.Cell(1, 1).Value = "發票號碼";
+        detail.Cell(1, 4).Value = "品名";
+
+        detail.Cell(2, 1).Value = "AA00000002";
+        detail.Cell(2, 4).Value = "品項A";
+        detail.Cell(3, 1).Value = "AA00000002";
+        detail.Cell(3, 4).Value = "品項A";
+        detail.Cell(4, 1).Value = "AA00000002";
+        detail.Cell(4, 4).Value = "品項B";
+
+        workbook.SaveAs(filePath);
+    }
+
+    private static void CreateOfficialWorkbookInvalidDate(string filePath)
+    {
+        using var workbook = new XLWorkbook();
+
+        var summary = workbook.Worksheets.Add("btb411w_xls1");
+        summary.Cell(1, 1).Value = "發票號碼";
+        summary.Cell(1, 5).Value = "發票日期";
+        summary.Cell(1, 6).Value = "買方統一編號";
+        summary.Cell(1, 8).Value = "賣方統一編號";
+        summary.Cell(1, 12).Value = "應稅銷售額";
+        summary.Cell(1, 15).Value = "營業稅";
+        summary.Cell(1, 16).Value = "總計";
+
+        summary.Cell(2, 1).Value = "AA00000003";
+        summary.Cell(2, 5).Value = "not-a-date";
+        summary.Cell(2, 6).Value = "87654321";
+        summary.Cell(2, 8).Value = "12345678";
+        summary.Cell(2, 12).Value = 100m;
+        summary.Cell(2, 15).Value = 5m;
+        summary.Cell(2, 16).Value = 105m;
 
         workbook.SaveAs(filePath);
     }

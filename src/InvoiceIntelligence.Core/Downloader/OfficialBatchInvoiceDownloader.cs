@@ -63,7 +63,9 @@ public sealed class OfficialBatchInvoiceDownloader : IBatchInvoiceDownloader
             itemResults.Add(itemResult);
         }
 
-        var logPath = Path.Combine(request.FolderAPath, $"download-log-{batchTimestamp:yyyyMMdd-HHmmss}.log");
+        var logPath = Path.Combine(
+            request.FolderAPath,
+            $"download-log-{batchTimestamp:yyyyMMdd-HHmmssfff}-{Guid.NewGuid():N}.log");
         WriteLogFile(logPath, itemResults, batchTimestamp);
 
         return new BatchInvoiceDownloadResult(itemResults, logPath);

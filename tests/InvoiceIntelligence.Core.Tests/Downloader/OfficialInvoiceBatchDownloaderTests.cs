@@ -5,6 +5,143 @@ namespace InvoiceIntelligence.Core.Tests.Downloader;
 public class OfficialInvoiceBatchDownloaderTests
 {
     [Fact]
+    public async Task DownloadAsync_EmptyTaxId_ThrowsArgumentException()
+    {
+        var downloader = new OfficialInvoiceBatchDownloader(
+            new RecordingOfficialInvoiceApiClient(_ => Task.FromResult(new OfficialInvoicePageResult([], false))),
+            (_, _) => Task.CompletedTask);
+
+        var request = CreateRequest(taxId: " ");
+
+        await Assert.ThrowsAsync<ArgumentException>(() => downloader.DownloadAsync(request));
+    }
+
+    [Fact]
+    public async Task DownloadAsync_EndDateBeforeStartDate_ThrowsArgumentException()
+    {
+        var downloader = new OfficialInvoiceBatchDownloader(
+            new RecordingOfficialInvoiceApiClient(_ => Task.FromResult(new OfficialInvoicePageResult([], false))),
+            (_, _) => Task.CompletedTask);
+
+        var request = CreateRequest(dateFrom: new DateOnly(2026, 8, 31), dateTo: new DateOnly(2026, 8, 1));
+
+        await Assert.ThrowsAsync<ArgumentException>(() => downloader.DownloadAsync(request));
+    }
+
+    [Fact]
+    public async Task DownloadAsync_EmptySessionToken_ThrowsInvalidOperationException()
+    {
+        var downloader = new OfficialInvoiceBatchDownloader(
+            new RecordingOfficialInvoiceApiClient(_ => Task.FromResult(new OfficialInvoicePageResult([], false))),
+            (_, _) => Task.CompletedTask);
+
+        var request = CreateRequest(sessionToken: " ");
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => downloader.DownloadAsync(request));
+    }
+
+    [Theory]
+    [InlineData(0, 3, 10, 100)]
+    [InlineData(200, 0, 10, 100)]
+    [InlineData(200, 3, -10, 100)]
+    [InlineData(200, 3, 10, 0)]
+    public async Task DownloadAsync_InvalidOptions_ThrowsArgumentOutOfRangeException(
+        int pageSize,
+        int maxRetryAttempts,
+        int retryBaseDelayMilliseconds,
+        int maxPagesPerDirection)
+    {
+        var downloader = new OfficialInvoiceBatchDownloader(
+            new RecordingOfficialInvoiceApiClient(_ => Task.FromResult(new OfficialInvoicePageResult([], false))),
+            (_, _) => Task.CompletedTask);
+
+        var options = new OfficialInvoiceDownloadOptions(
+            PageSize: pageSize,
+            MaxRetryAttempts: maxRetryAttempts,
+            RetryBaseDelay: TimeSpan.FromMilliseconds(retryBaseDelayMilliseconds),
+            MaxPagesPerDirection: maxPagesPerDirection);
+
+        var request = CreateRequest(options: options);
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => downloader.DownloadAsync(request));
+    }
+
+    [Fact]
+    public async Task DownloadAsync_WhenHasMoreExceedsConfiguredMaxPages_ThrowsInvalidOperationException()
+    {
+        var client = new RecordingOfficialInvoiceApiClient(_ =>
+            Task.FromResult(new OfficialInvoicePageResult(
+                [CreateInvoice("AA12345678", new DateOnly(2026, 8, 1), InvoiceDirection.Sales, 1050m)],
+                HasMore: true)));
+
+        var downloader = new OfficialInvoiceBatchDownloader(client, (_, _) => Task.CompletedTask);
+        var request = CreateRequest(options: new OfficialInvoiceDownloadOptions(200, 2, TimeSpan.Zero, 1));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => downloader.DownloadAsync(request));
+        Assert.Single(client.Requests);
+    }
+
+    [Fact]
+    public async Task DownloadAsync_NonTransientApiError_DoesNotRetry()
+    {
+        var delays = new List<TimeSpan>();
+        var client = new RecordingOfficialInvoiceApiClient(_ =>
+            throw new MofOfficialInvoiceApiException("fatal", 400, isTransient: false));
+
+        var downloader = new OfficialInvoiceBatchDownloader(
+            client,
+            (delay, _) =>
+            {
+                delays.Add(delay);
+                return Task.CompletedTask;
+            });
+
+        var request = CreateRequest(options: new OfficialInvoiceDownloadOptions(200, 3, TimeSpan.FromMilliseconds(50), 100));
+
+        await Assert.ThrowsAsync<MofOfficialInvoiceApiException>(() => downloader.DownloadAsync(request));
+        Assert.Empty(delays);
+    }
+
+    [Fact]
+    public async Task DownloadAsync_TransientErrorWithZeroBaseDelay_RetriesWithZeroDelay()
+    {
+        var attempts = 0;
+        var delays = new List<TimeSpan>();
+
+        var client = new RecordingOfficialInvoiceApiClient(_ =>
+        {
+            attempts++;
+            if (attempts == 1)
+            {
+                throw new MofOfficialInvoiceApiException("temporary", 503, isTransient: true);
+            }
+
+            return Task.FromResult(new OfficialInvoicePageResult(
+            [
+                CreateInvoice("RET-001", new DateOnly(2026, 8, 20), InvoiceDirection.Sales, 315m)
+            ],
+            HasMore: false));
+        });
+
+        var downloader = new OfficialInvoiceBatchDownloader(
+            client,
+            (delay, _) =>
+            {
+                delays.Add(delay);
+                return Task.CompletedTask;
+            });
+
+        var request = CreateRequest(options: new OfficialInvoiceDownloadOptions(200, 3, TimeSpan.Zero, 100));
+
+        var result = await downloader.DownloadAsync(request);
+
+        Assert.Single(result.Invoices);
+        Assert.Single(delays);
+        Assert.Equal(TimeSpan.Zero, delays[0]);
+        Assert.Equal(1, result.TotalRetryCount);
+    }
+
+    [Fact]
     public async Task DownloadAsync_MultiDirectionAndPaging_MergesResultsAndDeduplicates()
     {
         var client = new RecordingOfficialInvoiceApiClient(request =>
@@ -248,6 +385,29 @@ public class OfficialInvoiceBatchDownloaderTests
             Direction: direction,
                 DocumentType: documentType,
             Currency: "TWD");
+    }
+
+    private static OfficialInvoiceBatchDownloadRequest CreateRequest(
+        string taxId = "12345678",
+        DateOnly? dateFrom = null,
+        DateOnly? dateTo = null,
+        string sessionToken = "session-token",
+        bool includeSalesInvoices = true,
+        bool includePurchaseInvoices = false,
+        bool includeSalesAllowances = false,
+        bool includePurchaseAllowances = false,
+        OfficialInvoiceDownloadOptions? options = null)
+    {
+        return new OfficialInvoiceBatchDownloadRequest(
+            TaxId: taxId,
+            DateFrom: dateFrom ?? new DateOnly(2026, 8, 1),
+            DateTo: dateTo ?? new DateOnly(2026, 8, 31),
+            SessionToken: sessionToken,
+            IncludeSalesInvoices: includeSalesInvoices,
+            IncludePurchaseInvoices: includePurchaseInvoices,
+            Options: options,
+            IncludeSalesAllowances: includeSalesAllowances,
+            IncludePurchaseAllowances: includePurchaseAllowances);
     }
 
     private sealed class RecordingOfficialInvoiceApiClient(

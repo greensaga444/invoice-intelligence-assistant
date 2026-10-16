@@ -258,7 +258,40 @@ Policy reference:
 
 ---
 
-## Q-016 Expense Category Credit Rule for Amount >= 10,000
+## Q-016 Table3/Table4 Knowledge Bootstrap
+
+If only historical 表三/表四 files are available (without complete Folder A raw fields), should the system support a dedicated import path to convert these files into knowledge repository entries for retrieval?
+
+Required decisions:
+
+- Canonical column mapping from 表三/表四 into knowledge fields
+- Deduplication/conflict policy for repeated invoice records
+- Minimum data-quality checks before write-back
+
+Status:
+
+- Open (requires product and data-governance decision)
+
+---
+
+## Q-017 True Vector RAG Migration
+
+Should retrieval move from current keyword matching to true vector RAG (embedding model + vector index) for better semantic matching quality?
+
+Required decisions:
+
+- Embedding model choice (for example BGE-M3)
+- Vector storage strategy (local embedded DB or external service)
+- Reindexing plan for existing knowledge cases
+- Offline-only and performance acceptance thresholds
+
+Status:
+
+- Open (requires architecture and operations decision)
+
+---
+
+## Q-018 Expense Category Credit Rule for Amount >= 10,000
 
 For expense-category entries, what is the credit account rule when amount is greater than or equal to 10,000?
 
@@ -277,7 +310,7 @@ Policy reference:
 
 ---
 
-## Q-017 Highest-Amount Item Selection Method
+## Q-019 Highest-Amount Item Selection Method
 
 When selecting the highest-amount item for fallback judgment, how should negative lines (e.g., discounts) be handled?
 
@@ -297,7 +330,7 @@ Policy reference:
 
 ---
 
-## Q-018 Tax Allocation Rounding Precision
+## Q-020 Tax Allocation Rounding Precision
 
 Tax allocation formula is specified, but rounding precision is not fully explicit.
 
@@ -317,7 +350,58 @@ Policy reference:
 
 ---
 
-## Q-019 Item Name Noise-Removal Dictionary
+## Q-021 Table3/Table4 Training Dataset Governance
+
+If model training will be based mainly on historical 表三/表四, what is the canonical dataset-governance policy?
+
+Required decisions:
+
+- Canonical label mapping from 表三/表四 fields to target outputs (可抵稅、建議科目、判定原因)
+- Conflict-resolution rule for duplicate keys with inconsistent labels
+- Required data-quality gate before training (missing fields, outliers, invalid categories)
+- Train/validation/test split rule to prevent leakage (by company and time window)
+
+Status:
+
+- Open (requires product, QA, and data-governance decision)
+
+---
+
+## Q-022 LLM Model Evaluation and Release Gate
+
+What acceptance and release criteria are required before switching processor runtime to a trained LLM model?
+
+Required decisions:
+
+- Minimum offline evaluation thresholds (status accuracy, category F1, reason quality review)
+- Online/shadow comparison scope and duration against existing logic
+- Rollback trigger and procedure when quality regresses
+- Version-approval owner and release sign-off workflow
+
+Status:
+
+- Open (requires architecture, QA, and operations decision)
+
+---
+
+## Q-023 Non-CLI Training Workflow UI
+
+Should the system provide an in-product training workflow UI for users unfamiliar with command-line operations?
+
+Required decisions:
+
+- Minimum wizard steps (file select, mapping preview, validation report, train, evaluation, publish)
+- Permission and approval model for running training and publishing models
+- Progress/log visibility and user-facing error handling standards
+- Whether scripts remain internal backend implementation with UI-only operator flow
+
+Status:
+
+- Open (requires product and UX decision)
+
+---
+
+## Q-024 Item Name Noise-Removal Dictionary
 
 Should item-name cleanup be governed by a fixed dictionary/rule set?
 

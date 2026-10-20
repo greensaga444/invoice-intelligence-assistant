@@ -404,7 +404,15 @@ Required decisions:
 
 Status:
 
-- Open (requires product and UX decision)
+- Resolved (2026-10-20)
+
+Decision:
+
+- Provide a guided in-product workflow tab in Invoice AI Processor with fixed four-step sequence:
+  1) dataset selection (.xlsx), 2) validation, 3) training, 4) evaluation, then publish.
+- Enforce explicit approver input before publish; publish writes a local approved model artifact.
+- Keep training/evaluation local-only and file-based (no external service dependency).
+- Expose progress and validation/evaluation summaries in UI status text with actionable error messages.
 
 ---
 

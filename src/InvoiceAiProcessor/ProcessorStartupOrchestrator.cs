@@ -18,6 +18,7 @@ internal sealed class ProcessorStartupOrchestrator
         var knowledgeRepositoryPath = PathResolutionHelper.ResolveConfiguredPath(solutionRootPath, config.KnowledgeRepositoryPath);
 
         var pipelineState = BuildPipelineState(
+            solutionRootPath,
             folderAPath,
             folderBPath,
             folderCPath,
@@ -42,6 +43,7 @@ internal sealed class ProcessorStartupOrchestrator
     }
 
     private static ProcessorStartupState BuildPipelineState(
+        string solutionRootPath,
         string folderAPath,
         string folderBPath,
         string folderCPath,
@@ -63,7 +65,8 @@ internal sealed class ProcessorStartupOrchestrator
             return new ProcessorStartupState(
                 StatusMessage: "AI 決策流程：資料夾 A 尚無可分析檔案。",
                 DecisionResults: [],
-                FeedbackService: feedbackService);
+                FeedbackService: feedbackService,
+                TrainingService: new TrainingWorkflowService(solutionRootPath));
         }
 
         var approvedKnowledgeCases = knowledgeRepository.LoadCases();
@@ -145,7 +148,8 @@ internal sealed class ProcessorStartupOrchestrator
         return new ProcessorStartupState(
             statusMessage,
             pipelineResult.Items,
-            feedbackService);
+            feedbackService,
+            new TrainingWorkflowService(solutionRootPath));
     }
 
     private static (IReadOnlyList<InvoiceDecisionResult> ReadyForFolderB, IReadOnlyList<InvoiceDecisionResult> NeedManualReview)
@@ -184,4 +188,5 @@ internal sealed class ProcessorStartupOrchestrator
 internal sealed record ProcessorStartupState(
     string StatusMessage,
     IReadOnlyList<InvoiceDecisionResult> DecisionResults,
-    ManualKnowledgeFeedbackService? FeedbackService);
+    ManualKnowledgeFeedbackService? FeedbackService,
+    TrainingWorkflowService? TrainingService);

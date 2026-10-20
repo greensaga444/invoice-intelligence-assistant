@@ -13,9 +13,9 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: Q-017 true vector RAG migration
+Work Item Name: Q-023 non-CLI training workflow UI
 
-Description: Replace keyword-only retrieval with local vector similarity retrieval in processor RAG flow while preserving offline execution and quality-gate performance.
+Description: Define and deliver an in-product guided training workflow so non-CLI users can run dataset validation, training, evaluation, and publish with clear permissions, progress, and error handling.
 
 ---
 
@@ -250,10 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-Implemented a new local vector-similarity retriever for processor RAG and switched startup orchestration from keyword-only retrieval.
-Added vector retriever unit tests and updated integration/performance tests to validate vector retrieval in the active pipeline path.
-Validated build/test/format gates successfully with offline-only execution preserved.
-Prepared PRD open-question documentation update for Q-017 decision closure.
+Added non-CLI training workflow UI tab in AI Processor with dataset selection, validation, training, evaluation, and publish actions.
+Implemented local `TrainingWorkflowService` for Table3/Table4-style dataset validation, deterministic train/test split, staged model output, evaluation report, and publish artifact.
+Added unit tests for validation summary, staged model generation, precondition guard, and publish flow.
+Verified with `dotnet test InvoiceIntelligenceAssistant.slnx -v minimal` and `dotnet format InvoiceIntelligenceAssistant.slnx --verify-no-changes`.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 

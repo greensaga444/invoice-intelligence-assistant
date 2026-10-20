@@ -22,13 +22,15 @@ public partial class App : Application
             startupState = new ProcessorStartupState(
                 StatusMessage: $"設定載入失敗: {ex.Message}",
                 DecisionResults: [],
-                FeedbackService: null);
+                FeedbackService: null,
+                TrainingService: null);
         }
 
         var mainWindow = new MainWindow(
             startupState.StatusMessage,
             startupState.DecisionResults,
-            startupState.FeedbackService);
+            startupState.FeedbackService,
+            startupState.TrainingService);
         mainWindow.Show();
     }
 }

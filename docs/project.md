@@ -195,6 +195,7 @@ Constraints / Non-Functional Requirements:
 | 8 | Unified INI settings UI | Downloader provides one settings UI to edit both downloader.ini and processor.ini fields (except module.name) with shared folder/App credential sync. | P1 | LIGHT | 1 | DONE |
 | 9 | Downloader official-only mode | Downloader local mode is removed, official API flow is fixed in code, and downloader.ini no longer requires invoiceDownloadMode. | P1 | LIGHT | 3,8 | DONE |
 | 10 | True vector RAG migration baseline | Processor RAG retrieval uses local vector similarity ranking instead of keyword-only matching while keeping offline execution and quality gates green. | P1 | FULL | 4,6 | DONE |
+| 11 | Q-023 non-CLI training workflow UI | Users can complete dataset selection, validation, training, evaluation, and publish steps from a guided in-product UI without command-line usage. | P1 | FULL | 6,7 | DONE |
 
 Definition of Done: one line describing a distinct user-visible outcome; no two rows should share it.
 Track values: FULL (full pipeline) / LIGHT (skip PLAN)
@@ -210,6 +211,7 @@ Status values: TODO / IN PROGRESS / DONE / BLOCKED
 - [x] M2: AI Processor MVP complete (decision pipeline and Folder B enhanced export)
 - [x] M3: Production readiness complete (knowledge feedback, localization, performance/security validation)
 - [x] M4: Configuration UX alignment complete (unified settings UI and cross-INI sync)
+- [x] M5: Non-CLI training workflow complete (guided dataset validation, training, evaluation, and publish flow)
 
 ---
 

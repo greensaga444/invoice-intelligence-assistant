@@ -8,20 +8,25 @@ internal static class LauncherSettingsValidator
     {
         ArgumentNullException.ThrowIfNull(input);
 
-        if (string.IsNullOrWhiteSpace(input.ModuleName)
-            || string.IsNullOrWhiteSpace(input.FolderAPath)
-            || string.IsNullOrWhiteSpace(input.FolderBPath)
-            || string.IsNullOrWhiteSpace(input.FolderCPath)
-            || string.IsNullOrWhiteSpace(input.CustomerListFilePath)
-            || string.IsNullOrWhiteSpace(input.FileNamingRule)
-            || string.IsNullOrWhiteSpace(input.InvoiceFileSuffix)
-            || string.IsNullOrWhiteSpace(input.AllowanceFileSuffix)
-            || string.IsNullOrWhiteSpace(input.InvoiceOutputLabel)
-            || string.IsNullOrWhiteSpace(input.AllowanceOutputLabel)
-            || string.IsNullOrWhiteSpace(input.ProcessorKnowledgeRepositoryFile)
-            || string.IsNullOrWhiteSpace(input.MofAccount)
-            || string.IsNullOrWhiteSpace(input.OfficialApiAppId)
-            || string.IsNullOrWhiteSpace(input.OfficialApiAppKey))
+        var requiredValues = new[]
+        {
+            input.ModuleName,
+            input.FolderAPath,
+            input.FolderBPath,
+            input.FolderCPath,
+            input.CustomerListFilePath,
+            input.FileNamingRule,
+            input.InvoiceFileSuffix,
+            input.AllowanceFileSuffix,
+            input.InvoiceOutputLabel,
+            input.AllowanceOutputLabel,
+            input.ProcessorKnowledgeRepositoryFile,
+            input.MofAccount,
+            input.OfficialApiAppId,
+            input.OfficialApiAppKey
+        };
+
+        if (requiredValues.Any(string.IsNullOrWhiteSpace))
         {
             errorMessage = "請完整填寫所有欄位。";
             return false;

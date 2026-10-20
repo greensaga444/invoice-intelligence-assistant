@@ -95,18 +95,15 @@ public partial class MainWindow : Window
         else
         {
             var resolvedPath = ResolveConfiguredPath(configuredPath);
-            if (Directory.Exists(resolvedPath))
+            var (initialDirectory, fileName) = PathResolutionHelper.ResolveDialogInitialPath(resolvedPath);
+            if (!string.IsNullOrWhiteSpace(initialDirectory))
             {
-                dialog.InitialDirectory = resolvedPath;
+                dialog.InitialDirectory = initialDirectory;
             }
-            else
+
+            if (!string.IsNullOrWhiteSpace(fileName))
             {
-                var directoryPath = Path.GetDirectoryName(resolvedPath);
-                if (!string.IsNullOrWhiteSpace(directoryPath) && Directory.Exists(directoryPath))
-                {
-                    dialog.InitialDirectory = directoryPath;
-                    dialog.FileName = Path.GetFileName(resolvedPath);
-                }
+                dialog.FileName = fileName;
             }
         }
 
@@ -219,7 +216,7 @@ public partial class MainWindow : Window
 
             BatchDownloadResultText.Text =
                 $"批次下載完成：成功 {successCount} 筆，失敗 {failureCount} 筆。\n" +
-                $"模式: {GetDownloadModeLabel()}\n" +
+                "模式: 官方 API\n" +
                 $"原始發票資料夾 (Folder A): {folderAPath}\n" +
                 $"下載記錄: {result.LogFilePath}";
         }
@@ -291,10 +288,5 @@ public partial class MainWindow : Window
             scopeSelection: OfficialInvoiceScopeSelection.Default);
 
         return (batchDownloader, httpClient);
-    }
-
-    private string GetDownloadModeLabel()
-    {
-        return "官方 API";
     }
 }

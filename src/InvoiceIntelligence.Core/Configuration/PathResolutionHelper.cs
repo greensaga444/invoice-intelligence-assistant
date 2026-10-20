@@ -47,4 +47,25 @@ public static class PathResolutionHelper
 
         return Path.GetFullPath(Path.Combine(rootPath, configuredPath));
     }
+
+    public static (string? InitialDirectory, string? FileName) ResolveDialogInitialPath(string configuredPath)
+    {
+        if (string.IsNullOrWhiteSpace(configuredPath))
+        {
+            return (null, null);
+        }
+
+        if (Directory.Exists(configuredPath))
+        {
+            return (configuredPath, null);
+        }
+
+        var directoryPath = Path.GetDirectoryName(configuredPath);
+        if (!string.IsNullOrWhiteSpace(directoryPath) && Directory.Exists(directoryPath))
+        {
+            return (directoryPath, Path.GetFileName(configuredPath));
+        }
+
+        return (null, null);
+    }
 }

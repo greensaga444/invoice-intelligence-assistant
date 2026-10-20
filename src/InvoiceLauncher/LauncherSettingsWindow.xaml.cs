@@ -165,18 +165,15 @@ public partial class LauncherSettingsWindow : Window
         var configuredPath = targetTextBox.Text.Trim();
         if (!string.IsNullOrWhiteSpace(configuredPath))
         {
-            if (Directory.Exists(configuredPath))
+            var (initialDirectory, fileName) = PathResolutionHelper.ResolveDialogInitialPath(configuredPath);
+            if (!string.IsNullOrWhiteSpace(initialDirectory))
             {
-                dialog.InitialDirectory = configuredPath;
+                dialog.InitialDirectory = initialDirectory;
             }
-            else
+
+            if (!string.IsNullOrWhiteSpace(fileName))
             {
-                var directoryPath = Path.GetDirectoryName(configuredPath);
-                if (!string.IsNullOrWhiteSpace(directoryPath) && Directory.Exists(directoryPath))
-                {
-                    dialog.InitialDirectory = directoryPath;
-                    dialog.FileName = Path.GetFileName(configuredPath);
-                }
+                dialog.FileName = fileName;
             }
         }
 

@@ -26,8 +26,7 @@ internal sealed class ProcessorStartupOrchestrator
             $"資料夾 C: {folderCPath}\n" +
             $"人工覆核門檻: {config.LowConfidenceThreshold:0.00}\n" +
             $"命名規則: {config.OutputNamingRule}\n" +
-            $"知識庫檔案: {knowledgeRepositoryPath}\n" +
-            "尚未開始處理，請按下「Start」。";
+            $"知識庫檔案: {knowledgeRepositoryPath}";
 
         return new ProcessorInitialState(
             StatusMessage: message,
@@ -202,29 +201,11 @@ internal sealed class ProcessorStartupOrchestrator
             string invoiceFileSuffix,
             string allowanceFileSuffix)
     {
-        var readyForFolderB = new List<InvoiceDecisionResult>(decisionResults.Count);
-        var needManualReview = new List<InvoiceDecisionResult>();
-
-        var groupedByReviewGroup = decisionResults
-            .GroupBy(
-                item => FolderAFileCategoryHelper.BuildGroupKey(
-                    item.Record.SourceFileName,
-                    invoiceFileSuffix,
-                    allowanceFileSuffix),
-                StringComparer.OrdinalIgnoreCase);
-
-        foreach (var group in groupedByReviewGroup)
-        {
-            if (group.Any(item => item.Decision.ConfidenceScore < lowConfidenceThreshold))
-            {
-                needManualReview.AddRange(group);
-                continue;
-            }
-
-            readyForFolderB.AddRange(group);
-        }
-
-        return (readyForFolderB, needManualReview);
+        return DecisionReviewPartitioner.SplitByThreshold(
+            decisionResults,
+            lowConfidenceThreshold,
+            invoiceFileSuffix,
+            allowanceFileSuffix);
     }
 }
 

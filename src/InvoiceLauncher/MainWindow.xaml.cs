@@ -266,9 +266,9 @@ public partial class MainWindow : Window
                 return loader.Load(configPath);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Keep fallback defaults if config parsing fails.
+            AppendLog($"設定檔讀取失敗，改用預設值：{ex.Message}");
         }
 
         return fallback;

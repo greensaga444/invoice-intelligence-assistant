@@ -74,19 +74,7 @@ internal sealed class ModuleRuntimeCoordinator
     {
         ArgumentNullException.ThrowIfNull(module);
 
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = module.ExecutablePath,
-            WorkingDirectory = module.WorkingDirectory,
-            UseShellExecute = true
-        };
-
-        foreach (var argument in module.Arguments ?? Array.Empty<string>())
-        {
-            startInfo.ArgumentList.Add(argument);
-        }
-
-        var process = _startProcess(startInfo);
+        var process = _startProcess(BuildStartInfo(module));
 
         if (process is null)
         {
@@ -110,19 +98,7 @@ internal sealed class ModuleRuntimeCoordinator
 
         try
         {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = module.ExecutablePath,
-                WorkingDirectory = module.WorkingDirectory,
-                UseShellExecute = true
-            };
-
-            foreach (var argument in module.Arguments ?? Array.Empty<string>())
-            {
-                startInfo.ArgumentList.Add(argument);
-            }
-
-            _startProcess(startInfo);
+            _startProcess(BuildStartInfo(module));
 
             appendLog($"{module.DisplayName} 已啟動。");
         }
@@ -131,6 +107,23 @@ internal sealed class ModuleRuntimeCoordinator
             appendLog($"啟動 {module.DisplayName} 失敗：{ex.Message}");
             _showMessage(owner, ex.Message, "啟動失敗", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private static ProcessStartInfo BuildStartInfo(ModuleRuntimeDefinition module)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = module.ExecutablePath,
+            WorkingDirectory = module.WorkingDirectory,
+            UseShellExecute = true
+        };
+
+        foreach (var argument in module.Arguments ?? Array.Empty<string>())
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
+        return startInfo;
     }
 
     public void OpenFolder(Window owner, string folderPath, Action<string> appendLog)

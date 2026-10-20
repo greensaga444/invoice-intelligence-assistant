@@ -105,19 +105,19 @@ AI 與檢索：
 ## 目前可執行骨架
 
 - 解決方案檔：InvoiceIntelligenceAssistant.slnx
-- 應用程式：src/InvoiceLauncher、src/InvoiceDownloader、src/InvoiceAiProcessor
+- 應用程式：src/InvoiceLauncher、src/InvoiceDownloader、src/InvoiceAiProcessor、src/InvoiceTrainer
 - 共用核心：src/InvoiceIntelligence.Core
 - 設定檔範本：config/downloader.ini、config/processor.ini
 - 主控台（InvoiceLauncher）提供統一設定視窗：可集中編輯根目錄 config 下的 downloader.ini 與 processor.ini。
 - 主控台設定視窗可調整輸出分流關鍵欄位：invoiceFileSuffix、allowanceFileSuffix、invoiceOutputLabel、allowanceOutputLabel。
-- 主控台已新增 RAG 訓練入口：可直接啟動 Processor 並開啟訓練流程頁籤。
+- 主控台已新增 Trainer 入口：可直接啟動 Trainer 模組。
 - 子模組（Downloader / Processor）獨立執行時不提供設定 UI。
 - Downloader 已支援客戶清單 Excel 匯入、MOF 驗證，以及批次下載原始發票 Excel 至原始發票資料夾（Folder A）並輸出下載記錄。
 - AI Processor 已支援原始發票資料夾（Folder A）原始發票讀取、分階段 AI 決策流程（Rule Engine -> Case Cache -> RAG -> LLM），並可將保留原始欄位且附加 AI 欄位的強化 Excel 匯出至 AI 分析結果資料夾（Folder B）。
 - AI Processor 已支援低信心人工覆核流程：可設定信心門檻，低於門檻的公司來源群組（同檔名基底，`-invoice` / `-allowance` 視為同組）會匯出至人工覆核資料夾（Folder C），待人工覆核後可再複製回 AI 分析結果資料夾（Folder B）。
-- AI Processor 已支援手動知識回饋：可勾選人工核准紀錄並更新本地知識庫，且後續執行會將已核准案例載入 RAG 檢索。
+- AI Trainer 已支援手動知識回饋：可勾選人工核准紀錄並更新本地知識庫，且後續執行會將已核准案例載入 RAG 檢索。
 - AI Processor 目前使用本地向量相似度檢索（Vector RAG baseline）進行參考案例排序，維持離線執行且不依賴外部 AI API。
-- AI Processor 已支援免 CLI 訓練流程 UI：可在應用程式內完成資料集驗證、訓練、評估與核准發布模型。
+- AI Trainer 已支援免 CLI 訓練流程 UI：可在應用程式內完成資料集驗證、訓練、評估與核准發布模型。
 - 目前版本已完成在地化與品質閘道：使用者可見訊息與輸出欄位維持繁體中文，且已加入離線 AI 驗證與目標規模效能測試。
 
 ## 開發與交付快速路徑
@@ -157,6 +157,7 @@ dotnet format InvoiceIntelligenceAssistant.slnx --verify-no-changes
 ```powershell
 .\scripts\publish-downloader.ps1
 .\scripts\publish-processor.ps1
+.\scripts\publish-trainer.ps1
 .\scripts\publish-all.ps1
 ```
 
@@ -165,6 +166,7 @@ dotnet format InvoiceIntelligenceAssistant.slnx --verify-no-changes
 ```powershell
 .\scripts\publish-downloader.ps1 -Runtime win-x64 -Configuration Release
 .\scripts\publish-processor.ps1 -Runtime win-x64 -Configuration Release
+.\scripts\publish-trainer.ps1 -Runtime win-x64 -Configuration Release
 .\scripts\publish-all.ps1 -Runtime win-x64 -Configuration Release
 ```
 
@@ -173,7 +175,7 @@ dotnet format InvoiceIntelligenceAssistant.slnx --verify-no-changes
 - `-Runtime win-x64|win-x86|win-arm64`：目標 Windows RID。
 - `-Configuration Release|Debug`：建置組態。
 - `-FrameworkDependent`：改為 framework-dependent 打包（客戶端需安裝對應 .NET Runtime）。
-- `-OutputPath`（publish-downloader / publish-processor）：指定輸出根路徑（預設 `build/deploy/InvoiceIntelligence`）。
+- `-OutputPath`（publish-downloader / publish-processor / publish-trainer）：指定輸出根路徑（預設 `build/deploy/InvoiceIntelligence`）。
 - `-DeployRoot`（publish-all）：指定輸出根路徑（預設 `build/deploy`，整包在 `build/deploy/InvoiceIntelligence`）。
 - `-SkipZip`（publish-all）：僅產出資料夾，不建立 zip。
 
@@ -196,7 +198,7 @@ dotnet format InvoiceIntelligenceAssistant.slnx --verify-no-changes
 參數：
 
 - `-PackageRoot <path>`：指定部署根目錄（例如 `build/deploy/InvoiceIntelligence`）。
-- `-Profile all|downloader|processor`：指定檢查範圍，預設為 `all`。
+- `-Profile all|downloader|processor|trainer`：指定檢查範圍，預設為 `all`。
 
 範例：
 
@@ -215,7 +217,7 @@ dotnet format InvoiceIntelligenceAssistant.slnx --verify-no-changes
 
 ### 部署資料夾結構
 
-整合部署（Downloader + Processor + 主控台）：
+整合部署（Downloader + Processor + Trainer + 主控台）：
 
 ```text
 InvoiceIntelligence/
@@ -224,6 +226,8 @@ InvoiceIntelligence/
 |-- downloader/
 |   `-- libs/
 |-- processor/
+|   `-- libs/
+|-- trainer/
 |   `-- libs/
 `-- config/
     |-- downloader.ini
@@ -250,7 +254,7 @@ InvoiceIntelligence/
     `-- processor.ini
 ```
 
-- 每個可執行模組（主控台、Downloader、Processor）根目錄保留啟動用 `*.exe` 包裝器；實際執行檔與所有 `.dll` 皆位於 `libs/`。
+- 每個可執行模組（主控台、Downloader、Processor、Trainer）根目錄保留啟動用 `*.exe` 包裝器；實際執行檔與所有 `.dll` 皆位於 `libs/`。
 
 ### 部署流程 0：主控台整合部署（推薦）
 
@@ -262,8 +266,8 @@ InvoiceIntelligence/
 4. 在主控台使用「設定」集中管理 `config/downloader.ini` 與 `config/processor.ini`。
 5. 如需執行完整流程，在主控台按「執行完整流程」（先啟動 Downloader，關閉後可接續啟動 Processor）。
 6. 如需獨立執行單一模組，請進入對應子資料夾：
-	`build/deploy/InvoiceIntelligence/downloader/InvoiceDownloader.exe` 或 `build/deploy/InvoiceIntelligence/processor/InvoiceAiProcessor.exe`。
-	若要使用訓練流程，請由主控台點選「開啟 RAG 訓練」進入 Processor 的訓練頁籤。
+	`build/deploy/InvoiceIntelligence/downloader/InvoiceDownloader.exe`、`build/deploy/InvoiceIntelligence/processor/InvoiceAiProcessor.exe` 或 `build/deploy/InvoiceIntelligence/trainer/InvoiceTrainer.exe`。
+	若要使用訓練流程，請由主控台點選「開啟 Trainer」啟動 Trainer 模組。
 7. 子模組獨立執行時不提供設定 UI。
 
 流程：
@@ -272,8 +276,10 @@ InvoiceIntelligence/
 flowchart LR
 		A[InvoiceLauncher.exe] --> B[downloader 子資料夾]
 		A --> C[processor 子資料夾]
-		B --> D[InvoiceDownloader.exe]
-		C --> E[InvoiceAiProcessor.exe]
+		A --> D[trainer 子資料夾]
+		B --> E[InvoiceDownloader.exe]
+		C --> F[InvoiceAiProcessor.exe]
+		D --> G[InvoiceTrainer.exe]
 ```
 
 ### 部署流程 A：只部署 Downloader（模組 A）

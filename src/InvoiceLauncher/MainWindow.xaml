@@ -112,7 +112,7 @@
                         Padding="12,6"
                         Click="OpenProcessorFolderButton_Click" />
 
-                <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="RAG 訓練（Processor）" />
+                <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Trainer" />
                 <TextBlock x:Name="TrainerPathText"
                            Grid.Row="3"
                            Grid.Column="1"
@@ -165,7 +165,7 @@
                             Margin="0,0,8,0"
                             Click="LaunchProcessorButton_Click" />
                     <Button x:Name="LaunchTrainerButton"
-                            Content="開啟 RAG 訓練"
+                            Content="開啟 Trainer"
                             Padding="14,6"
                             Margin="0,0,8,0"
                             Click="LaunchTrainerButton_Click" />

@@ -2,7 +2,7 @@
 param(
     [string]$PackageRoot,
 
-    [ValidateSet("all", "downloader", "processor")]
+    [ValidateSet("all", "downloader", "processor", "trainer")]
     [string]$Profile = "all"
 )
 
@@ -36,7 +36,8 @@ function Resolve-PackageRoot {
         $markerPaths = @(
             (Join-Path $candidate "InvoiceLauncher.exe"),
             (Join-Path $candidate "downloader\InvoiceDownloader.exe"),
-            (Join-Path $candidate "processor\InvoiceAiProcessor.exe")
+            (Join-Path $candidate "processor\InvoiceAiProcessor.exe"),
+            (Join-Path $candidate "trainer\InvoiceTrainer.exe")
         )
 
         foreach ($markerPath in $markerPaths) {
@@ -248,10 +249,20 @@ function Get-TargetApps {
         RuntimeConfig = "InvoiceAiProcessor.runtimeconfig.json"
     }
 
+    $trainer = [PSCustomObject]@{
+        Name = "Trainer"
+        BasePath = "trainer"
+        Exe = "InvoiceTrainer.exe"
+        Dll = "InvoiceTrainer.dll"
+        Deps = "InvoiceTrainer.deps.json"
+        RuntimeConfig = "InvoiceTrainer.runtimeconfig.json"
+    }
+
     switch ($RequestedProfile) {
-        "all" { return @($launcher, $downloader, $processor) }
+        "all" { return @($launcher, $downloader, $processor, $trainer) }
         "downloader" { return @($downloader) }
         "processor" { return @($processor) }
+        "trainer" { return @($trainer) }
         default { throw "Unsupported profile: $RequestedProfile" }
     }
 }
@@ -284,6 +295,7 @@ $requiredConfigFiles = switch ($Profile) {
     "all" { @("config\\downloader.ini", "config\\processor.ini") }
     "downloader" { @("config\\downloader.ini") }
     "processor" { @("config\\processor.ini") }
+    "trainer" { @("config\\processor.ini") }
     default { @() }
 }
 

@@ -4,7 +4,7 @@ using System.Text;
 using System.Text.Json;
 using ClosedXML.Excel;
 
-namespace InvoiceIntelligence.Core.Processor;
+namespace InvoiceIntelligence.Core.Trainer;
 
 public sealed class TrainingWorkflowService
 {

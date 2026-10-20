@@ -25,6 +25,7 @@ if ([string]::IsNullOrWhiteSpace($DeployRoot)) {
 
 $downloaderScript = Join-Path $scriptRoot "publish-downloader.ps1"
 $processorScript = Join-Path $scriptRoot "publish-processor.ps1"
+$trainerScript = Join-Path $scriptRoot "publish-trainer.ps1"
 $readinessScriptSource = Join-Path $scriptRoot "check-customer-environment.ps1"
 
 if (-not (Test-Path $downloaderScript)) {
@@ -33,6 +34,10 @@ if (-not (Test-Path $downloaderScript)) {
 
 if (-not (Test-Path $processorScript)) {
     throw "Script not found: $processorScript"
+}
+
+if (-not (Test-Path $trainerScript)) {
+    throw "Script not found: $trainerScript"
 }
 
 if (-not (Test-Path $readinessScriptSource)) {
@@ -64,10 +69,12 @@ if (-not (Test-Path $bootstrapperProjectPath)) {
 $packageRoot = Join-Path $DeployRoot "InvoiceIntelligence"
 $downloaderOutput = Join-Path $packageRoot "downloader"
 $processorOutput = Join-Path $packageRoot "processor"
+$trainerOutput = Join-Path $packageRoot "trainer"
 $configOutput = Join-Path $packageRoot "config"
 $launcherLibsOutput = Join-Path $packageRoot "libs"
 $downloaderLibsOutput = Join-Path $downloaderOutput "libs"
 $processorLibsOutput = Join-Path $processorOutput "libs"
+$trainerLibsOutput = Join-Path $trainerOutput "libs"
 $readinessScriptTarget = Join-Path $packageRoot "check-customer-environment.ps1"
 $powershellPath = Join-Path $PSHOME "powershell.exe"
 if (-not (Test-Path $powershellPath)) {
@@ -136,6 +143,47 @@ function Convert-ToBootstrapLayout {
     return $libsOutputPath
 }
 
+function Remove-DirectorySafely {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
+        return
+    }
+
+    $lastError = $null
+    for ($attempt = 1; $attempt -le 3; $attempt++) {
+        try {
+            if (Test-Path -LiteralPath $Path -PathType Container) {
+                Get-ChildItem -LiteralPath $Path -Recurse -Force -ErrorAction SilentlyContinue | ForEach-Object {
+                    if ($_.Attributes -band [IO.FileAttributes]::ReadOnly) {
+                        $_.Attributes = $_.Attributes -bxor [IO.FileAttributes]::ReadOnly
+                    }
+                }
+
+                $rootItem = Get-Item -LiteralPath $Path -Force -ErrorAction SilentlyContinue
+                if ($null -ne $rootItem -and ($rootItem.Attributes -band [IO.FileAttributes]::ReadOnly)) {
+                    $rootItem.Attributes = $rootItem.Attributes -bxor [IO.FileAttributes]::ReadOnly
+                }
+
+                Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction Stop
+            }
+
+            return
+        }
+        catch {
+            $lastError = $_
+            if ($attempt -lt 3) {
+                Start-Sleep -Milliseconds 400
+            }
+        }
+    }
+
+    throw "Unable to clean deploy folder '$Path'. Close running InvoiceLauncher/Downloader/Processor/Trainer processes and any open Explorer window under this folder, then retry. Details: $($lastError.Exception.Message)"
+}
+
 $commonParams = @{
     Configuration = $Configuration
     Runtime = $Runtime
@@ -146,7 +194,7 @@ if ($FrameworkDependent) {
 }
 
 if (Test-Path -LiteralPath $packageRoot -PathType Container) {
-    Remove-Item -LiteralPath $packageRoot -Recurse -Force
+    Remove-DirectorySafely -Path $packageRoot
 }
 
 $null = New-Item -ItemType Directory -Path $packageRoot -Force
@@ -179,6 +227,12 @@ if ($LASTEXITCODE -ne 0) {
     throw "Processor publish failed."
 }
 
+Write-Host "Publishing Trainer package..." -ForegroundColor Cyan
+& $trainerScript @commonParams -OutputPath $packageRoot
+if ($LASTEXITCODE -ne 0) {
+    throw "Trainer publish failed."
+}
+
 Write-Host "Running integrated customer environment readiness check..." -ForegroundColor Cyan
 & $powershellPath -NoProfile -ExecutionPolicy Bypass -File $readinessScriptTarget -PackageRoot $packageRoot -Profile all
 if ($LASTEXITCODE -ne 0) {
@@ -190,9 +244,11 @@ if ($SkipZip) {
     Write-Host "Package:    $packageRoot"
     Write-Host "Downloader: $downloaderOutput"
     Write-Host "Processor:  $processorOutput"
+    Write-Host "Trainer:    $trainerOutput"
     Write-Host "Launcher runtime:   $launcherLibsOutput"
     Write-Host "Downloader runtime: $downloaderLibsOutput"
     Write-Host "Processor runtime:  $processorLibsOutput"
+    Write-Host "Trainer runtime:    $trainerLibsOutput"
     Write-Host "Config:     $configOutput"
     Write-Host "Env Check:  $readinessScriptTarget"
     return
@@ -213,9 +269,11 @@ Write-Host "Done. Packages and zip artifacts are ready." -ForegroundColor Green
 Write-Host "Package:    $packageRoot"
 Write-Host "Downloader: $downloaderOutput"
 Write-Host "Processor:  $processorOutput"
+Write-Host "Trainer:    $trainerOutput"
 Write-Host "Launcher runtime:   $launcherLibsOutput"
 Write-Host "Downloader runtime: $downloaderLibsOutput"
 Write-Host "Processor runtime:  $processorLibsOutput"
+Write-Host "Trainer runtime:    $trainerLibsOutput"
 Write-Host "Config:     $configOutput"
 Write-Host "Env Check:  $readinessScriptTarget"
 Write-Host "Zip:        $packageZip"

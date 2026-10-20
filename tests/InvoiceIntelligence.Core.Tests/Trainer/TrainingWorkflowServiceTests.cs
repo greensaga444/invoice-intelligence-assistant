@@ -1,7 +1,7 @@
 using ClosedXML.Excel;
-using InvoiceIntelligence.Core.Processor;
+using InvoiceIntelligence.Core.Trainer;
 
-namespace InvoiceIntelligence.Core.Tests.Processor;
+namespace InvoiceIntelligence.Core.Tests.Trainer;
 
 public class TrainingWorkflowServiceTests : IDisposable
 {

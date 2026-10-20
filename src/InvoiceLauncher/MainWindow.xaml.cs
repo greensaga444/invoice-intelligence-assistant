@@ -14,6 +14,7 @@ public partial class MainWindow : Window
     private readonly string _configFolderPath;
     private readonly string _downloaderFolderPath;
     private readonly string _processorFolderPath;
+    private readonly string _trainerFolderPath;
     private readonly ModuleRuntimeDefinition _downloaderModule;
     private readonly ModuleRuntimeDefinition _processorModule;
     private readonly ModuleRuntimeDefinition _trainerModule;
@@ -27,6 +28,7 @@ public partial class MainWindow : Window
         _configFolderPath = Path.Combine(_packageRootPath, "config");
         _downloaderFolderPath = Path.GetFullPath(Path.Combine(_packageRootPath, "downloader"));
         _processorFolderPath = Path.GetFullPath(Path.Combine(_packageRootPath, "processor"));
+        _trainerFolderPath = Path.GetFullPath(Path.Combine(_packageRootPath, "trainer"));
         _downloaderModule = new ModuleRuntimeDefinition(
             DisplayName: "Downloader",
             ExecutablePath: Path.Combine(_downloaderFolderPath, "InvoiceDownloader.exe"),
@@ -38,11 +40,10 @@ public partial class MainWindow : Window
             WorkingDirectory: _processorFolderPath,
             ConfigPath: Path.Combine(_configFolderPath, "processor.ini"));
         _trainerModule = new ModuleRuntimeDefinition(
-            DisplayName: "RAG 訓練",
-            ExecutablePath: Path.Combine(_processorFolderPath, "InvoiceAiProcessor.exe"),
-            WorkingDirectory: _processorFolderPath,
-            ConfigPath: Path.Combine(_configFolderPath, "processor.ini"),
-            Arguments: ["--training"]);
+            DisplayName: "Trainer",
+            ExecutablePath: Path.Combine(_trainerFolderPath, "InvoiceTrainer.exe"),
+            WorkingDirectory: _trainerFolderPath,
+            ConfigPath: Path.Combine(_configFolderPath, "processor.ini"));
         _runtimeCoordinator = new ModuleRuntimeCoordinator();
 
         RefreshModuleStatus();
@@ -164,7 +165,7 @@ public partial class MainWindow : Window
 
     private void OpenTrainerFolderButton_Click(object sender, RoutedEventArgs e)
     {
-        _runtimeCoordinator.OpenFolder(this, _processorFolderPath, AppendLog);
+        _runtimeCoordinator.OpenFolder(this, _trainerFolderPath, AppendLog);
     }
 
     private void RefreshModuleStatus()
@@ -189,7 +190,7 @@ public partial class MainWindow : Window
 
         OpenDownloaderFolderButton.IsEnabled = Directory.Exists(_downloaderFolderPath);
         OpenProcessorFolderButton.IsEnabled = Directory.Exists(_processorFolderPath);
-        OpenTrainerFolderButton.IsEnabled = Directory.Exists(_processorFolderPath);
+        OpenTrainerFolderButton.IsEnabled = Directory.Exists(_trainerFolderPath);
         RunFullFlowButton.IsEnabled = downloaderReady && processorReady && downloaderConfigReady && processorConfigReady;
         LaunchDownloaderButton.IsEnabled = downloaderReady && downloaderConfigReady;
         LaunchProcessorButton.IsEnabled = processorReady && processorConfigReady;

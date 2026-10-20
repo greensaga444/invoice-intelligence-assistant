@@ -10,7 +10,6 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-        var openTrainingTab = e.Args.Any(arg => string.Equals(arg, "--training", StringComparison.OrdinalIgnoreCase));
 
         ProcessorStartupState startupState;
 
@@ -23,16 +22,13 @@ public partial class App : Application
             startupState = new ProcessorStartupState(
                 StatusMessage: $"設定載入失敗: {ex.Message}",
                 DecisionResults: [],
-                FeedbackService: null,
-                TrainingService: null);
+                FeedbackService: null);
         }
 
         var mainWindow = new MainWindow(
             startupState.StatusMessage,
             startupState.DecisionResults,
-            startupState.FeedbackService,
-            startupState.TrainingService,
-            openTrainingTab);
+            startupState.FeedbackService);
         mainWindow.Show();
     }
 }

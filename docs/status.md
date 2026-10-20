@@ -250,8 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-Added non-CLI training workflow UI tab in AI Processor with dataset selection, validation, training, evaluation, and publish actions.
+Added non-CLI training workflow UI in AI Trainer module with dataset selection, validation, training, evaluation, and publish actions.
 Implemented local `TrainingWorkflowService` for Table3/Table4-style dataset validation, deterministic train/test split, staged model output, evaluation report, and publish artifact.
+Removed training-flow and manual knowledge-feedback UI from AI Processor, keeping it focused on decision processing.
+Moved manual knowledge-feedback UI from AI Processor into AI Trainer module.
 Added unit tests for validation summary, staged model generation, precondition guard, and publish flow.
 Verified with `dotnet test InvoiceIntelligenceAssistant.slnx -v minimal` and `dotnet format InvoiceIntelligenceAssistant.slnx --verify-no-changes`.
 

@@ -5,6 +5,7 @@
     <Project Path="src/InvoiceDownloader/InvoiceDownloader.csproj" />
     <Project Path="src/InvoiceIntelligence.Core/InvoiceIntelligence.Core.csproj" />
     <Project Path="src/InvoiceLauncher/InvoiceLauncher.csproj" />
+    <Project Path="src/InvoiceTrainer/InvoiceTrainer.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/InvoiceIntelligence.Core.Tests/InvoiceIntelligence.Core.Tests.csproj" />

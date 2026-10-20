@@ -27,7 +27,7 @@ internal static class ProcessorIniFileWriter
             folderAPath: settings.FolderAPath,
             folderBPath: settings.FolderBPath,
             folderCPath: settings.FolderCPath,
-            fileNamingRule: settings.ProcessorFileNamingRule,
+            fileNamingRule: settings.FileNamingRule,
             invoiceFileSuffix: settings.InvoiceFileSuffix,
             allowanceFileSuffix: settings.AllowanceFileSuffix,
             lowConfidenceThreshold: settings.LowConfidenceThreshold,

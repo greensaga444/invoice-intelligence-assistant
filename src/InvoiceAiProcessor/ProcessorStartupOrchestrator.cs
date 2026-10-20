@@ -6,7 +6,7 @@ namespace InvoiceAiProcessor;
 
 internal sealed class ProcessorStartupOrchestrator
 {
-    public ProcessorStartupState BuildStartupState()
+    public ProcessorInitialState BuildInitialState()
     {
         var loader = new IniModuleConfigurationLoader();
         var configPath = PathResolutionHelper.ResolveConfigPath("processor.ini");
@@ -16,56 +16,76 @@ internal sealed class ProcessorStartupOrchestrator
         var folderBPath = PathResolutionHelper.ResolveConfiguredPath(solutionRootPath, config.FolderBPath);
         var folderCPath = PathResolutionHelper.ResolveConfiguredPath(solutionRootPath, config.FolderCPath);
         var knowledgeRepositoryPath = PathResolutionHelper.ResolveConfiguredPath(solutionRootPath, config.KnowledgeRepositoryPath);
-
-        var pipelineState = BuildPipelineState(
-            folderAPath,
-            folderBPath,
-            folderCPath,
-            config.OutputNamingRule,
-            config.InvoiceOutputLabel,
-            config.AllowanceOutputLabel,
-            config.InvoiceFileSuffix,
-            config.AllowanceFileSuffix,
-            config.LowConfidenceThreshold,
-            knowledgeRepositoryPath);
-
-        var message = $"載入成功: {config.ModuleName}\n" +
-                      $"資料夾 A: {folderAPath}\n" +
-                      $"資料夾 B: {folderBPath}\n" +
-                      $"資料夾 C: {folderCPath}\n" +
-                      $"人工覆核門檻: {config.LowConfidenceThreshold:0.00}\n" +
-                      $"命名規則: {config.OutputNamingRule}\n" +
-                      $"知識庫檔案: {knowledgeRepositoryPath}\n" +
-                      pipelineState.StatusMessage;
-
-        return pipelineState with { StatusMessage = message };
-    }
-
-    private static ProcessorStartupState BuildPipelineState(
-        string folderAPath,
-        string folderBPath,
-        string folderCPath,
-        string outputNamingRule,
-        string invoiceOutputLabel,
-        string allowanceOutputLabel,
-        string invoiceFileSuffix,
-        string allowanceFileSuffix,
-        decimal lowConfidenceThreshold,
-        string knowledgeRepositoryPath)
-    {
-        var reader = new FolderAInvoiceRecordReader();
-        var records = reader.ReadFromFolder(folderAPath, invoiceFileSuffix, allowanceFileSuffix);
         var knowledgeRepository = new JsonKnowledgeCaseRepository(knowledgeRepositoryPath);
         var feedbackService = new ManualKnowledgeFeedbackService(knowledgeRepository);
 
+        var message =
+            $"載入成功: {config.ModuleName}\n" +
+            $"資料夾 A: {folderAPath}\n" +
+            $"資料夾 B: {folderBPath}\n" +
+            $"資料夾 C: {folderCPath}\n" +
+            $"人工覆核門檻: {config.LowConfidenceThreshold:0.00}\n" +
+            $"命名規則: {config.OutputNamingRule}\n" +
+            $"知識庫檔案: {knowledgeRepositoryPath}\n" +
+            "尚未開始處理，請按下「Start」。";
+
+        return new ProcessorInitialState(
+            StatusMessage: message,
+            FolderAPath: folderAPath,
+            FolderBPath: folderBPath,
+            FolderCPath: folderCPath,
+            OutputNamingRule: config.OutputNamingRule,
+            InvoiceOutputLabel: config.InvoiceOutputLabel,
+            AllowanceOutputLabel: config.AllowanceOutputLabel,
+            InvoiceFileSuffix: config.InvoiceFileSuffix,
+            AllowanceFileSuffix: config.AllowanceFileSuffix,
+            LowConfidenceThreshold: config.LowConfidenceThreshold,
+            KnowledgeRepositoryPath: knowledgeRepositoryPath,
+            FeedbackService: feedbackService);
+    }
+
+    public ProcessorStartupState BuildStartupState()
+    {
+        var initialState = BuildInitialState();
+        var processingState = RunProcessing(initialState);
+        var combinedMessage = $"{initialState.StatusMessage}\n{processingState.StatusMessage}";
+
+        return new ProcessorStartupState(
+            combinedMessage,
+            processingState.DecisionResults,
+            processingState.FeedbackService);
+    }
+
+    public ProcessorProcessingState RunProcessing(
+        ProcessorInitialState initialState,
+        Action<ProcessorProgressUpdate>? reportProgress = null)
+    {
+        ArgumentNullException.ThrowIfNull(initialState);
+
+        var reader = new FolderAInvoiceRecordReader();
+        var records = reader.ReadFromFolder(
+            initialState.FolderAPath,
+            initialState.InvoiceFileSuffix,
+            initialState.AllowanceFileSuffix);
+
         if (records.Count == 0)
         {
-            return new ProcessorStartupState(
+            reportProgress?.Invoke(new ProcessorProgressUpdate(0, 0, 100m));
+            return new ProcessorProcessingState(
                 StatusMessage: "AI 決策流程：資料夾 A 尚無可分析檔案。",
                 DecisionResults: [],
-                FeedbackService: feedbackService);
+                FeedbackService: initialState.FeedbackService,
+                ProcessedRecords: 0,
+                TotalRecords: 0,
+                FolderBRecordCount: 0,
+                FolderCRecordCount: 0,
+                FolderBFileCount: 0,
+                FolderCFileCount: 0);
         }
 
+        reportProgress?.Invoke(new ProcessorProgressUpdate(0, records.Count, 0m));
+
+        var knowledgeRepository = new JsonKnowledgeCaseRepository(initialState.KnowledgeRepositoryPath);
         var approvedKnowledgeCases = knowledgeRepository.LoadCases();
         var ragKnowledgeCases = KnowledgeRuleCatalog.DefaultKnowledgeCases
             .Concat(approvedKnowledgeCases)
@@ -77,30 +97,36 @@ internal sealed class ProcessorStartupOrchestrator
             new VectorRagRetriever(ragKnowledgeCases),
             new LocalHeuristicLlmAnalyzer());
 
-        var pipelineResult = pipeline.Process(records);
+        var pipelineResult = pipeline.Process(records, (processed, total) =>
+        {
+            reportProgress?.Invoke(new ProcessorProgressUpdate(
+                processed,
+                total,
+                CalculatePercentage(processed, total)));
+        });
         var (readyForFolderB, needManualReview) = SplitResultsByReviewThreshold(
             pipelineResult.Items,
-            lowConfidenceThreshold,
-            invoiceFileSuffix,
-            allowanceFileSuffix);
+            initialState.LowConfidenceThreshold,
+            initialState.InvoiceFileSuffix,
+            initialState.AllowanceFileSuffix);
 
         var exporter = new FolderBEnhancedInvoiceExporter();
         var folderBExportResult = exporter.Export(
             readyForFolderB,
-            folderBPath,
-            outputNamingRule,
-            invoiceOutputLabel: invoiceOutputLabel,
-            allowanceOutputLabel: allowanceOutputLabel,
-            invoiceFileSuffix: invoiceFileSuffix,
-            allowanceFileSuffix: allowanceFileSuffix);
+            initialState.FolderBPath,
+            initialState.OutputNamingRule,
+            invoiceOutputLabel: initialState.InvoiceOutputLabel,
+            allowanceOutputLabel: initialState.AllowanceOutputLabel,
+            invoiceFileSuffix: initialState.InvoiceFileSuffix,
+            allowanceFileSuffix: initialState.AllowanceFileSuffix);
         var folderCExportResult = exporter.Export(
             needManualReview,
-            folderCPath,
-            outputNamingRule,
-            invoiceOutputLabel: invoiceOutputLabel,
-            allowanceOutputLabel: allowanceOutputLabel,
-            invoiceFileSuffix: invoiceFileSuffix,
-            allowanceFileSuffix: allowanceFileSuffix);
+            initialState.FolderCPath,
+            initialState.OutputNamingRule,
+            invoiceOutputLabel: initialState.InvoiceOutputLabel,
+            allowanceOutputLabel: initialState.AllowanceOutputLabel,
+            invoiceFileSuffix: initialState.InvoiceFileSuffix,
+            allowanceFileSuffix: initialState.AllowanceFileSuffix);
 
         var previewLines = pipelineResult.Items
             .Take(3)
@@ -123,7 +149,7 @@ internal sealed class ProcessorStartupOrchestrator
         var exportSummary =
             $"資料夾 B 匯出完成：檔案 {folderBExportResult.ExportedFileCount}，筆數 {folderBExportResult.ExportedRecordCount}。\n" +
             $"資料夾 C（人工覆核）匯出完成：檔案 {folderCExportResult.ExportedFileCount}，筆數 {folderCExportResult.ExportedRecordCount}。\n" +
-            $"覆核規則：同一公司來源群組（同檔名基底，-{invoiceFileSuffix}/-{allowanceFileSuffix}/-allwance 視為同組）只要有任一筆信心度 < {lowConfidenceThreshold:0.00}，該群組檔案即匯出至資料夾 C。";
+            $"覆核規則：同一公司來源群組（同檔名基底，-{initialState.InvoiceFileSuffix}/-{initialState.AllowanceFileSuffix}/-allwance 視為同組）只要有任一筆信心度 < {initialState.LowConfidenceThreshold:0.00}，該群組檔案即匯出至資料夾 C。";
 
         if (folderBFilesPreview.Length > 0)
         {
@@ -142,10 +168,31 @@ internal sealed class ProcessorStartupOrchestrator
             $"判定預覽:\n{string.Join("\n", previewLines)}\n" +
             exportSummary;
 
-        return new ProcessorStartupState(
+        reportProgress?.Invoke(new ProcessorProgressUpdate(
+            records.Count,
+            records.Count,
+            100m));
+
+        return new ProcessorProcessingState(
             statusMessage,
             pipelineResult.Items,
-            feedbackService);
+            initialState.FeedbackService,
+            ProcessedRecords: records.Count,
+            TotalRecords: records.Count,
+            FolderBRecordCount: folderBExportResult.ExportedRecordCount,
+            FolderCRecordCount: folderCExportResult.ExportedRecordCount,
+            FolderBFileCount: folderBExportResult.ExportedFileCount,
+            FolderCFileCount: folderCExportResult.ExportedFileCount);
+    }
+
+    private static decimal CalculatePercentage(int processed, int total)
+    {
+        if (total <= 0)
+        {
+            return 100m;
+        }
+
+        return Math.Round(processed * 100m / total, 2, MidpointRounding.AwayFromZero);
     }
 
     private static (IReadOnlyList<InvoiceDecisionResult> ReadyForFolderB, IReadOnlyList<InvoiceDecisionResult> NeedManualReview)
@@ -185,3 +232,33 @@ internal sealed record ProcessorStartupState(
     string StatusMessage,
     IReadOnlyList<InvoiceDecisionResult> DecisionResults,
     ManualKnowledgeFeedbackService? FeedbackService);
+
+internal sealed record ProcessorInitialState(
+    string StatusMessage,
+    string FolderAPath,
+    string FolderBPath,
+    string FolderCPath,
+    string OutputNamingRule,
+    string InvoiceOutputLabel,
+    string AllowanceOutputLabel,
+    string InvoiceFileSuffix,
+    string AllowanceFileSuffix,
+    decimal LowConfidenceThreshold,
+    string KnowledgeRepositoryPath,
+    ManualKnowledgeFeedbackService? FeedbackService);
+
+internal sealed record ProcessorProcessingState(
+    string StatusMessage,
+    IReadOnlyList<InvoiceDecisionResult> DecisionResults,
+    ManualKnowledgeFeedbackService? FeedbackService,
+    int ProcessedRecords,
+    int TotalRecords,
+    int FolderBRecordCount,
+    int FolderCRecordCount,
+    int FolderBFileCount,
+    int FolderCFileCount);
+
+internal sealed record ProcessorProgressUpdate(
+    int ProcessedRecords,
+    int TotalRecords,
+    decimal Percentage);

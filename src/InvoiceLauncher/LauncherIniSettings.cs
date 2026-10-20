@@ -11,7 +11,6 @@ public sealed record LauncherIniSettings(
     string AllowanceFileSuffix,
     string InvoiceOutputLabel,
     string AllowanceOutputLabel,
-    string ProcessorFileNamingRule,
     string ProcessorKnowledgeRepositoryFile,
     decimal LowConfidenceThreshold,
     string MofAccount,

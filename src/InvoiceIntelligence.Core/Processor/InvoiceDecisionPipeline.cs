@@ -28,7 +28,9 @@ public sealed class InvoiceDecisionPipeline
         _maxReferenceCases = maxReferenceCases;
     }
 
-    public InvoiceDecisionPipelineResult Process(IReadOnlyCollection<InvoiceAnalysisRecord> records)
+    public InvoiceDecisionPipelineResult Process(
+        IReadOnlyCollection<InvoiceAnalysisRecord> records,
+        Action<int, int>? reportProgress = null)
     {
         ArgumentNullException.ThrowIfNull(records);
 
@@ -36,6 +38,8 @@ public sealed class InvoiceDecisionPipeline
         var resolvedByRuleEngine = 0;
         var resolvedByCaseCache = 0;
         var resolvedByLlm = 0;
+        var processedCount = 0;
+        var totalRecords = records.Count;
 
         foreach (var record in records)
         {
@@ -44,6 +48,8 @@ public sealed class InvoiceDecisionPipeline
             {
                 resolvedByRuleEngine++;
                 results.Add(new InvoiceDecisionResult(record, ruleDecision, DecisionStage.RuleEngine, []));
+                processedCount++;
+                reportProgress?.Invoke(processedCount, totalRecords);
                 continue;
             }
 
@@ -52,6 +58,8 @@ public sealed class InvoiceDecisionPipeline
             {
                 resolvedByCaseCache++;
                 results.Add(new InvoiceDecisionResult(record, cacheDecision, DecisionStage.CaseCache, []));
+                processedCount++;
+                reportProgress?.Invoke(processedCount, totalRecords);
                 continue;
             }
 
@@ -61,6 +69,8 @@ public sealed class InvoiceDecisionPipeline
 
             resolvedByLlm++;
             results.Add(new InvoiceDecisionResult(record, llmDecision, DecisionStage.Llm, references));
+            processedCount++;
+            reportProgress?.Invoke(processedCount, totalRecords);
         }
 
         var summary = new InvoiceDecisionPipelineSummary(

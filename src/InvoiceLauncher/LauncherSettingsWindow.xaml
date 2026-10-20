@@ -95,32 +95,28 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="下載器命名規則" VerticalAlignment="Center" Margin="0,0,12,10" />
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="命名規則" VerticalAlignment="Center" Margin="0,0,12,10" />
                         <TextBox x:Name="FileNamingRuleTextBox" Grid.Row="0" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
 
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Processor 命名規則" VerticalAlignment="Center" Margin="0,0,12,10" />
-                        <TextBox x:Name="ProcessorFileNamingRuleTextBox" Grid.Row="1" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="發票來源後綴" VerticalAlignment="Center" Margin="0,0,12,10" />
+                        <TextBox x:Name="InvoiceFileSuffixTextBox" Grid.Row="1" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
 
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="發票來源後綴" VerticalAlignment="Center" Margin="0,0,12,10" />
-                        <TextBox x:Name="InvoiceFileSuffixTextBox" Grid.Row="2" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="折讓來源後綴" VerticalAlignment="Center" Margin="0,0,12,10" />
+                        <TextBox x:Name="AllowanceFileSuffixTextBox" Grid.Row="2" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
 
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="折讓來源後綴" VerticalAlignment="Center" Margin="0,0,12,10" />
-                        <TextBox x:Name="AllowanceFileSuffixTextBox" Grid.Row="3" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="發票輸出標籤" VerticalAlignment="Center" Margin="0,0,12,10" />
+                        <TextBox x:Name="InvoiceOutputLabelTextBox" Grid.Row="3" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
 
-                        <TextBlock Grid.Row="4" Grid.Column="0" Text="發票輸出標籤" VerticalAlignment="Center" Margin="0,0,12,10" />
-                        <TextBox x:Name="InvoiceOutputLabelTextBox" Grid.Row="4" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="折讓輸出標籤" VerticalAlignment="Center" Margin="0,0,12,10" />
+                        <TextBox x:Name="AllowanceOutputLabelTextBox" Grid.Row="4" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
 
-                        <TextBlock Grid.Row="5" Grid.Column="0" Text="折讓輸出標籤" VerticalAlignment="Center" Margin="0,0,12,10" />
-                        <TextBox x:Name="AllowanceOutputLabelTextBox" Grid.Row="5" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Processor 知識庫檔案" VerticalAlignment="Center" Margin="0,0,12,10" />
+                        <TextBox x:Name="ProcessorKnowledgeRepositoryFileTextBox" Grid.Row="5" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
 
-                        <TextBlock Grid.Row="6" Grid.Column="0" Text="Processor 知識庫檔案" VerticalAlignment="Center" Margin="0,0,12,10" />
-                        <TextBox x:Name="ProcessorKnowledgeRepositoryFileTextBox" Grid.Row="6" Grid.Column="1" Height="32" Padding="8" Margin="0,0,0,10" />
-
-                        <TextBlock Grid.Row="7" Grid.Column="0" Text="低信心門檻 (0~1)" VerticalAlignment="Center" Margin="0,0,12,0" />
-                        <TextBox x:Name="LowConfidenceThresholdTextBox" Grid.Row="7" Grid.Column="1" Height="32" Padding="8" />
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="低信心門檻 (0~1)" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <TextBox x:Name="LowConfidenceThresholdTextBox" Grid.Row="6" Grid.Column="1" Height="32" Padding="8" />
                     </Grid>
                 </ScrollViewer>
             </TabItem>

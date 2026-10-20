@@ -29,7 +29,6 @@ public partial class MainWindow : Window
         _feedbackRows = new ObservableCollection<FeedbackCandidateRow>(
             decisionResults.Select(FeedbackCandidateRow.Create));
         FeedbackGrid.ItemsSource = _feedbackRows;
-        TrainingApproverTextBox.Text = Environment.UserName;
         StatusText.Text = statusMessage;
         TrainingStatusText.Text = _trainingWorkflowService is null
             ? "訓練服務尚未初始化。"
@@ -113,7 +112,7 @@ public partial class MainWindow : Window
 
     private void ValidateDatasetButton_Click(object sender, RoutedEventArgs e)
     {
-        if (!TryGetTrainingInputs(requireDataset: true, out var datasetPath, out _))
+        if (!TryGetTrainingInputs(requireDataset: true, out var datasetPath))
         {
             return;
         }
@@ -133,14 +132,15 @@ public partial class MainWindow : Window
 
     private void TrainModelButton_Click(object sender, RoutedEventArgs e)
     {
-        if (!TryGetTrainingInputs(requireDataset: true, out var datasetPath, out var approver))
+        if (!TryGetTrainingInputs(requireDataset: true, out var datasetPath))
         {
             return;
         }
 
         try
         {
-            var result = _trainingWorkflowService!.Train(datasetPath!, approver!);
+            var actor = ResolveActor();
+            var result = _trainingWorkflowService!.Train(datasetPath!, actor);
             TrainingStatusText.Text =
                 $"訓練完成：模型條目 {result.ModelEntryCount}，訓練集 {result.TrainingRecordCount}，測試集 {result.TestRecordCount}。\n" +
                 $"staged model：{result.StagedModelPath}\n" +
@@ -154,7 +154,7 @@ public partial class MainWindow : Window
 
     private void EvaluateModelButton_Click(object sender, RoutedEventArgs e)
     {
-        if (!TryGetTrainingInputs(requireDataset: true, out var datasetPath, out _))
+        if (!TryGetTrainingInputs(requireDataset: true, out var datasetPath))
         {
             return;
         }
@@ -175,14 +175,15 @@ public partial class MainWindow : Window
 
     private void PublishModelButton_Click(object sender, RoutedEventArgs e)
     {
-        if (!TryGetTrainingInputs(requireDataset: false, out _, out var approver))
+        if (!TryGetTrainingInputs(requireDataset: false, out _))
         {
             return;
         }
 
         try
         {
-            var result = _trainingWorkflowService!.Publish(approver!);
+            var actor = ResolveActor();
+            var result = _trainingWorkflowService!.Publish(actor);
             TrainingStatusText.Text =
                 $"發布完成：{result.PublishedModelPath}\n" +
                 $"核准人：{result.ApprovedBy}，發布時間(UTC)：{result.PublishedAtUtc:yyyy-MM-dd HH:mm:ss}";
@@ -193,20 +194,13 @@ public partial class MainWindow : Window
         }
     }
 
-    private bool TryGetTrainingInputs(bool requireDataset, out string? datasetPath, out string? approver)
+    private bool TryGetTrainingInputs(bool requireDataset, out string? datasetPath)
     {
         datasetPath = _selectedDatasetPath;
-        approver = TrainingApproverTextBox.Text?.Trim();
 
         if (_trainingWorkflowService is null)
         {
             TrainingStatusText.Text = "訓練服務尚未初始化，無法執行。";
-            return false;
-        }
-
-        if (string.IsNullOrWhiteSpace(approver))
-        {
-            TrainingStatusText.Text = "請輸入核准人。";
             return false;
         }
 
@@ -228,6 +222,13 @@ public partial class MainWindow : Window
         }
 
         return true;
+    }
+
+    private static string ResolveActor()
+    {
+        return string.IsNullOrWhiteSpace(Environment.UserName)
+            ? "system"
+            : Environment.UserName.Trim();
     }
 
     private static string BuildValidationIssuesSummary(TrainingDatasetValidationResult validation)

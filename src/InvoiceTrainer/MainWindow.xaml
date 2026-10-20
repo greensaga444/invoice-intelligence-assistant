@@ -78,8 +78,6 @@
                             <RowDefinition Height="12" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="12" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="12" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
@@ -133,22 +131,8 @@
                                     Content="4. 發布模型" />
                         </StackPanel>
 
-                        <StackPanel Grid.Row="4"
-                                    Grid.Column="0"
-                                    Grid.ColumnSpan="3"
-                                    Orientation="Horizontal"
-                                    VerticalAlignment="Center">
-                            <TextBlock Text="核准人："
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,8,0" />
-                            <TextBox x:Name="TrainingApproverTextBox"
-                                     Width="220"
-                                     Height="30"
-                                     VerticalContentAlignment="Center" />
-                        </StackPanel>
-
                         <TextBlock x:Name="TrainingStatusText"
-                                   Grid.Row="6"
+                                   Grid.Row="4"
                                    Grid.Column="0"
                                    Grid.ColumnSpan="3"
                                    TextWrapping="Wrap"

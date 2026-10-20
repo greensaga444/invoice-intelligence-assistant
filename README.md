@@ -108,7 +108,7 @@ AI 與檢索：
 - 應用程式：src/InvoiceLauncher、src/InvoiceDownloader、src/InvoiceAiProcessor、src/InvoiceTrainer
 - 共用核心：src/InvoiceIntelligence.Core
 - 設定檔範本：config/downloader.ini、config/processor.ini
-- 主控台（InvoiceLauncher）提供統一設定視窗：可集中編輯根目錄 config 下的 downloader.ini 與 processor.ini。
+- 主控台（InvoiceLauncher）提供統一設定視窗：可集中編輯根目錄 config 下的 downloader.ini 與 processor.ini，並共用單一「命名規則」同步套用至 Downloader 與 Processor。
 - 主控台設定視窗可調整輸出分流關鍵欄位：invoiceFileSuffix、allowanceFileSuffix、invoiceOutputLabel、allowanceOutputLabel。
 - 主控台已新增 Trainer 入口：可直接啟動 Trainer 模組。
 - 子模組（Downloader / Processor）獨立執行時不提供設定 UI。
@@ -117,7 +117,7 @@ AI 與檢索：
 - AI Processor 已支援低信心人工覆核流程：可設定信心門檻，低於門檻的公司來源群組（同檔名基底，`-invoice` / `-allowance` 視為同組）會匯出至人工覆核資料夾（Folder C），待人工覆核後可再複製回 AI 分析結果資料夾（Folder B）。
 - AI Trainer 已支援手動知識回饋：可勾選人工核准紀錄並更新本地知識庫，且後續執行會將已核准案例載入 RAG 檢索。
 - AI Processor 目前使用本地向量相似度檢索（Vector RAG baseline）進行參考案例排序，維持離線執行且不依賴外部 AI API。
-- AI Trainer 已支援免 CLI 訓練流程 UI：可在應用程式內完成資料集驗證、訓練、評估與核准發布模型。
+- AI Trainer 已支援免 CLI 訓練流程 UI：可在應用程式內完成資料集驗證、訓練、評估與發布模型（發布人自動取用目前使用者，無需手動輸入）。
 - 目前版本已完成在地化與品質閘道：使用者可見訊息與輸出欄位維持繁體中文，且已加入離線 AI 驗證與目標規模效能測試。
 
 ## 開發與交付快速路徑

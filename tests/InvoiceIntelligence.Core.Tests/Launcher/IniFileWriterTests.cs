@@ -79,7 +79,7 @@ public class IniFileWriterTests
             Assert.Equal(settings.FolderAPath, config.FolderAPath);
             Assert.Equal(settings.FolderBPath, config.FolderBPath);
             Assert.Equal(settings.FolderCPath, config.FolderCPath);
-            Assert.Equal(settings.ProcessorFileNamingRule, config.OutputNamingRule);
+            Assert.Equal(settings.FileNamingRule, config.OutputNamingRule);
             Assert.Equal(settings.ProcessorKnowledgeRepositoryFile, config.KnowledgeRepositoryPath);
             Assert.Equal(settings.LowConfidenceThreshold, config.LowConfidenceThreshold);
             Assert.Equal(settings.InvoiceOutputLabel, config.InvoiceOutputLabel);
@@ -111,7 +111,6 @@ public class IniFileWriterTests
             AllowanceFileSuffix: "allowance",
             InvoiceOutputLabel: "SalesInvoiceDetail-T3",
             AllowanceOutputLabel: "PurchaseVoucherDetail-T4",
-            ProcessorFileNamingRule: "{taxId}_{timestamp}.xlsx",
             ProcessorKnowledgeRepositoryFile: "data/knowledge/knowledge-cases.json",
             LowConfidenceThreshold: 0.80m,
             MofAccount: "mof-account",

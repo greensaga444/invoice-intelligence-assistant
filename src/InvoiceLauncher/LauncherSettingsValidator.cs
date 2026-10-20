@@ -18,7 +18,6 @@ internal static class LauncherSettingsValidator
             || string.IsNullOrWhiteSpace(input.AllowanceFileSuffix)
             || string.IsNullOrWhiteSpace(input.InvoiceOutputLabel)
             || string.IsNullOrWhiteSpace(input.AllowanceOutputLabel)
-            || string.IsNullOrWhiteSpace(input.ProcessorFileNamingRule)
             || string.IsNullOrWhiteSpace(input.ProcessorKnowledgeRepositoryFile)
             || string.IsNullOrWhiteSpace(input.MofAccount)
             || string.IsNullOrWhiteSpace(input.OfficialApiAppId)
@@ -62,7 +61,6 @@ internal sealed record LauncherSettingsInput(
     string AllowanceFileSuffix,
     string InvoiceOutputLabel,
     string AllowanceOutputLabel,
-    string ProcessorFileNamingRule,
     string ProcessorKnowledgeRepositoryFile,
     string LowConfidenceThresholdText,
     string MofAccount,

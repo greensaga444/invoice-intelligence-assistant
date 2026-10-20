@@ -228,6 +228,9 @@ public partial class MainWindow : Window
         var downloaderConfiguration = LoadConfigurationOrDefault(_downloaderModule.ConfigPath, CreateDefaultDownloaderConfig());
         var processorConfiguration = LoadConfigurationOrDefault(_processorModule.ConfigPath, CreateDefaultProcessorConfig());
         var officialApiPassword = ResolveOfficialApiPassword(downloaderConfiguration.OfficialApiPasswordEncrypted);
+        var fileNamingRule = string.IsNullOrWhiteSpace(downloaderConfiguration.OutputNamingRule)
+            ? processorConfiguration.OutputNamingRule
+            : downloaderConfiguration.OutputNamingRule;
 
         return new LauncherIniSettings(
             ModuleName: downloaderConfiguration.ModuleName,
@@ -235,12 +238,11 @@ public partial class MainWindow : Window
             FolderBPath: ResolveConfiguredPath(downloaderConfiguration.FolderBPath),
             FolderCPath: ResolveConfiguredPath(processorConfiguration.FolderCPath),
             CustomerListFilePath: ResolveConfiguredPath(downloaderConfiguration.CustomerListFilePath),
-            FileNamingRule: downloaderConfiguration.OutputNamingRule,
+            FileNamingRule: fileNamingRule,
             InvoiceFileSuffix: downloaderConfiguration.InvoiceFileSuffix,
             AllowanceFileSuffix: downloaderConfiguration.AllowanceFileSuffix,
             InvoiceOutputLabel: processorConfiguration.InvoiceOutputLabel,
             AllowanceOutputLabel: processorConfiguration.AllowanceOutputLabel,
-            ProcessorFileNamingRule: processorConfiguration.OutputNamingRule,
             ProcessorKnowledgeRepositoryFile: ResolveConfiguredPath(processorConfiguration.KnowledgeRepositoryPath),
             LowConfidenceThreshold: processorConfiguration.LowConfidenceThreshold,
             MofAccount: downloaderConfiguration.MofAccount,

@@ -78,7 +78,6 @@ public class LauncherSettingsValidatorTests
             AllowanceFileSuffix: "allowance",
             InvoiceOutputLabel: "SalesInvoiceDetail-T3",
             AllowanceOutputLabel: "PurchaseVoucherDetail-T4",
-            ProcessorFileNamingRule: "{taxId}_{timestamp}.xlsx",
             ProcessorKnowledgeRepositoryFile: "data/knowledge/knowledge-cases.json",
             LowConfidenceThresholdText: "0.80",
             MofAccount: "mof-account",

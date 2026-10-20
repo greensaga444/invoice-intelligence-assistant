@@ -1,4 +1,5 @@
 using System.Windows;
+using InvoiceIntelligence.Core.Configuration;
 
 namespace InvoiceAiProcessor;
 
@@ -11,24 +12,31 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        ProcessorStartupState startupState;
+        var orchestrator = new ProcessorStartupOrchestrator();
+        ProcessorInitialState startupState;
 
         try
         {
-            startupState = new ProcessorStartupOrchestrator().BuildStartupState();
+            startupState = orchestrator.BuildInitialState();
         }
         catch (Exception ex)
         {
-            startupState = new ProcessorStartupState(
+            startupState = new ProcessorInitialState(
                 StatusMessage: $"設定載入失敗: {ex.Message}",
-                DecisionResults: [],
+                FolderAPath: string.Empty,
+                FolderBPath: string.Empty,
+                FolderCPath: string.Empty,
+                OutputNamingRule: "{taxId}_{timestamp}.xlsx",
+                InvoiceOutputLabel: ConfigurationDefaults.InvoiceOutputLabel,
+                AllowanceOutputLabel: ConfigurationDefaults.AllowanceOutputLabel,
+                InvoiceFileSuffix: ConfigurationDefaults.InvoiceFileSuffix,
+                AllowanceFileSuffix: ConfigurationDefaults.AllowanceFileSuffix,
+                LowConfidenceThreshold: ConfigurationDefaults.LowConfidenceThreshold,
+                KnowledgeRepositoryPath: string.Empty,
                 FeedbackService: null);
         }
 
-        var mainWindow = new MainWindow(
-            startupState.StatusMessage,
-            startupState.DecisionResults,
-            startupState.FeedbackService);
+        var mainWindow = new MainWindow(orchestrator, startupState);
         mainWindow.Show();
     }
 }

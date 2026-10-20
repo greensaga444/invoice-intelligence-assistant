@@ -26,7 +26,6 @@ public partial class LauncherSettingsWindow : Window
         AllowanceFileSuffixTextBox.Text = settings.AllowanceFileSuffix;
         InvoiceOutputLabelTextBox.Text = settings.InvoiceOutputLabel;
         AllowanceOutputLabelTextBox.Text = settings.AllowanceOutputLabel;
-        ProcessorFileNamingRuleTextBox.Text = settings.ProcessorFileNamingRule;
         ProcessorKnowledgeRepositoryFileTextBox.Text = settings.ProcessorKnowledgeRepositoryFile;
         LowConfidenceThresholdTextBox.Text = settings.LowConfidenceThreshold.ToString("0.00", CultureInfo.InvariantCulture);
         MofAccountTextBox.Text = settings.MofAccount;
@@ -74,7 +73,6 @@ public partial class LauncherSettingsWindow : Window
         var allowanceFileSuffix = AllowanceFileSuffixTextBox.Text.Trim();
         var invoiceOutputLabel = InvoiceOutputLabelTextBox.Text.Trim();
         var allowanceOutputLabel = AllowanceOutputLabelTextBox.Text.Trim();
-        var processorFileNamingRule = ProcessorFileNamingRuleTextBox.Text.Trim();
         var processorKnowledgeRepositoryFile = ProcessorKnowledgeRepositoryFileTextBox.Text.Trim();
         var lowConfidenceThresholdText = LowConfidenceThresholdTextBox.Text.Trim();
         var mofAccount = MofAccountTextBox.Text.Trim();
@@ -94,7 +92,6 @@ public partial class LauncherSettingsWindow : Window
             AllowanceFileSuffix: allowanceFileSuffix,
             InvoiceOutputLabel: invoiceOutputLabel,
             AllowanceOutputLabel: allowanceOutputLabel,
-            ProcessorFileNamingRule: processorFileNamingRule,
             ProcessorKnowledgeRepositoryFile: processorKnowledgeRepositoryFile,
             LowConfidenceThresholdText: lowConfidenceThresholdText,
             MofAccount: mofAccount,
@@ -122,7 +119,6 @@ public partial class LauncherSettingsWindow : Window
             AllowanceFileSuffix: allowanceFileSuffix,
             InvoiceOutputLabel: invoiceOutputLabel,
             AllowanceOutputLabel: allowanceOutputLabel,
-            ProcessorFileNamingRule: processorFileNamingRule,
             ProcessorKnowledgeRepositoryFile: processorKnowledgeRepositoryFile,
             LowConfidenceThreshold: lowConfidenceThreshold,
             MofAccount: mofAccount,

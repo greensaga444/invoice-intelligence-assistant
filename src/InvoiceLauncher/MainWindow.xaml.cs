@@ -16,6 +16,7 @@ public partial class MainWindow : Window
     private readonly string _processorFolderPath;
     private readonly ModuleRuntimeDefinition _downloaderModule;
     private readonly ModuleRuntimeDefinition _processorModule;
+    private readonly ModuleRuntimeDefinition _trainerModule;
     private readonly ModuleRuntimeCoordinator _runtimeCoordinator;
 
     public MainWindow()
@@ -36,6 +37,12 @@ public partial class MainWindow : Window
             ExecutablePath: Path.Combine(_processorFolderPath, "InvoiceAiProcessor.exe"),
             WorkingDirectory: _processorFolderPath,
             ConfigPath: Path.Combine(_configFolderPath, "processor.ini"));
+        _trainerModule = new ModuleRuntimeDefinition(
+            DisplayName: "RAG 訓練",
+            ExecutablePath: Path.Combine(_processorFolderPath, "InvoiceAiProcessor.exe"),
+            WorkingDirectory: _processorFolderPath,
+            ConfigPath: Path.Combine(_configFolderPath, "processor.ini"),
+            Arguments: ["--training"]);
         _runtimeCoordinator = new ModuleRuntimeCoordinator();
 
         RefreshModuleStatus();
@@ -98,6 +105,11 @@ public partial class MainWindow : Window
         _runtimeCoordinator.LaunchWithoutWaiting(this, _processorModule, AppendLog);
     }
 
+    private void LaunchTrainerButton_Click(object sender, RoutedEventArgs e)
+    {
+        _runtimeCoordinator.LaunchWithoutWaiting(this, _trainerModule, AppendLog);
+    }
+
     private void OpenSettingsButton_Click(object sender, RoutedEventArgs e)
     {
         var settingsWindow = new LauncherSettingsWindow(BuildSettingsFromCurrentState())
@@ -150,13 +162,20 @@ public partial class MainWindow : Window
         _runtimeCoordinator.OpenFolder(this, _processorFolderPath, AppendLog);
     }
 
+    private void OpenTrainerFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        _runtimeCoordinator.OpenFolder(this, _processorFolderPath, AppendLog);
+    }
+
     private void RefreshModuleStatus()
     {
         DownloaderPathText.Text = _downloaderModule.ExecutablePath;
         ProcessorPathText.Text = _processorModule.ExecutablePath;
+        TrainerPathText.Text = _trainerModule.ExecutablePath;
 
         var downloaderReady = File.Exists(_downloaderModule.ExecutablePath);
         var processorReady = File.Exists(_processorModule.ExecutablePath);
+        var trainerReady = File.Exists(_trainerModule.ExecutablePath);
         var downloaderConfigReady = File.Exists(_downloaderModule.ConfigPath);
         var processorConfigReady = File.Exists(_processorModule.ConfigPath);
 
@@ -166,12 +185,15 @@ public partial class MainWindow : Window
         ProcessorStatusText.Text = processorReady
             ? processorConfigReady ? "已就緒" : "缺設定"
             : "未就緒";
+        TrainerStatusText.Text = trainerReady ? "已就緒" : "未就緒";
 
         OpenDownloaderFolderButton.IsEnabled = Directory.Exists(_downloaderFolderPath);
         OpenProcessorFolderButton.IsEnabled = Directory.Exists(_processorFolderPath);
+        OpenTrainerFolderButton.IsEnabled = Directory.Exists(_processorFolderPath);
         RunFullFlowButton.IsEnabled = downloaderReady && processorReady && downloaderConfigReady && processorConfigReady;
         LaunchDownloaderButton.IsEnabled = downloaderReady && downloaderConfigReady;
         LaunchProcessorButton.IsEnabled = processorReady && processorConfigReady;
+        LaunchTrainerButton.IsEnabled = trainerReady;
     }
 
     private void SetActionButtonsEnabled(bool isEnabled)
@@ -187,6 +209,8 @@ public partial class MainWindow : Window
         LaunchProcessorButton.IsEnabled = isEnabled
             && File.Exists(_processorModule.ExecutablePath)
             && File.Exists(_processorModule.ConfigPath);
+        LaunchTrainerButton.IsEnabled = isEnabled
+            && File.Exists(_trainerModule.ExecutablePath);
         RefreshStatusButton.IsEnabled = isEnabled;
         OpenSettingsButton.IsEnabled = isEnabled;
     }

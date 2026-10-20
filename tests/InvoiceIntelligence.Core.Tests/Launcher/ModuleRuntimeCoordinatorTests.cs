@@ -94,6 +94,29 @@ public class ModuleRuntimeCoordinatorTests
     }
 
     [Fact]
+    public void EnsureModuleReady_WhenConfigNotRequired_ReturnsTrueWithoutConfigCheck()
+    {
+        var messages = new List<(string Caption, string Message)>();
+        var coordinator = CreateCoordinator(
+            fileExists: path => !path.EndsWith("missing.ini", StringComparison.OrdinalIgnoreCase),
+            onMessage: (caption, message) => messages.Add((caption, message)));
+        var window = CreateWindowStub();
+        var module = new ModuleRuntimeDefinition(
+            DisplayName: "RAG 訓練",
+            ExecutablePath: "module.exe",
+            WorkingDirectory: ".",
+            ConfigPath: "missing.ini",
+            RequiresConfig: false);
+        var logs = new List<string>();
+
+        var ready = coordinator.EnsureModuleReady(window, module, logs.Add);
+
+        Assert.True(ready);
+        Assert.Empty(logs);
+        Assert.Empty(messages);
+    }
+
+    [Fact]
     public async Task StartAndWaitForExitAsync_NullModule_ThrowsArgumentNullException()
     {
         var coordinator = CreateCoordinator();

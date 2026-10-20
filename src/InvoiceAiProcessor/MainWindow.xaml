@@ -26,7 +26,7 @@
         </Border>
 
         <Border Grid.Row="2" Padding="16" BorderThickness="1" CornerRadius="8" BorderBrush="#FFBFBFBF">
-            <TabControl>
+            <TabControl x:Name="MainTabs">
                 <TabItem Header="手動知識回饋">
                     <Grid Margin="8">
                         <Grid.RowDefinitions>

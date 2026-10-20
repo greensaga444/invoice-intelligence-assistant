@@ -23,7 +23,8 @@ public partial class MainWindow : Window
         string statusMessage,
         IReadOnlyList<InvoiceDecisionResult> decisionResults,
         ManualKnowledgeFeedbackService? feedbackService,
-        TrainingWorkflowService? trainingWorkflowService)
+        TrainingWorkflowService? trainingWorkflowService,
+        bool openTrainingTab = false)
     {
         InitializeComponent();
         StatusText.Text = statusMessage;
@@ -38,6 +39,10 @@ public partial class MainWindow : Window
             : "請先選擇 .xlsx 資料集，再依序執行驗證、訓練、評估與發布。";
 
         FeedbackGrid.ItemsSource = _feedbackRows;
+        if (openTrainingTab)
+        {
+            MainTabs.SelectedIndex = 1;
+        }
 
         if (_feedbackRows.Count == 0)
         {

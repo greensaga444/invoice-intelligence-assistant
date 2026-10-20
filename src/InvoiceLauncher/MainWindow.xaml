@@ -53,6 +53,7 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="170" />
@@ -110,6 +111,28 @@
                         Content="開啟子資料夾"
                         Padding="12,6"
                         Click="OpenProcessorFolderButton_Click" />
+
+                <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="RAG 訓練（Processor）" />
+                <TextBlock x:Name="TrainerPathText"
+                           Grid.Row="3"
+                           Grid.Column="1"
+                           Margin="0,8,12,0"
+                           TextWrapping="Wrap"
+                           VerticalAlignment="Center" />
+                <TextBlock x:Name="TrainerStatusText"
+                           Grid.Row="3"
+                           Grid.Column="2"
+                           Margin="0,8,12,0"
+                           VerticalAlignment="Center"
+                           Foreground="#FF1A4D8F"
+                           FontWeight="SemiBold" />
+                <Button x:Name="OpenTrainerFolderButton"
+                        Grid.Row="3"
+                        Grid.Column="3"
+                        Margin="0,8,0,0"
+                        Content="開啟子資料夾"
+                        Padding="12,6"
+                        Click="OpenTrainerFolderButton_Click" />
             </Grid>
         </Border>
 
@@ -141,6 +164,11 @@
                             Padding="14,6"
                             Margin="0,0,8,0"
                             Click="LaunchProcessorButton_Click" />
+                    <Button x:Name="LaunchTrainerButton"
+                            Content="開啟 RAG 訓練"
+                            Padding="14,6"
+                            Margin="0,0,8,0"
+                            Click="LaunchTrainerButton_Click" />
                     <Button x:Name="RefreshStatusButton"
                             Content="重新整理狀態"
                             Padding="14,6"

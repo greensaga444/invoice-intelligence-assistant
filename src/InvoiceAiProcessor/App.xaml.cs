@@ -10,6 +10,7 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        var openTrainingTab = e.Args.Any(arg => string.Equals(arg, "--training", StringComparison.OrdinalIgnoreCase));
 
         ProcessorStartupState startupState;
 
@@ -30,7 +31,8 @@ public partial class App : Application
             startupState.StatusMessage,
             startupState.DecisionResults,
             startupState.FeedbackService,
-            startupState.TrainingService);
+            startupState.TrainingService,
+            openTrainingTab);
         mainWindow.Show();
     }
 }

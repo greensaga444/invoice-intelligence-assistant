@@ -110,6 +110,7 @@ AI 與檢索：
 - 設定檔範本：config/downloader.ini、config/processor.ini
 - 主控台（InvoiceLauncher）提供統一設定視窗：可集中編輯根目錄 config 下的 downloader.ini 與 processor.ini。
 - 主控台設定視窗可調整輸出分流關鍵欄位：invoiceFileSuffix、allowanceFileSuffix、invoiceOutputLabel、allowanceOutputLabel。
+- 主控台已新增 RAG 訓練入口：可直接啟動 Processor 並開啟訓練流程頁籤。
 - 子模組（Downloader / Processor）獨立執行時不提供設定 UI。
 - Downloader 已支援客戶清單 Excel 匯入、MOF 驗證，以及批次下載原始發票 Excel 至原始發票資料夾（Folder A）並輸出下載記錄。
 - AI Processor 已支援原始發票資料夾（Folder A）原始發票讀取、分階段 AI 決策流程（Rule Engine -> Case Cache -> RAG -> LLM），並可將保留原始欄位且附加 AI 欄位的強化 Excel 匯出至 AI 分析結果資料夾（Folder B）。
@@ -262,6 +263,7 @@ InvoiceIntelligence/
 5. 如需執行完整流程，在主控台按「執行完整流程」（先啟動 Downloader，關閉後可接續啟動 Processor）。
 6. 如需獨立執行單一模組，請進入對應子資料夾：
 	`build/deploy/InvoiceIntelligence/downloader/InvoiceDownloader.exe` 或 `build/deploy/InvoiceIntelligence/processor/InvoiceAiProcessor.exe`。
+	若要使用訓練流程，請由主控台點選「開啟 RAG 訓練」進入 Processor 的訓練頁籤。
 7. 子模組獨立執行時不提供設定 UI。
 
 流程：

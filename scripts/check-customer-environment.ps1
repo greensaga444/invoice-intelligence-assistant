@@ -217,7 +217,8 @@ function Test-FrameworkInstalled {
 
 function Get-TargetApps {
     param(
-        [string]$RequestedProfile
+        [string]$RequestedProfile,
+        [string]$ResolvedPackageRoot
     )
 
     $launcher = [PSCustomObject]@{
@@ -277,7 +278,7 @@ else {
     Add-Result -Results $results -Name "PackageRoot" -Passed $false -Detail "Deploy folder does not exist: $resolvedPackageRoot"
 }
 
-$targetApps = Get-TargetApps -RequestedProfile $Profile
+$targetApps = Get-TargetApps -RequestedProfile $Profile -ResolvedPackageRoot $resolvedPackageRoot
 
 $requiredConfigFiles = switch ($Profile) {
     "all" { @("config\\downloader.ini", "config\\processor.ini") }

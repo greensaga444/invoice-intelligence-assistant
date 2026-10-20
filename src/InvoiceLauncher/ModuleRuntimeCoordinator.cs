@@ -54,6 +54,11 @@ internal sealed class ModuleRuntimeCoordinator
             return false;
         }
 
+        if (!module.RequiresConfig)
+        {
+            return true;
+        }
+
         if (_fileExists(module.ConfigPath))
         {
             return true;
@@ -69,12 +74,19 @@ internal sealed class ModuleRuntimeCoordinator
     {
         ArgumentNullException.ThrowIfNull(module);
 
-        var process = _startProcess(new ProcessStartInfo
+        var startInfo = new ProcessStartInfo
         {
             FileName = module.ExecutablePath,
             WorkingDirectory = module.WorkingDirectory,
             UseShellExecute = true
-        });
+        };
+
+        foreach (var argument in module.Arguments ?? Array.Empty<string>())
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
+        var process = _startProcess(startInfo);
 
         if (process is null)
         {
@@ -98,12 +110,19 @@ internal sealed class ModuleRuntimeCoordinator
 
         try
         {
-            _startProcess(new ProcessStartInfo
+            var startInfo = new ProcessStartInfo
             {
                 FileName = module.ExecutablePath,
                 WorkingDirectory = module.WorkingDirectory,
                 UseShellExecute = true
-            });
+            };
+
+            foreach (var argument in module.Arguments ?? Array.Empty<string>())
+            {
+                startInfo.ArgumentList.Add(argument);
+            }
+
+            _startProcess(startInfo);
 
             appendLog($"{module.DisplayName} 已啟動。");
         }
@@ -141,4 +160,6 @@ internal sealed record ModuleRuntimeDefinition(
     string DisplayName,
     string ExecutablePath,
     string WorkingDirectory,
-    string ConfigPath);
+    string ConfigPath,
+    IReadOnlyList<string>? Arguments = null,
+    bool RequiresConfig = true);

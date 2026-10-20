@@ -261,7 +261,7 @@ Prepared PRD open-question documentation update for Q-017 decision closure.
 
 ## Next Action
 
-Item delivered to main by direct push policy; branch cleanup can be executed with finish.
+Run auto completed: item delivered to main and branch cleanup finished.
 
 ---
 

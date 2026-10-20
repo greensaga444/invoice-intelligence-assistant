@@ -6,11 +6,15 @@ param(
     [ValidateSet("win-x64", "win-x86", "win-arm64")]
     [string]$Runtime = "win-x64",
 
+    [switch]$SelfContained,
+
     [switch]$FrameworkDependent,
 
     [string]$DeployRoot,
 
-    [switch]$SkipZip
+    [switch]$SkipZip,
+
+    [switch]$SkipDeveloperEnvironmentCheck
 )
 
 Set-StrictMode -Version Latest
@@ -27,6 +31,7 @@ $downloaderScript = Join-Path $scriptRoot "publish-downloader.ps1"
 $processorScript = Join-Path $scriptRoot "publish-processor.ps1"
 $trainerScript = Join-Path $scriptRoot "publish-trainer.ps1"
 $readinessScriptSource = Join-Path $scriptRoot "check-customer-environment.ps1"
+$developerReadinessScript = Join-Path $scriptRoot "check-developer-environment.ps1"
 
 if (-not (Test-Path $downloaderScript)) {
     throw "Script not found: $downloaderScript"
@@ -42,6 +47,10 @@ if (-not (Test-Path $trainerScript)) {
 
 if (-not (Test-Path $readinessScriptSource)) {
     throw "Script not found: $readinessScriptSource"
+}
+
+if (-not (Test-Path $developerReadinessScript)) {
+    throw "Script not found: $developerReadinessScript"
 }
 
 $dotnetPath = (Get-Command dotnet -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue)
@@ -81,7 +90,19 @@ if (-not (Test-Path $powershellPath)) {
     $powershellPath = "powershell.exe"
 }
 
-$selfContained = if ($FrameworkDependent) { "false" } else { "true" }
+if ($SelfContained -and $FrameworkDependent) {
+    throw "Parameters -SelfContained and -FrameworkDependent cannot be used together."
+}
+
+$selfContainedMode = if ($SelfContained) { "true" } else { "false" }
+
+if (-not $SkipDeveloperEnvironmentCheck) {
+    Write-Host "Running developer build readiness check..." -ForegroundColor Cyan
+    & $powershellPath -NoProfile -ExecutionPolicy Bypass -File $developerReadinessScript -Configuration $Configuration
+    if ($LASTEXITCODE -ne 0) {
+        throw "Developer environment readiness check failed."
+    }
+}
 
 function Publish-BootstrapperBinary {
     param(
@@ -189,8 +210,10 @@ $commonParams = @{
     Runtime = $Runtime
 }
 
-if ($FrameworkDependent) {
-    $commonParams.FrameworkDependent = $true
+$commonParams.SkipDeveloperEnvironmentCheck = $true
+
+if ($SelfContained) {
+    $commonParams.SelfContained = $true
 }
 
 if (Test-Path -LiteralPath $packageRoot -PathType Container) {
@@ -200,12 +223,12 @@ if (Test-Path -LiteralPath $packageRoot -PathType Container) {
 $null = New-Item -ItemType Directory -Path $packageRoot -Force
 
 Write-Host "Publishing Main UI package..." -ForegroundColor Cyan
-& $dotnetPath publish $launcherProjectPath -c $Configuration -r $Runtime --self-contained $selfContained -o $packageRoot
+& $dotnetPath publish $launcherProjectPath -c $Configuration -r $Runtime --self-contained $selfContainedMode -o $packageRoot
 if ($LASTEXITCODE -ne 0) {
     throw "Main UI publish failed."
 }
 
-$bootstrapperExecutablePath = Publish-BootstrapperBinary -PublishRuntime $Runtime -PublishConfiguration $Configuration -PublishSelfContained $selfContained
+$bootstrapperExecutablePath = Publish-BootstrapperBinary -PublishRuntime $Runtime -PublishConfiguration $Configuration -PublishSelfContained $selfContainedMode
 $launcherRuntimePath = Convert-ToBootstrapLayout -ApplicationOutputPath $packageRoot -ApplicationExecutableName "InvoiceLauncher.exe" -BootstrapperExecutablePath $bootstrapperExecutablePath
 $launcherRuntimeDllCount = @(Get-ChildItem -LiteralPath $launcherRuntimePath -Recurse -File -Filter "*.dll").Count
 Write-Host ("Launcher runtime relocated to {0} ({1} dll files under libs)." -f $launcherRuntimePath, $launcherRuntimeDllCount)
@@ -231,12 +254,6 @@ Write-Host "Publishing Trainer package..." -ForegroundColor Cyan
 & $trainerScript @commonParams -OutputPath $packageRoot
 if ($LASTEXITCODE -ne 0) {
     throw "Trainer publish failed."
-}
-
-Write-Host "Running integrated customer environment readiness check..." -ForegroundColor Cyan
-& $powershellPath -NoProfile -ExecutionPolicy Bypass -File $readinessScriptTarget -PackageRoot $packageRoot -Profile all
-if ($LASTEXITCODE -ne 0) {
-    throw "Customer environment readiness check failed for integrated package."
 }
 
 if ($SkipZip) {

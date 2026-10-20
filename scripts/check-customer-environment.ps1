@@ -1,54 +1,22 @@
 [CmdletBinding()]
 param(
-    [string]$PackageRoot,
-
     [ValidateSet("all", "downloader", "processor", "trainer")]
-    [string]$Profile = "all"
+    [string]$Profile = "all",
+
+    [ValidateSet("framework-dependent", "self-contained")]
+    [string]$PublishMode = "framework-dependent",
+
+    [ValidateSet("win-x64", "win-x86", "win-arm64")]
+    [string]$Runtime = "win-x64",
+
+    [ValidatePattern('^\d+\.\d+\.\d+$')]
+    [string]$RequiredRuntimeVersion = "8.0.0",
+
+    [switch]$SkipDotnetRuntimeCheck
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
-
-$scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$repoRoot = Split-Path -Parent $scriptRoot
-
-function Resolve-PackageRoot {
-    param(
-        [string]$InputPath,
-        [string]$RepoPath
-    )
-
-    if (-not [string]::IsNullOrWhiteSpace($InputPath)) {
-        return [System.IO.Path]::GetFullPath($InputPath)
-    }
-
-    $candidates = @(
-        (Join-Path $RepoPath "build\deploy\InvoiceIntelligence"),
-        (Join-Path $RepoPath "deploy\InvoiceIntelligence"),
-        $PWD.Path
-    )
-
-    foreach ($candidate in $candidates) {
-        if (-not (Test-Path -LiteralPath $candidate -PathType Container)) {
-            continue
-        }
-
-        $markerPaths = @(
-            (Join-Path $candidate "InvoiceLauncher.exe"),
-            (Join-Path $candidate "downloader\InvoiceDownloader.exe"),
-            (Join-Path $candidate "processor\InvoiceAiProcessor.exe"),
-            (Join-Path $candidate "trainer\InvoiceTrainer.exe")
-        )
-
-        foreach ($markerPath in $markerPaths) {
-            if (Test-Path -LiteralPath $markerPath -PathType Leaf) {
-                return [System.IO.Path]::GetFullPath($candidate)
-            }
-        }
-    }
-
-    throw "Unable to resolve package root automatically. Use -PackageRoot to specify the deploy folder."
-}
 
 function Add-Result {
     param(
@@ -66,99 +34,6 @@ function Add-Result {
         Detail = $Detail
         Severity = $Severity
     })
-}
-
-function Test-RequiredFile {
-    param(
-        [System.Collections.Generic.List[object]]$Results,
-        [string]$CheckName,
-        [string]$FullPath
-    )
-
-    if (Test-Path -LiteralPath $FullPath -PathType Leaf) {
-        $length = (Get-Item -LiteralPath $FullPath).Length
-        Add-Result -Results $Results -Name $CheckName -Passed $true -Detail "Found: $FullPath ($length bytes)"
-        return $true
-    }
-
-    Add-Result -Results $Results -Name $CheckName -Passed $false -Detail "Missing file: $FullPath"
-    return $false
-}
-
-function Test-LibsLayout {
-    param(
-        [System.Collections.Generic.List[object]]$Results,
-        [string]$AppName,
-        [string]$AppBasePath
-    )
-
-    $libsFolderPath = Join-Path $AppBasePath "libs"
-    if (-not (Test-Path -LiteralPath $libsFolderPath -PathType Container)) {
-        Add-Result -Results $Results -Name ("{0}:libs-folder" -f $AppName) -Passed $false -Detail "Missing libs folder: $libsFolderPath"
-        return
-    }
-
-    Add-Result -Results $Results -Name ("{0}:libs-folder" -f $AppName) -Passed $true -Detail "Found libs folder: $libsFolderPath"
-
-    $rootDllFiles = @(Get-ChildItem -LiteralPath $AppBasePath -File -Filter "*.dll")
-    if ($rootDllFiles.Count -gt 0) {
-        $rootDllList = [string]::Join(", ", ($rootDllFiles | Select-Object -ExpandProperty Name))
-        Add-Result -Results $Results -Name ("{0}:root-dll-clean" -f $AppName) -Passed $false -Detail "Root folder still contains DLL files: $rootDllList"
-        return
-    }
-
-    Add-Result -Results $Results -Name ("{0}:root-dll-clean" -f $AppName) -Passed $true -Detail "Root folder has no DLL files."
-
-    $libsDllFiles = @(Get-ChildItem -LiteralPath $libsFolderPath -Recurse -File -Filter "*.dll")
-    if ($libsDllFiles.Count -eq 0) {
-        Add-Result -Results $Results -Name ("{0}:libs-dll-count" -f $AppName) -Passed $false -Detail "No DLL files found in libs folder."
-        return
-    }
-
-    Add-Result -Results $Results -Name ("{0}:libs-dll-count" -f $AppName) -Passed $true -Detail "libs contains $($libsDllFiles.Count) DLL files."
-}
-
-function Get-RuntimeRequirement {
-    param(
-        [string]$RuntimeConfigPath
-    )
-
-    $runtimeConfig = Get-Content -LiteralPath $RuntimeConfigPath -Raw | ConvertFrom-Json
-    $runtimeOptions = $runtimeConfig.runtimeOptions
-
-    $requiredFrameworks = New-Object System.Collections.Generic.List[object]
-    $includedFrameworks = New-Object System.Collections.Generic.List[object]
-
-    if ($runtimeOptions.PSObject.Properties.Match("framework").Count -gt 0 -and $null -ne $runtimeOptions.framework) {
-        $requiredFrameworks.Add([PSCustomObject]@{
-            Name = [string]$runtimeOptions.framework.name
-            Version = [string]$runtimeOptions.framework.version
-        })
-    }
-
-    if ($runtimeOptions.PSObject.Properties.Match("frameworks").Count -gt 0 -and $null -ne $runtimeOptions.frameworks) {
-        foreach ($framework in $runtimeOptions.frameworks) {
-            $requiredFrameworks.Add([PSCustomObject]@{
-                Name = [string]$framework.name
-                Version = [string]$framework.version
-            })
-        }
-    }
-
-    if ($runtimeOptions.PSObject.Properties.Match("includedFrameworks").Count -gt 0 -and $null -ne $runtimeOptions.includedFrameworks) {
-        foreach ($framework in $runtimeOptions.includedFrameworks) {
-            $includedFrameworks.Add([PSCustomObject]@{
-                Name = [string]$framework.name
-                Version = [string]$framework.version
-            })
-        }
-    }
-
-    return [PSCustomObject]@{
-        FrameworkDependent = ($requiredFrameworks.Count -gt 0)
-        RequiredFrameworks = $requiredFrameworks
-        IncludedFrameworks = $includedFrameworks
-    }
 }
 
 function Get-InstalledRuntimes {
@@ -216,146 +91,97 @@ function Test-FrameworkInstalled {
     return $false
 }
 
-function Get-TargetApps {
+function Get-RequiredFrameworks {
     param(
-        [string]$RequestedProfile,
-        [string]$ResolvedPackageRoot
+        [string]$RequestedPublishMode,
+        [string]$MinimumRuntimeVersion
     )
 
-    $launcher = [PSCustomObject]@{
-        Name = "Launcher"
-        BasePath = "."
-        Exe = "InvoiceLauncher.exe"
-        Dll = "InvoiceLauncher.dll"
-        Deps = "InvoiceLauncher.deps.json"
-        RuntimeConfig = "InvoiceLauncher.runtimeconfig.json"
+    if ($RequestedPublishMode -eq "self-contained") {
+        return @()
     }
 
-    $downloader = [PSCustomObject]@{
-        Name = "Downloader"
-        BasePath = "downloader"
-        Exe = "InvoiceDownloader.exe"
-        Dll = "InvoiceDownloader.dll"
-        Deps = "InvoiceDownloader.deps.json"
-        RuntimeConfig = "InvoiceDownloader.runtimeconfig.json"
-    }
+    return @(
+        [PSCustomObject]@{ Name = "Microsoft.NETCore.App"; Version = $MinimumRuntimeVersion },
+        [PSCustomObject]@{ Name = "Microsoft.WindowsDesktop.App"; Version = $MinimumRuntimeVersion }
+    )
+}
 
-    $processor = [PSCustomObject]@{
-        Name = "Processor"
-        BasePath = "processor"
-        Exe = "InvoiceAiProcessor.exe"
-        Dll = "InvoiceAiProcessor.dll"
-        Deps = "InvoiceAiProcessor.deps.json"
-        RuntimeConfig = "InvoiceAiProcessor.runtimeconfig.json"
-    }
+function Test-RuntimeArchitecture {
+    param(
+        [string]$RequestedRuntime
+    )
 
-    $trainer = [PSCustomObject]@{
-        Name = "Trainer"
-        BasePath = "trainer"
-        Exe = "InvoiceTrainer.exe"
-        Dll = "InvoiceTrainer.dll"
-        Deps = "InvoiceTrainer.deps.json"
-        RuntimeConfig = "InvoiceTrainer.runtimeconfig.json"
-    }
+    $is64BitOs = [System.Environment]::Is64BitOperatingSystem
+    $arch = $env:PROCESSOR_ARCHITECTURE
 
-    switch ($RequestedProfile) {
-        "all" { return @($launcher, $downloader, $processor, $trainer) }
-        "downloader" { return @($downloader) }
-        "processor" { return @($processor) }
-        "trainer" { return @($trainer) }
-        default { throw "Unsupported profile: $RequestedProfile" }
+    switch ($RequestedRuntime) {
+        "win-x64" {
+            if (-not $is64BitOs) {
+                return [PSCustomObject]@{ Passed = $false; Detail = "win-x64 package requires a 64-bit Windows OS." }
+            }
+
+            return [PSCustomObject]@{ Passed = $true; Detail = "64-bit Windows OS detected for win-x64 package." }
+        }
+        "win-x86" {
+            return [PSCustomObject]@{ Passed = $true; Detail = "win-x86 package can run on both x86 and x64 Windows." }
+        }
+        "win-arm64" {
+            if ($arch -eq "ARM64") {
+                return [PSCustomObject]@{ Passed = $true; Detail = "ARM64 Windows detected for win-arm64 package." }
+            }
+
+            return [PSCustomObject]@{ Passed = $false; Detail = "win-arm64 package requires ARM64 Windows." }
+        }
+        default {
+            return [PSCustomObject]@{ Passed = $false; Detail = "Unsupported runtime value: $RequestedRuntime" }
+        }
     }
 }
 
-$resolvedPackageRoot = Resolve-PackageRoot -InputPath $PackageRoot -RepoPath $repoRoot
 $results = New-Object System.Collections.Generic.List[object]
 
 Write-Host "Environment readiness check" -ForegroundColor Cyan
-Write-Host "Package root: $resolvedPackageRoot"
+Write-Host "Host: $env:COMPUTERNAME"
 Write-Host "Profile: $Profile"
+Write-Host "Publish mode: $PublishMode"
+Write-Host "Runtime target: $Runtime"
 
 $isWindows = $env:OS -eq "Windows_NT"
 if ($isWindows) {
     Add-Result -Results $results -Name "OS" -Passed $true -Detail "Windows OS detected: $([System.Environment]::OSVersion.VersionString)"
 }
 else {
-    Add-Result -Results $results -Name "OS" -Passed $false -Detail "This package is Windows-targeted and must run on Windows." 
+    Add-Result -Results $results -Name "OS" -Passed $false -Detail "This package is Windows-targeted and must run on Windows."
 }
 
-if (Test-Path -LiteralPath $resolvedPackageRoot -PathType Container) {
-    Add-Result -Results $results -Name "PackageRoot" -Passed $true -Detail "Found deploy folder: $resolvedPackageRoot"
+if ($isWindows) {
+    $archCheck = Test-RuntimeArchitecture -RequestedRuntime $Runtime
+    Add-Result -Results $results -Name "OSArchitecture" -Passed $archCheck.Passed -Detail $archCheck.Detail
+}
+
+if ($PSVersionTable.PSVersion.Major -ge 5) {
+    Add-Result -Results $results -Name "PowerShell" -Passed $true -Detail "PowerShell version $($PSVersionTable.PSVersion) detected."
 }
 else {
-    Add-Result -Results $results -Name "PackageRoot" -Passed $false -Detail "Deploy folder does not exist: $resolvedPackageRoot"
+    Add-Result -Results $results -Name "PowerShell" -Passed $false -Detail "PowerShell 5.1 or newer is required."
 }
 
-$targetApps = Get-TargetApps -RequestedProfile $Profile -ResolvedPackageRoot $resolvedPackageRoot
-
-$requiredConfigFiles = switch ($Profile) {
-    "all" { @("config\\downloader.ini", "config\\processor.ini") }
-    "downloader" { @("config\\downloader.ini") }
-    "processor" { @("config\\processor.ini") }
-    "trainer" { @("config\\processor.ini") }
-    default { @() }
+if ($SkipDotnetRuntimeCheck) {
+    Add-Result -Results $results -Name "runtime-prereq" -Passed $true -Detail "Runtime checks were skipped by parameter."
 }
-
-foreach ($configRelPath in $requiredConfigFiles) {
-    $configPath = Join-Path $resolvedPackageRoot $configRelPath
-    [void](Test-RequiredFile -Results $results -CheckName "Config:$configRelPath" -FullPath $configPath)
+elseif ($PublishMode -eq "self-contained") {
+    Add-Result -Results $results -Name "runtime-prereq" -Passed $true -Detail "Self-contained package selected. Shared .NET runtime is not required."
 }
-
-$requiredFrameworks = New-Object System.Collections.Generic.List[object]
-
-foreach ($app in $targetApps) {
-    $appBase = if ($app.BasePath -eq ".") { $resolvedPackageRoot } else { Join-Path $resolvedPackageRoot $app.BasePath }
-    $libsBase = Join-Path $appBase "libs"
-
-    [void](Test-RequiredFile -Results $results -CheckName "$($app.Name):exe" -FullPath (Join-Path $appBase $app.Exe))
-
-    if (Test-Path -LiteralPath $libsBase -PathType Container) {
-        Add-Result -Results $results -Name "$($app.Name):libs-base" -Passed $true -Detail "Found libs folder: $libsBase"
-    }
-    else {
-        Add-Result -Results $results -Name "$($app.Name):libs-base" -Passed $false -Detail "Missing libs folder: $libsBase"
-    }
-
-    [void](Test-RequiredFile -Results $results -CheckName "$($app.Name):libs-exe" -FullPath (Join-Path $libsBase $app.Exe))
-    [void](Test-RequiredFile -Results $results -CheckName "$($app.Name):libs-dll" -FullPath (Join-Path $libsBase $app.Dll))
-    [void](Test-RequiredFile -Results $results -CheckName "$($app.Name):libs-deps" -FullPath (Join-Path $libsBase $app.Deps))
-
-    $runtimeConfigPath = Join-Path $libsBase $app.RuntimeConfig
-    if (Test-RequiredFile -Results $results -CheckName "$($app.Name):libs-runtimeconfig" -FullPath $runtimeConfigPath) {
-        try {
-            $runtimeRequirement = Get-RuntimeRequirement -RuntimeConfigPath $runtimeConfigPath
-            if ($runtimeRequirement.FrameworkDependent) {
-                foreach ($framework in $runtimeRequirement.RequiredFrameworks) {
-                    $requiredFrameworks.Add($framework)
-                }
-
-                Add-Result -Results $results -Name "$($app.Name):runtime-mode" -Passed $true -Detail "Framework-dependent publish detected in runtimeconfig."
-            }
-            elseif ($runtimeRequirement.IncludedFrameworks.Count -gt 0) {
-                Add-Result -Results $results -Name "$($app.Name):runtime-mode" -Passed $true -Detail "Self-contained publish detected (includedFrameworks in runtimeconfig)."
-            }
-            else {
-                Add-Result -Results $results -Name "$($app.Name):runtime-mode" -Passed $true -Detail "Runtime mode could not be inferred from runtimeconfig; no framework requirement declared." -Severity "Warning"
-            }
-        }
-        catch {
-            Add-Result -Results $results -Name "$($app.Name):runtimeconfig-parse" -Passed $false -Detail "Invalid runtimeconfig JSON: $runtimeConfigPath. $($_.Exception.Message)"
-        }
-    }
-
-    Test-LibsLayout -Results $results -AppName $app.Name -AppBasePath $appBase
-}
-
-if ($requiredFrameworks.Count -gt 0) {
+else {
+    $requiredFrameworks = Get-RequiredFrameworks -RequestedPublishMode $PublishMode -MinimumRuntimeVersion $RequiredRuntimeVersion
     $installedRuntimes = Get-InstalledRuntimes
+
     if ($null -eq $installedRuntimes) {
-        Add-Result -Results $results -Name "dotnet" -Passed $false -Detail "dotnet command not found. Framework-dependent package requires installed .NET runtimes."
+        Add-Result -Results $results -Name "dotnet" -Passed $false -Detail "dotnet command not found. Install .NET Desktop Runtime 8 (x64) and retry."
     }
     else {
-        Add-Result -Results $results -Name "dotnet" -Passed $true -Detail "dotnet command found; validating required shared runtimes."
+        Add-Result -Results $results -Name "dotnet" -Passed $true -Detail "dotnet command found; validating required shared runtimes for framework-dependent package."
 
         foreach ($framework in $requiredFrameworks) {
             $isInstalled = Test-FrameworkInstalled -RuntimeMap $installedRuntimes -FrameworkName $framework.Name -FrameworkVersion $framework.Version
@@ -367,9 +193,6 @@ if ($requiredFrameworks.Count -gt 0) {
             }
         }
     }
-}
-else {
-    Add-Result -Results $results -Name "runtime-prereq" -Passed $true -Detail "No shared runtime prerequisites detected for selected profile."
 }
 
 Write-Host ""

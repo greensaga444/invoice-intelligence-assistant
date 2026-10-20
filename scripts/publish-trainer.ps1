@@ -6,9 +6,13 @@ param(
     [ValidateSet("win-x64", "win-x86", "win-arm64")]
     [string]$Runtime = "win-x64",
 
+    [switch]$SelfContained,
+
     [switch]$FrameworkDependent,
 
-    [string]$OutputPath
+    [string]$OutputPath,
+
+    [switch]$SkipDeveloperEnvironmentCheck
 )
 
 Set-StrictMode -Version Latest
@@ -50,13 +54,30 @@ if (-not (Test-Path $readinessScriptSource)) {
     throw "Script not found: $readinessScriptSource"
 }
 
+$developerReadinessScript = Join-Path $scriptRoot "check-developer-environment.ps1"
+if (-not (Test-Path $developerReadinessScript)) {
+    throw "Script not found: $developerReadinessScript"
+}
+
 $readinessScriptTarget = Join-Path $OutputPath "check-customer-environment.ps1"
 $powershellPath = Join-Path $PSHOME "powershell.exe"
 if (-not (Test-Path $powershellPath)) {
     $powershellPath = "powershell.exe"
 }
 
-$selfContained = if ($FrameworkDependent) { "false" } else { "true" }
+if ($SelfContained -and $FrameworkDependent) {
+    throw "Parameters -SelfContained and -FrameworkDependent cannot be used together."
+}
+
+$selfContainedMode = if ($SelfContained) { "true" } else { "false" }
+
+if (-not $SkipDeveloperEnvironmentCheck) {
+    Write-Host "Running developer build readiness check..." -ForegroundColor Cyan
+    & $powershellPath -NoProfile -ExecutionPolicy Bypass -File $developerReadinessScript -Configuration $Configuration
+    if ($LASTEXITCODE -ne 0) {
+        throw "Developer environment readiness check failed."
+    }
+}
 
 function Publish-BootstrapperBinary {
     param(
@@ -123,12 +144,12 @@ if (Test-Path -LiteralPath $moduleOutput -PathType Container) {
 }
 
 Write-Host "Publishing InvoiceTrainer..." -ForegroundColor Cyan
-& $dotnetPath publish $projectPath -c $Configuration -r $Runtime --self-contained $selfContained -o $moduleOutput
+& $dotnetPath publish $projectPath -c $Configuration -r $Runtime --self-contained $selfContainedMode -o $moduleOutput
 if ($LASTEXITCODE -ne 0) {
     throw "dotnet publish failed for InvoiceTrainer."
 }
 
-$bootstrapperExecutablePath = Publish-BootstrapperBinary -PublishRuntime $Runtime -PublishConfiguration $Configuration -PublishSelfContained $selfContained
+$bootstrapperExecutablePath = Publish-BootstrapperBinary -PublishRuntime $Runtime -PublishConfiguration $Configuration -PublishSelfContained $selfContainedMode
 $trainerLibsPath = Convert-ToBootstrapLayout -ApplicationOutputPath $moduleOutput -ApplicationExecutableName "InvoiceTrainer.exe" -BootstrapperExecutablePath $bootstrapperExecutablePath
 $trainerLibsDllCount = @(Get-ChildItem -LiteralPath $trainerLibsPath -Recurse -File -Filter "*.dll").Count
 Write-Host ("Trainer runtime relocated to {0} ({1} dll files under libs)." -f $trainerLibsPath, $trainerLibsDllCount)
@@ -139,12 +160,6 @@ $null = New-Item -ItemType Directory -Path $configDir -Force
 
 Copy-Item (Join-Path $repoRoot "config\processor.ini") (Join-Path $configDir "processor.ini") -Force
 Copy-Item $readinessScriptSource $readinessScriptTarget -Force
-
-Write-Host "Running customer environment readiness check..." -ForegroundColor Cyan
-& $powershellPath -NoProfile -ExecutionPolicy Bypass -File $readinessScriptTarget -PackageRoot $OutputPath -Profile trainer
-if ($LASTEXITCODE -ne 0) {
-    throw "Customer environment readiness check failed for trainer package."
-}
 
 Write-Host "Packaging complete." -ForegroundColor Green
 Write-Host "Package Root: $OutputPath"

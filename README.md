@@ -168,13 +168,21 @@ dotnet format InvoiceIntelligenceAssistant.slnx --verify-no-changes
 .\scripts\publish-processor.ps1 -Runtime win-x64 -Configuration Release
 .\scripts\publish-trainer.ps1 -Runtime win-x64 -Configuration Release
 .\scripts\publish-all.ps1 -Runtime win-x64 -Configuration Release
+.\scripts\publish-all.ps1 -Runtime win-x64 -Configuration Release -SelfContained
 ```
+
+說明：
+
+- publish 腳本在打包前會自動執行 `scripts/check-developer-environment.ps1` 作為建置環境閘道。
+- 若確定目前機器已完成驗證，可加上 `-SkipDeveloperEnvironmentCheck` 跳過（不建議於正式交付流程使用）。
 
 常用參數：
 
 - `-Runtime win-x64|win-x86|win-arm64`：目標 Windows RID。
 - `-Configuration Release|Debug`：建置組態。
-- `-FrameworkDependent`：改為 framework-dependent 打包（客戶端需安裝對應 .NET Runtime）。
+- `-SelfContained`：改為 self-contained 打包（相容舊版行為，不需客戶端預先安裝 .NET Runtime）。
+- `-FrameworkDependent`：維持舊參數相容；目前預設即為 framework-dependent。不可與 `-SelfContained` 同時使用。
+- `-SkipDeveloperEnvironmentCheck`：略過建置前 `check-developer-environment.ps1` 檢查。
 - `-OutputPath`（publish-downloader / publish-processor / publish-trainer）：指定輸出根路徑（預設 `build/deploy/InvoiceIntelligence`）。
 - `-DeployRoot`（publish-all）：指定輸出根路徑（預設 `build/deploy`，整包在 `build/deploy/InvoiceIntelligence`）。
 - `-SkipZip`（publish-all）：僅產出資料夾，不建立 zip。
@@ -182,32 +190,41 @@ dotnet format InvoiceIntelligenceAssistant.slnx --verify-no-changes
 輸出與預設：
 
 - 三個 publish 腳本預設輸出皆在 `build/deploy/InvoiceIntelligence`。
-- 預設為 self-contained 打包；若客戶端已具備 Runtime 可使用 `-FrameworkDependent`。
+- 預設為 framework-dependent 打包。
+- 若要改為 self-contained（舊行為），請加上 `-SelfContained`。
 
 ### 4) 客戶端環境檢查（check-customer-environment.ps1）
 
-`check-customer-environment.ps1` 用於驗證部署包是否可在客戶端環境執行。
+`check-customer-environment.ps1` 用於在「全新客戶主機」檢查執行環境是否就緒。
+此腳本為主機前置檢查，不負責驗證交付包內的 exe/dll 檔案結構。
 
 檢查內容：
 
 - 作業系統是否為 Windows。
-- 部署資料夾與必要檔案是否存在（exe、dll、deps、runtimeconfig、config）。
-- 每個模組根目錄是否存在 `libs/`，且根目錄不殘留 `.dll`。
-- 若為 framework-dependent 打包，會檢查 `dotnet` 與所需 shared runtime 是否已安裝。
+- 作業系統架構是否符合目標 RID（`win-x64|win-x86|win-arm64`）。
+- PowerShell 版本是否為 5.1 以上。
+- 若為 framework-dependent 打包，會檢查 `dotnet` 與所需 shared runtime 是否已安裝（`Microsoft.NETCore.App`、`Microsoft.WindowsDesktop.App`）。
+- 若為 self-contained 打包，可略過 shared runtime 需求檢查。
 
 參數：
 
-- `-PackageRoot <path>`：指定部署根目錄（例如 `build/deploy/InvoiceIntelligence`）。
 - `-Profile all|downloader|processor|trainer`：指定檢查範圍，預設為 `all`。
+- `-PublishMode framework-dependent|self-contained`：指定交付模式，預設 `framework-dependent`。
+- `-Runtime win-x64|win-x86|win-arm64`：指定客戶端目標 RID，預設 `win-x64`。
+- `-RequiredRuntimeVersion <major.minor.patch>`：framework-dependent 模式下的最低 Runtime 版本，預設 `8.0.0`。
+- `-SkipDotnetRuntimeCheck`：略過 .NET Runtime 檢查。
 
 範例：
 
 ```powershell
-# 在 repo 根目錄執行（檢查整合包）
-.\scripts\check-customer-environment.ps1 -PackageRoot .\build\deploy\InvoiceIntelligence -Profile all
+# framework-dependent 交付（預設）
+.\scripts\check-customer-environment.ps1 -PublishMode framework-dependent -Runtime win-x64 -RequiredRuntimeVersion 8.0.0 -Profile all
 
-# 在交付給客戶的部署資料夾根目錄執行
-.\check-customer-environment.ps1 -Profile all
+# self-contained 交付（不要求 shared runtime）
+.\scripts\check-customer-environment.ps1 -PublishMode self-contained -Runtime win-x64 -Profile all
+
+# 若在客戶端部署資料夾中執行
+.\check-customer-environment.ps1 -PublishMode framework-dependent -Runtime win-x64 -Profile all
 ```
 
 回傳碼：

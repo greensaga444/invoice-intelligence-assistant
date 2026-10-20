@@ -13,15 +13,15 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: Update testing coverage and app-layer validation
+Work Item Name: Q-017 true vector RAG migration
 
-Description: Expand automated tests across core and app-layer workflows, close critical QA gaps, and improve runtime coordination testability for reliable delivery.
+Description: Replace keyword-only retrieval with local vector similarity retrieval in processor RAG flow while preserving offline execution and quality-gate performance.
 
 ---
 
 ## Track
 
-LIGHT
+FULL
 
 Tracks:
 
@@ -223,9 +223,9 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ### PLAN
 
-- [ ] Goal + MVP Defined
-- [ ] Scope + Acceptance Criteria
-- [ ] Task Breakdown Ready
+- [x] Goal + MVP Defined
+- [x] Scope + Acceptance Criteria
+- [x] Task Breakdown Ready
 
 ### IMPLEMENTATION
 
@@ -250,10 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-Expanded core and app-layer test coverage for downloader workflow, launcher settings/INI writers, parser/config utilities, and processor orchestration paths.
-Added test visibility plumbing for internal app services and validated orchestration paths with branch-focused tests.
-Refactored ModuleRuntimeCoordinator with internal seams to enable deterministic branch testing without UI/process side effects.
-Validated tests and coverage locally; branch is ready for delivery landing to main.
+Implemented a new local vector-similarity retriever for processor RAG and switched startup orchestration from keyword-only retrieval.
+Added vector retriever unit tests and updated integration/performance tests to validate vector retrieval in the active pipeline path.
+Validated build/test/format gates successfully with offline-only execution preserved.
+Prepared PRD open-question documentation update for Q-017 decision closure.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 
@@ -261,7 +261,7 @@ Validated tests and coverage locally; branch is ready for delivery landing to ma
 
 ## Next Action
 
-Deliver this branch by direct push to main per policy (main unprotected, no PR required).
+Item delivered to main by direct push policy; branch cleanup can be executed with finish.
 
 ---
 

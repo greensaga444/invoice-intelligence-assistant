@@ -287,7 +287,14 @@ Required decisions:
 
 Status:
 
-- Open (requires architecture and operations decision)
+- Resolved (2026-10-20)
+
+Decision:
+
+- Embedding model choice: local hashed n-gram vectorizer (offline baseline).
+- Vector storage strategy: in-memory vector index built at processor startup from built-in and approved knowledge cases.
+- Reindexing plan: rebuild index at startup from current knowledge repository content.
+- Offline and performance gate: keep local-only execution (no external AI calls) and retain current quality gate target of 30,000 records under 5 seconds in local test baseline.
 
 ---
 

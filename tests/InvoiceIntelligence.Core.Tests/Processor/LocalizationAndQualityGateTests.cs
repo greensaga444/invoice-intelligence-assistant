@@ -97,7 +97,7 @@ public class LocalizationAndQualityGateTests
                     NetAmount: 2200m,
                     Decision: new InvoiceDecision("可抵稅", "案例快取命中。", "資訊服務費", 0.95m))
             ]),
-            new KeywordRagRetriever(
+            new VectorRagRetriever(
             [
                 new KnowledgeReferenceCase("KB-001", "文具案例", "可抵稅", "辦公用品費", ["文具", "耗材"]),
                 new KnowledgeReferenceCase("KB-002", "顧問服務案例", "可抵稅", "營業費用", ["顧問", "服務"])

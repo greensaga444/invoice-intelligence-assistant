@@ -74,7 +74,7 @@ internal sealed class ProcessorStartupOrchestrator
         var pipeline = new InvoiceDecisionPipeline(
             new KeywordRuleEngine(),
             new InMemoryCaseCache(KnowledgeRuleCatalog.DefaultCaseCache),
-            new KeywordRagRetriever(ragKnowledgeCases),
+            new VectorRagRetriever(ragKnowledgeCases),
             new LocalHeuristicLlmAnalyzer());
 
         var pipelineResult = pipeline.Process(records);

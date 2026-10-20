@@ -85,7 +85,7 @@ public class JsonKnowledgeCaseRepositoryTests
             Assert.Equal("可抵稅", knowledgeCases[0].DeductibleStatus);
             Assert.Contains("雲端授權服務", knowledgeCases[0].Keywords);
 
-            var retriever = new KeywordRagRetriever(knowledgeCases);
+            var retriever = new VectorRagRetriever(knowledgeCases);
             var references = retriever.Retrieve(CreateRecord(itemName: "雲端授權服務", invoiceNumber: "INV-LOOKUP"), maxResults: 3);
 
             Assert.Single(references);

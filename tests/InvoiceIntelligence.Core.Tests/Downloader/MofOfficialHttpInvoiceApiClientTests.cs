@@ -8,6 +8,13 @@ namespace InvoiceIntelligence.Core.Tests.Downloader;
 public class MofOfficialHttpInvoiceApiClientTests
 {
     [Fact]
+    public void Constructor_WithInvalidBaseUrl_ThrowsArgumentException()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            new MofOfficialHttpInvoiceApiClient(new HttpClient(), "not-a-url"));
+    }
+
+    [Fact]
     public async Task QueryInvoicesAsync_ValidOfficialResponse_UsesOfficialEndpointAndMapsRecords()
     {
         var responseJson = """
@@ -518,6 +525,51 @@ public class MofOfficialHttpInvoiceApiClientTests
         Assert.Equal(InvoiceDocumentType.Allowance, result.Items[0].DocumentType);
     }
 
+    [Fact]
+    public async Task QueryInvoicesAsync_WhenCallerCancellationRequested_ThrowsOperationCanceledException()
+    {
+        var client = new MofOfficialHttpInvoiceApiClient(
+            new HttpClient(new CancellationAwareHttpMessageHandler()),
+            "https://www-vc.einvoice.nat.gov.tw");
+        var request = CreateBaseRequest();
+
+        using var cancellationTokenSource = new CancellationTokenSource();
+        cancellationTokenSource.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.QueryInvoicesAsync(request, cancellationTokenSource.Token));
+    }
+
+    [Fact]
+    public async Task QueryInvoicesAsync_MixedCaseFields_ParsesSuccessfully()
+    {
+        var responseJson = """
+            {
+              "CoDe": "200",
+              "MsG": "OK",
+              "DeTaIlS": [
+                {
+                  "InVoIcEdAtE": "2026-07-15",
+                  "B2bCrTaVgAmOuNt": "120",
+                  "B2cCrTaVgAmOuNt": "30"
+                }
+              ]
+            }
+            """;
+
+        var handler = new RecordingHttpMessageHandler(_ =>
+            new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(responseJson, Encoding.UTF8, "application/json")
+            });
+
+        var client = new MofOfficialHttpInvoiceApiClient(new HttpClient(handler), "https://www-vc.einvoice.nat.gov.tw");
+        var result = await client.QueryInvoicesAsync(CreateBaseRequest());
+
+        Assert.Single(result.Items);
+        Assert.Equal(150m, result.Items[0].TotalAmount);
+    }
+
     private static OfficialInvoicePageRequest CreateBaseRequest(
         InvoiceDirection direction = InvoiceDirection.Sales,
         InvoiceDocumentType documentType = InvoiceDocumentType.Invoice)
@@ -565,6 +617,15 @@ public class MofOfficialHttpInvoiceApiClientTests
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             return Task.FromResult(_callback(request));
+        }
+    }
+
+    private sealed class CancellationAwareHttpMessageHandler : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            return new HttpResponseMessage(HttpStatusCode.OK);
         }
     }
 }

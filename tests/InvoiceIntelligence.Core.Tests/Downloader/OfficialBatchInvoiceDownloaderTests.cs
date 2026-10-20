@@ -167,6 +167,63 @@ public class OfficialBatchInvoiceDownloaderTests
         }
     }
 
+    [Fact]
+    public async Task DownloadAsync_WhenExporterFailsForOneCustomer_ContinuesOtherCustomers()
+    {
+        var outputDirectory = CreateTempDirectory();
+        var exporter = new SelectiveFailingExporter("99999999");
+        var downloader = CreateDownloader(new StubOfficialApiClient(), exporter);
+        var request = BuildRequest(outputDirectory) with
+        {
+            Customers =
+            [
+                new CustomerRecord("12345678", "Alpha Co", new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31)),
+                new CustomerRecord("99999999", "Failure Co", new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31))
+            ]
+        };
+
+        try
+        {
+            var result = await downloader.DownloadAsync(request);
+
+            Assert.Equal(2, result.Items.Count);
+            Assert.Contains(result.Items, item => item.IsSuccess && item.Customer.TaxId == "12345678");
+            Assert.Contains(result.Items, item => !item.IsSuccess && item.Customer.TaxId == "99999999");
+            Assert.True(File.Exists(result.LogFilePath));
+        }
+        finally
+        {
+            DeleteDirectory(outputDirectory);
+        }
+    }
+
+    [Fact]
+    public async Task DownloadAsync_LogFile_DoesNotContainOfficialApiCredentials()
+    {
+        var outputDirectory = CreateTempDirectory();
+        var downloader = CreateDownloader(new StubOfficialApiClient(), new PassthroughExporter());
+        var request = BuildRequest(outputDirectory) with
+        {
+            OfficialApiAppId = "app-id-should-not-appear",
+            OfficialApiAccount = "merchant-account-should-not-appear",
+            OfficialApiPassword = "secret-password-should-not-appear"
+        };
+
+        try
+        {
+            var result = await downloader.DownloadAsync(request);
+            var log = File.ReadAllText(result.LogFilePath, Encoding.UTF8);
+
+            Assert.DoesNotContain("app-id-should-not-appear", log, StringComparison.Ordinal);
+            Assert.DoesNotContain("merchant-account-should-not-appear", log, StringComparison.Ordinal);
+            Assert.DoesNotContain("secret-password-should-not-appear", log, StringComparison.Ordinal);
+        }
+        finally
+        {
+            DeleteDirectory(outputDirectory);
+        }
+    }
+
     private static BatchInvoiceDownloadRequest BuildRequest(string outputDirectory)
     {
         return new BatchInvoiceDownloadRequest(
@@ -227,6 +284,29 @@ public class OfficialBatchInvoiceDownloaderTests
             string outputPath,
             CancellationToken cancellationToken = default)
         {
+            var directory = Path.GetDirectoryName(outputPath);
+            if (!string.IsNullOrWhiteSpace(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            return File.WriteAllTextAsync(outputPath, $"rows={invoices.Count}", cancellationToken);
+        }
+    }
+
+    private sealed class SelectiveFailingExporter(string failingTaxId) : IOfficialInvoiceExporter
+    {
+        public Task ExportAsync(
+            IReadOnlyList<OfficialInvoiceRecord> invoices,
+            string outputPath,
+            CancellationToken cancellationToken = default)
+        {
+            if (invoices.Any(invoice =>
+                    invoice.InvoiceNumber.StartsWith(failingTaxId, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException("forced exporter failure");
+            }
+
             var directory = Path.GetDirectoryName(outputPath);
             if (!string.IsNullOrWhiteSpace(directory))
             {

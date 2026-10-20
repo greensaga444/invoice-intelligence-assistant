@@ -312,6 +312,52 @@ public class OfficialInvoiceBatchDownloaderTests
     }
 
     [Fact]
+    public async Task DownloadAsync_TwoTransientErrors_UsesExponentialBackoff()
+    {
+        var attempts = 0;
+        var delays = new List<TimeSpan>();
+        var client = new RecordingOfficialInvoiceApiClient(_ =>
+        {
+            attempts++;
+            if (attempts <= 2)
+            {
+                throw new MofOfficialInvoiceApiException("Temporary failure", 503, isTransient: true);
+            }
+
+            return Task.FromResult(new OfficialInvoicePageResult(
+                [CreateInvoice("BACKOFF-001", new DateOnly(2026, 8, 10), InvoiceDirection.Sales, 3150m)],
+                HasMore: false));
+        });
+
+        var downloader = new OfficialInvoiceBatchDownloader(
+            client,
+            (delay, _) =>
+            {
+                delays.Add(delay);
+                return Task.CompletedTask;
+            });
+
+        var request = new OfficialInvoiceBatchDownloadRequest(
+            TaxId: "12345678",
+            DateFrom: new DateOnly(2026, 8, 1),
+            DateTo: new DateOnly(2026, 9, 30),
+            SessionToken: "session-token",
+            IncludeSalesInvoices: true,
+            IncludePurchaseInvoices: false,
+            Options: new OfficialInvoiceDownloadOptions(200, 4, TimeSpan.FromMilliseconds(50), 100),
+            IncludeSalesAllowances: false,
+            IncludePurchaseAllowances: false);
+
+        var result = await downloader.DownloadAsync(request);
+
+        Assert.Single(result.Invoices);
+        Assert.Equal(2, result.TotalRetryCount);
+        Assert.Equal(2, delays.Count);
+        Assert.Equal(TimeSpan.FromMilliseconds(50), delays[0]);
+        Assert.Equal(TimeSpan.FromMilliseconds(100), delays[1]);
+    }
+
+    [Fact]
     public async Task DownloadAsync_TransientErrorExceedsMaxRetry_Throws()
     {
         var delays = new List<TimeSpan>();

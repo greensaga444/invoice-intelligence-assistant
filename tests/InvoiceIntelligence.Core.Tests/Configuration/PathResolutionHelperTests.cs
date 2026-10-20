@@ -101,4 +101,54 @@ public class PathResolutionHelperTests
             Directory.Delete(rootPath, recursive: true);
         }
     }
+
+    [Fact]
+    public void ResolveDialogInitialPath_WhenDirectoryExists_ReturnsDirectoryOnly()
+    {
+        var directoryPath = Path.Combine(Path.GetTempPath(), $"path-resolution-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directoryPath);
+
+        try
+        {
+            var result = PathResolutionHelper.ResolveDialogInitialPath(directoryPath);
+
+            Assert.Equal(directoryPath, result.InitialDirectory);
+            Assert.Null(result.FileName);
+        }
+        finally
+        {
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ResolveDialogInitialPath_WhenParentDirectoryExists_ReturnsParentAndFileName()
+    {
+        var directoryPath = Path.Combine(Path.GetTempPath(), $"path-resolution-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directoryPath);
+        var configuredPath = Path.Combine(directoryPath, "sample.xlsx");
+
+        try
+        {
+            var result = PathResolutionHelper.ResolveDialogInitialPath(configuredPath);
+
+            Assert.Equal(directoryPath, result.InitialDirectory);
+            Assert.Equal("sample.xlsx", result.FileName);
+        }
+        finally
+        {
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ResolveDialogInitialPath_WhenPathIsInvalid_ReturnsNullTuple()
+    {
+        var configuredPath = Path.Combine(Path.GetTempPath(), $"path-resolution-missing-{Guid.NewGuid():N}", "missing.xlsx");
+
+        var result = PathResolutionHelper.ResolveDialogInitialPath(configuredPath);
+
+        Assert.Null(result.InitialDirectory);
+        Assert.Null(result.FileName);
+    }
 }

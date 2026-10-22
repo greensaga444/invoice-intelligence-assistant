@@ -122,9 +122,31 @@ This document lists all current automated tests in the repository, grouped by te
   - FolderBEnhancedInvoiceExporter_UsesTraditionalChineseWorksheetName
   - ProcessorCodePath_DoesNotContainExternalAiInvocationPatterns
   - InvoiceDecisionPipeline_ProcessThirtyThousandRecords_CompletesWithinScaleTarget
+  - InvoiceDecisionPipeline_ProcessThirtyThousandRecordsAcrossOneHundredFiftyCustomers_CompletesWithinScaleTarget
+
+### D3. Q-013 Production Volume Validation Checklist
+
+- Prepare a production-like Folder A snapshot with customer count and record count evidence.
+- Record machine profile: CPU model, RAM size, storage type, and OS version.
+- Execute target test command:
+  - `dotnet test InvoiceIntelligenceAssistant.slnx -v minimal --filter FullyQualifiedName~LocalizationAndQualityGateTests`
+- Execute one full processor run with the production-like dataset.
+- Capture evidence fields:
+
+| Evidence Field | Description |
+| --- | --- |
+| Run date/time | Local execution timestamp |
+| Customer count | Number of distinct customer tax IDs in input |
+| Invoice count | Total input invoice rows |
+| Processor elapsed time | End-to-end processing duration |
+| Test gate result | Pass/fail for LocalizationAndQualityGateTests |
+| Error count | Number of failed rows/files |
+| Output success rate | Successful output files divided by expected files |
+
+- Q-013 can be marked resolved only after production-like run evidence is attached and reviewed.
 
 ## Test Inventory Summary
 
 - Test classes: 15
-- Test cases: 64
+- Test cases: 65
 - Primary automated test project: tests/InvoiceIntelligence.Core.Tests

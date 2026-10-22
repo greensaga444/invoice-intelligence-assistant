@@ -87,25 +87,10 @@ public class LocalizationAndQualityGateTests
     [Fact]
     public void InvoiceDecisionPipeline_ProcessThirtyThousandRecords_CompletesWithinScaleTarget()
     {
-        var pipeline = new InvoiceDecisionPipeline(
-            new KeywordRuleEngine(),
-            new InMemoryCaseCache(
-            [
-                new CachedInvoiceDecisionCase(
-                    VendorTaxId: "90000000",
-                    ItemName: "雲端授權費",
-                    NetAmount: 2200m,
-                    Decision: new InvoiceDecision("可抵稅", "案例快取命中。", "資訊服務費", 0.95m))
-            ]),
-            new VectorRagRetriever(
-            [
-                new KnowledgeReferenceCase("KB-001", "文具案例", "可抵稅", "辦公用品費", ["文具", "耗材"]),
-                new KnowledgeReferenceCase("KB-002", "顧問服務案例", "可抵稅", "營業費用", ["顧問", "服務"])
-            ]),
-            new LocalHeuristicLlmAnalyzer());
+        var pipeline = CreateScalePipeline();
 
         var records = Enumerable.Range(1, 30000)
-            .Select(CreateScaleRecord)
+            .Select(index => CreateScaleRecord(index, 1))
             .ToArray();
 
         var stopwatch = Stopwatch.StartNew();
@@ -121,8 +106,57 @@ public class LocalizationAndQualityGateTests
             $"Pipeline processing took {stopwatch.Elapsed.TotalSeconds:0.00}s, expected under 5 seconds.");
     }
 
-    private static InvoiceAnalysisRecord CreateScaleRecord(int index)
+    [Fact]
+    public void InvoiceDecisionPipeline_ProcessThirtyThousandRecordsAcrossOneHundredFiftyCustomers_CompletesWithinScaleTarget()
     {
+        const int customerCount = 150;
+        var pipeline = CreateScalePipeline();
+        var records = Enumerable.Range(1, 30000)
+            .Select(index => CreateScaleRecord(index, customerCount))
+            .ToArray();
+
+        Assert.Equal(
+            customerCount,
+            records.Select(static record => record.TaxId).Distinct(StringComparer.Ordinal).Count());
+
+        var stopwatch = Stopwatch.StartNew();
+        var result = pipeline.Process(records);
+        stopwatch.Stop();
+
+        Assert.Equal(30000, result.Summary.TotalRecords);
+        Assert.Equal(10000, result.Summary.ResolvedByRuleEngine);
+        Assert.Equal(10000, result.Summary.ResolvedByCaseCache);
+        Assert.Equal(10000, result.Summary.ResolvedByLlm);
+        Assert.True(
+            stopwatch.Elapsed < TimeSpan.FromSeconds(5),
+            $"Pipeline processing across {customerCount} customers took {stopwatch.Elapsed.TotalSeconds:0.00}s, expected under 5 seconds.");
+    }
+
+    private static InvoiceDecisionPipeline CreateScalePipeline()
+    {
+        return new InvoiceDecisionPipeline(
+            new KeywordRuleEngine(),
+            new InMemoryCaseCache(
+            [
+                new CachedInvoiceDecisionCase(
+                    VendorTaxId: "90000000",
+                    ItemName: "雲端授權費",
+                    NetAmount: 2200m,
+                    Decision: new InvoiceDecision("可抵稅", "案例快取命中。", "資訊服務費", 0.95m))
+            ]),
+            new VectorRagRetriever(
+            [
+                new KnowledgeReferenceCase("KB-001", "文具案例", "可抵稅", "辦公用品費", ["文具", "耗材"]),
+                new KnowledgeReferenceCase("KB-002", "顧問服務案例", "可抵稅", "營業費用", ["顧問", "服務"])
+            ]),
+            new LocalHeuristicLlmAnalyzer());
+    }
+
+    private static InvoiceAnalysisRecord CreateScaleRecord(int index, int customerCount)
+    {
+        var customerSlot = ((index - 1) % customerCount) + 1;
+        var customerTaxId = $"{50000000 + customerSlot:D8}";
+        var companyName = $"客戶公司{customerSlot:000}";
         var route = index % 3;
 
         if (route == 1)
@@ -131,6 +165,8 @@ public class LocalizationAndQualityGateTests
                 itemName: "辦公文具",
                 vendorTaxId: $"{80000000 + (index % 97):D8}",
                 netAmount: 1200m,
+                taxId: customerTaxId,
+                companyName: companyName,
                 invoiceNumber: $"INV-RULE-{index:00000}");
         }
 
@@ -140,6 +176,8 @@ public class LocalizationAndQualityGateTests
                 itemName: "雲端授權費",
                 vendorTaxId: "90000000",
                 netAmount: 2200m,
+                taxId: customerTaxId,
+                companyName: companyName,
                 invoiceNumber: $"INV-CACHE-{index:00000}");
         }
 
@@ -147,6 +185,8 @@ public class LocalizationAndQualityGateTests
             itemName: "一般顧問服務費",
             vendorTaxId: $"{70000000 + (index % 79):D8}",
             netAmount: 3600m,
+            taxId: customerTaxId,
+            companyName: companyName,
             invoiceNumber: $"INV-LLM-{index:00000}");
     }
 
@@ -154,14 +194,16 @@ public class LocalizationAndQualityGateTests
         string itemName,
         string vendorTaxId,
         decimal netAmount,
+        string taxId = "12345678",
+        string companyName = "Alpha Co",
         string invoiceNumber = "INV-001")
     {
         var taxAmount = decimal.Round(netAmount * 0.05m, 2, MidpointRounding.AwayFromZero);
 
         return new InvoiceAnalysisRecord(
             InvoiceNumber: invoiceNumber,
-            TaxId: "12345678",
-            CompanyName: "Alpha Co",
+            TaxId: taxId,
+            CompanyName: companyName,
             VendorTaxId: vendorTaxId,
             ItemName: itemName,
             InvoiceDate: new DateOnly(2026, 1, 15),

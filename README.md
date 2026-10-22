@@ -1,12 +1,12 @@
 # 發票智慧助理
 
-以 Windows 在地部署為優先的桌面解決方案，提供發票下載、AI 輔助會計判定、人工覆核分流，以及訓練/治理流程。
+這是一套以 Windows 在地部署為主的桌面解決方案，幫你把發票下載、AI 輔助會計判定、人工覆核分流，以及訓練/治理流程串在一起。
 
-> 事實來源：以 `src/` 程式碼、`scripts/` 腳本、`config/` 設定範本為準。
+> 內容以實作為準：請優先參考 `src/` 程式碼、`scripts/` 腳本、`config/` 設定範本。
 
 ## 專案概述
 
-此解決方案包含 4 個 WPF 應用程式與 1 個共用核心函式庫：
+目前專案由 4 個 WPF 應用程式 + 1 個共用核心函式庫組成：
 
 - **InvoiceLauncher**：整合式主控台，集中設定與模組啟動協調。
 - **InvoiceDownloader**：客戶清單匯入、MOF 驗證、批次下載發票至 Folder A。
@@ -35,18 +35,18 @@ invoice-intelligence-assistant/
 
 ### 端到端流程
 
-1. Downloader 從 `config/company-list.xlsx` 匯入客戶資料。
-2. 使用者完成 MOF 認證。
-3. Downloader 依客戶輸出 `.xlsx` 到 **Folder A**，並產生批次 `download-log-*.log`。
-4. Processor 讀取 Folder A `.xlsx`，依序執行：
+1. Downloader 先從 `config/company-list.xlsx` 匯入客戶資料。
+2. 接著完成 MOF 認證。
+3. Downloader 會依客戶把 `.xlsx` 輸出到 **Folder A**，同時產生批次 `download-log-*.log`。
+4. Processor 再讀取 Folder A 的 `.xlsx`，依序執行：
    - 規則引擎
    - 記憶體案例快取
    - 向量 RAG 檢索
    - 本地啟發式 LLM 補判
-5. Processor 輸出：
+5. Processor 會輸出：
    - **Folder B**（可直接使用）
    - **Folder C**（低信心/人工覆核）
-6. Trainer 支援：
+6. 最後你可以在 Trainer 進行：
    - 將人工核准回饋寫入本地知識庫
    - 模型驗證/訓練/評估/發布
 
@@ -114,7 +114,7 @@ flowchart TB
 
 ### 部署執行目錄
 
-發佈腳本會產生啟動包裝程式，並將實際執行檔移入 `libs/`。
+發佈腳本會先產生啟動包裝程式，再把實際執行檔移到 `libs/`。
 
 ```text
 InvoiceIntelligence/
@@ -134,26 +134,41 @@ InvoiceIntelligence/
    `- processor.ini
 ```
 
-`InvoiceAppBootstrapper` 會啟動對應 `libs\<AppName>.exe`。
+`InvoiceAppBootstrapper` 會負責啟動對應的 `libs\<AppName>.exe`。
 
 ## 環境需求
 
-- **作業系統**：Windows（桌面目標為 `net8.0-windows`）。
+- **作業系統**：Windows（桌面目標是 `net8.0-windows`）。
 - **.NET SDK**：
-  - 建置與發佈需 SDK 8+。
-  - 執行測試目前需 SDK 9+（測試專案目標 `net9.0-windows`）。
+  - 建置與發佈需要 SDK 8+。
+  - 跑測試目前需要 SDK 9+（測試專案目標 `net9.0-windows`）。
+  - 可直接用以下指令安裝（Windows / winget）：
+
+```powershell
+winget install Microsoft.DotNet.SDK.8
+winget install Microsoft.DotNet.SDK.9
+dotnet --list-sdks
+```
+
 - PowerShell 5.1+。
 
 ## 開發快速開始
 
-### 1) 環境自檢
+### 0) PowerShell 前置設定（目前視窗）
+
+這個設定會套用到目前 PowerShell 視窗後續的所有命令：
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+```
+
+### 1) 環境自檢
+
+```powershell
 .\scripts\check-developer-environment.ps1
 ```
 
-可選：
+如果你要測 Debug 組態，可改用：
 
 ```powershell
 .\scripts\check-developer-environment.ps1 -Configuration Debug
@@ -187,14 +202,24 @@ dotnet run --project .\src\InvoiceTrainer\InvoiceTrainer.csproj
 .\scripts\publish-all.ps1
 ```
 
-常用參數：
+常用參數（白話版）：
 
-- `-Configuration Release|Debug`
-- `-Runtime win-x64|win-x86|win-arm64`
-- `-SelfContained`（否則為 framework-dependent）
-- `-SkipDeveloperEnvironmentCheck`
-- `-OutputPath`（單模組）/ `-DeployRoot`（`publish-all.ps1`）
-- `-SkipZip`（僅 `publish-all.ps1`）
+- `-Configuration Release|Debug`  
+  指定建置組態。預設是 `Release`；要追查部署問題時可改用 `Debug`。
+- `-Runtime win-x64|win-x86|win-arm64`  
+  指定目標 Windows Runtime Identifier（RID）。預設是 `win-x64`。
+- `-SelfContained`  
+  產生 self-contained 套件（客戶端不用先裝 .NET Runtime）。未指定時就是 framework-dependent。
+- `-FrameworkDependent`  
+  保留的相容參數，代表 framework-dependent 模式。不可和 `-SelfContained` 同時使用。
+- `-SkipDeveloperEnvironmentCheck`  
+  跳過打包前的開發環境檢查（`check-developer-environment.ps1`）。只建議在你已確認環境沒問題時使用。
+- `-OutputPath <path>`（單模組腳本：`publish-downloader/processor/trainer.ps1`）  
+  指定單模組輸出根路徑。預設會輸出到 `build\deploy\InvoiceIntelligence`。
+- `-DeployRoot <path>`（僅 `publish-all.ps1`）  
+  指定整合打包根目錄。預設是 `build\deploy`，實際套件路徑會是 `build\deploy\InvoiceIntelligence`。
+- `-SkipZip`（僅 `publish-all.ps1`）  
+  跳過 zip 壓縮。未指定時會在 `build\deploy\artifacts\` 產生 zip 成品。
 
 ### 客戶端環境檢查
 
@@ -202,14 +227,14 @@ dotnet run --project .\src\InvoiceTrainer\InvoiceTrainer.csproj
 .\scripts\check-customer-environment.ps1 -Profile all -PublishMode framework-dependent -Runtime win-x64 -RequiredRuntimeVersion 8.0.0
 ```
 
-回傳碼：
+回傳碼說明：
 
 - `0`：可部署
 - `1`：不可部署
 
 ## 設定檔說明
 
-主要設定檔：
+你會最常調整的設定檔是：
 
 - `config/downloader.ini`
 - `config/processor.ini`
@@ -250,7 +275,7 @@ dotnet run --project .\src\InvoiceTrainer\InvoiceTrainer.csproj
 
 ### 命名規則 Placeholder
 
-允許的 placeholder：
+可用的 placeholder 有：
 
 - `{taxId}`
 - `{companyName}`
@@ -258,7 +283,7 @@ dotnet run --project .\src\InvoiceTrainer\InvoiceTrainer.csproj
 - `{dateTo}`
 - `{timestamp}`
 
-至少需包含一個 placeholder。
+命名規則至少要包含一個 placeholder。
 
 ## 核心工作流程
 
@@ -286,7 +311,7 @@ dotnet run --project .\src\InvoiceTrainer\InvoiceTrainer.csproj
    - 評估模型（`build/training/evaluation-report.json`）
    - 發布模型（`build/training/published-model.json` + `publish-metadata.json`）
 
-資料集驗證需具備以下欄位（或其別名）：
+資料集驗證時，至少要有以下欄位（或其別名）：
 
 - 公司名稱
 - 發票日期
@@ -295,7 +320,7 @@ dotnet run --project .\src\InvoiceTrainer\InvoiceTrainer.csproj
 - 建議科目
 - 判定原因
 
-治理品質報告輸出位置：
+治理品質報告會輸出在：
 
 - `build/training/quality-gates/validation-summary.json`
 - `build/training/quality-gates/reject-report.json`
@@ -303,9 +328,9 @@ dotnet run --project .\src\InvoiceTrainer\InvoiceTrainer.csproj
 
 ## 公開 API 與擴充點
 
-本儲存庫目前**不提供** HTTP/REST API。
+目前這個儲存庫**不提供** HTTP/REST API。
 
-主要擴充點為 `src/InvoiceIntelligence.Core` 的介面：
+如果你要擴充功能，主要會從 `src/InvoiceIntelligence.Core` 這些介面下手：
 
 - `ICustomerListImporter`
 - `IMofAuthenticator`
@@ -321,9 +346,9 @@ dotnet run --project .\src\InvoiceTrainer\InvoiceTrainer.csproj
 
 ## 環境變數
 
-應用模組執行不依賴自訂環境變數。
+應用模組執行時不依賴自訂環境變數。
 
-PowerShell 腳本僅讀取標準系統環境變數：
+PowerShell 腳本目前只會讀取標準系統環境變數：
 
 - `OS`
 - `PROCESSOR_ARCHITECTURE`
@@ -331,7 +356,7 @@ PowerShell 腳本僅讀取標準系統環境變數：
 
 ## CI 與容器化狀態
 
-依目前儲存庫掃描結果：
+就目前儲存庫內容來看：
 
 - 未找到 Dockerfile。
 - `.github/workflows` 下未找到 GitHub Actions 工作流程。

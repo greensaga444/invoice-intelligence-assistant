@@ -13,9 +13,9 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: Q-023 non-CLI training workflow UI
+Work Item Name: Q-016 and Q-021 governance-spec framework
 
-Description: Define and deliver an in-product guided training workflow so non-CLI users can run dataset validation, training, evaluation, and publish with clear permissions, progress, and error handling.
+Description: Define governance specifications for Table3/Table4 mapping, dedup/conflict handling, and train/validation/test split policy for knowledge bootstrap and training datasets.
 
 ---
 
@@ -250,12 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-Added non-CLI training workflow UI in AI Trainer module with dataset selection, validation, training, evaluation, and publish actions.
-Implemented local `TrainingWorkflowService` for Table3/Table4-style dataset validation, deterministic train/test split, staged model output, evaluation report, and publish artifact.
-Removed training-flow and manual knowledge-feedback UI from AI Processor, keeping it focused on decision processing.
-Moved manual knowledge-feedback UI from AI Processor into AI Trainer module.
-Added unit tests for validation summary, staged model generation, precondition guard, and publish flow.
-Verified with `dotnet test InvoiceIntelligenceAssistant.slnx -v minimal` and `dotnet format InvoiceIntelligenceAssistant.slnx --verify-no-changes`.
+Published GOV-IMP-01 governance contract artifacts under docs/config/governance (policy JSON + changelog + usage notes).
+Linked Q-016/Q-021 open-question progress to the governance artifact for traceability.
+Completed verification gates (`dotnet test` and `dotnet format --verify-no-changes`) with green results.
+Updated roadmap milestone and work item state to reflect baseline governance-spec completion.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 
@@ -263,7 +261,7 @@ Verified with `dotnet test InvoiceIntelligenceAssistant.slnx -v minimal` and `do
 
 ## Next Action
 
-Run auto completed: item delivered to main and branch cleanup finished.
+Run auto completed: implementation, verification, and delivery finished; branch changes landed to main and cleanup completed.
 
 ---
 

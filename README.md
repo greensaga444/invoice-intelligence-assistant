@@ -100,6 +100,7 @@ AI 與檢索：
 - 專案定義與路線圖：docs/project.md
 - 分支執行流程：docs/status.md
 - 測試目錄與測項清單：docs/testing.md
+- 資料治理政策合約（Q-016/Q-021）：docs/config/governance/
 - 程式風格基線與語言附錄：docs/style/
 
 ## 目前可執行骨架

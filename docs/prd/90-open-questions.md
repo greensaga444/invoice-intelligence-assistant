@@ -276,7 +276,13 @@ Required decisions:
 
 Status:
 
-- Open (requires product and data-governance decision)
+- In Progress
+
+Progress:
+
+- Governance-spec draft started (mapping matrix, dedup/conflict policy, quality gates).
+- Initial governance contract artifact published: `docs/config/governance/table3-table4-governance-policy.v1.json` (v1.0.0 draft).
+- Pending product and data-governance review/sign-off.
 
 ---
 
@@ -376,7 +382,13 @@ Required decisions:
 
 Status:
 
-- Open (requires product, QA, and data-governance decision)
+- In Progress
+
+Progress:
+
+- Governance-spec draft includes deterministic split-policy framework by company and time window.
+- Split-policy contract captured in `docs/config/governance/table3-table4-governance-policy.v1.json` (v1.0.0 draft).
+- Pending QA and data-governance review/sign-off.
 
 ---
 

@@ -1,0 +1,272 @@
+{
+  "policyId": "table3-table4-governance",
+  "version": "1.0.0",
+  "status": "draft",
+  "effectiveFrom": "2026-10-22",
+  "approvedBy": null,
+  "approvedAt": null,
+  "owners": {
+    "productOwner": "TBD",
+    "dataGovernanceOwner": "TBD",
+    "qaOwner": "TBD",
+    "engineeringOwner": "TBD"
+  },
+  "normalization": {
+    "trimText": true,
+    "collapseInternalWhitespace": true,
+    "preserveTraditionalChinese": true,
+    "dateOutputFormat": "yyyy-MM-dd",
+    "emptyStringAsNull": true
+  },
+  "labels": {
+    "deductibleStatus": {
+      "canonicalValues": [
+        "可抵稅",
+        "不可抵稅",
+        "不判定"
+      ],
+      "inputVariants": {
+        "可抵稅": [
+          "可抵",
+          "可扣抵",
+          "可抵稅"
+        ],
+        "不可抵稅": [
+          "不可抵",
+          "不可扣抵",
+          "不可抵稅"
+        ],
+        "不判定": [
+          "不判定",
+          "免判定"
+        ]
+      }
+    }
+  },
+  "mapping": {
+    "training": {
+      "requiredFields": [
+        {
+          "field": "CompanyName",
+          "aliases": [
+            "公司名稱",
+            "公司",
+            "客戶名稱",
+            "營業人名稱"
+          ],
+          "type": "string"
+        },
+        {
+          "field": "InvoiceDate",
+          "aliases": [
+            "發票日期",
+            "日期",
+            "憑證日期"
+          ],
+          "type": "date"
+        },
+        {
+          "field": "ItemName",
+          "aliases": [
+            "品名",
+            "品項",
+            "摘要",
+            "內容"
+          ],
+          "type": "string"
+        },
+        {
+          "field": "DeductibleStatus",
+          "aliases": [
+            "可抵稅",
+            "AI_可抵稅",
+            "是否可抵稅"
+          ],
+          "type": "enum"
+        },
+        {
+          "field": "AccountingCategory",
+          "aliases": [
+            "建議科目",
+            "AI_建議科目",
+            "科目"
+          ],
+          "type": "string"
+        },
+        {
+          "field": "DeductionReason",
+          "aliases": [
+            "判定原因",
+            "AI_判定原因",
+            "原因"
+          ],
+          "type": "string"
+        }
+      ]
+    },
+    "knowledgeBootstrap": {
+      "requiredFields": [
+        {
+          "field": "VendorTaxId",
+          "aliases": [
+            "賣方統編",
+            "廠商統編",
+            "對方統編"
+          ],
+          "type": "string(8)"
+        },
+        {
+          "field": "ItemName",
+          "aliases": [
+            "品名",
+            "品項",
+            "摘要",
+            "內容"
+          ],
+          "type": "string"
+        },
+        {
+          "field": "DeductibleStatus",
+          "aliases": [
+            "可抵稅",
+            "AI_可抵稅",
+            "是否可抵稅"
+          ],
+          "type": "enum"
+        },
+        {
+          "field": "AccountingCategory",
+          "aliases": [
+            "建議科目",
+            "AI_建議科目",
+            "科目"
+          ],
+          "type": "string"
+        }
+      ],
+      "recommendedFields": [
+        {
+          "field": "DeductionReason",
+          "aliases": [
+            "判定原因",
+            "AI_判定原因",
+            "原因"
+          ],
+          "type": "string"
+        },
+        {
+          "field": "CompanyName",
+          "aliases": [
+            "公司名稱",
+            "公司",
+            "客戶名稱"
+          ],
+          "type": "string"
+        },
+        {
+          "field": "InvoiceDate",
+          "aliases": [
+            "發票日期",
+            "日期",
+            "憑證日期"
+          ],
+          "type": "date"
+        }
+      ],
+      "optionalFields": [
+        {
+          "field": "InvoiceNumber",
+          "aliases": [
+            "發票號碼",
+            "憑證號碼"
+          ],
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "dedupPolicy": {
+    "knowledgeFingerprint": "Normalize(VendorTaxId)|Normalize(ItemName)|Normalize(DeductibleStatus)|Normalize(AccountingCategory)",
+    "trainingExactDuplicateKey": "Normalize(CompanyName)|InvoiceDate|Normalize(ItemName)|Normalize(DeductibleStatus)|Normalize(AccountingCategory)|Normalize(DeductionReason)",
+    "conflictIdentity": {
+      "knowledge": "Normalize(VendorTaxId)|Normalize(ItemName)",
+      "training": "Normalize(CompanyName)|InvoiceDate|Normalize(ItemName)"
+    },
+    "conflictTypes": [
+      "same key, different DeductibleStatus",
+      "same key and status, different AccountingCategory",
+      "same key and labels, different DeductionReason"
+    ],
+    "resolutionPrecedence": [
+      "source priority: manual approved feedback > governed bootstrap import > heuristic/generated label",
+      "newer InvoiceDate wins when source priority ties",
+      "majority vote over label triple when date ties",
+      "lexical tie-breaker: DeductibleStatus, AccountingCategory, DeductionReason"
+    ]
+  },
+  "qualityGates": {
+    "reject": [
+      "missing required canonical fields",
+      "invalid date parsing for required date fields",
+      "deductible status not in canonical vocabulary",
+      "knowledge bootstrap VendorTaxId missing or not 8 digits"
+    ],
+    "warn": [
+      "missing DeductionReason for knowledge bootstrap",
+      "DeductionReason length < 4",
+      "high duplicate ratio",
+      "category outside approved dictionary"
+    ],
+    "thresholds": {
+      "highDuplicateRatio": 0.3
+    }
+  },
+  "splitPolicy": {
+    "cohortKey": "Normalize(CompanyName)|yyyy-MM(InvoiceDate)",
+    "deterministicHash": "SHA256",
+    "bucketMod": 10,
+    "partitions": [
+      {
+        "name": "train",
+        "bucketRange": "0..7",
+        "targetRatio": 0.8
+      },
+      {
+        "name": "validation",
+        "bucketRange": "8",
+        "targetRatio": 0.1
+      },
+      {
+        "name": "test",
+        "bucketRange": "9",
+        "targetRatio": 0.1
+      }
+    ],
+    "leakageRule": "Records in the same cohort key must remain in a single partition.",
+    "transitionalCompatibility": "Validation and test buckets may be combined operationally until dedicated validation artifact output is implemented."
+  },
+  "reporting": {
+    "requiredReports": [
+      "validation summary",
+      "reject report",
+      "conflict report"
+    ],
+    "validationSummaryFields": [
+      "totalRows",
+      "validRows",
+      "invalidRows",
+      "warningRows"
+    ],
+    "rejectReportFields": [
+      "rowNumber",
+      "field",
+      "reason"
+    ],
+    "conflictReportFields": [
+      "conflictKey",
+      "competingLabels",
+      "selectedWinner",
+      "rulePath"
+    ]
+  }
+}

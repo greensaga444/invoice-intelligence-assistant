@@ -13,9 +13,9 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: GOV-IMP-05 quality-gate validator and reporting
+Work Item Name: GOV-IMP-06 split-policy runtime alignment
 
-Description: Implement governance quality-gate reporter with summary/reject/conflict JSON outputs and workflow-level report-path surfacing.
+Description: Implement train/validation/test split runtime alignment with cohort leakage guard and deterministic distribution metrics.
 
 ---
 
@@ -250,10 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-Implemented `TrainingGovernanceQualityGateReporter` to emit summary/reject/conflict JSON artifacts.
-Integrated quality-gate report emission into `TrainingWorkflowService` validation/train/evaluate parsing flow.
-Extended `TrainingDatasetValidationResult` to expose generated report paths.
-Added reporter and workflow tests for report generation and path surfacing.
+Implemented three-way split-policy runtime (`train/validation/test`) in `TrainingWorkflowService`.
+Added cohort leakage guard and surfaced split counts/ratios in `TrainingDatasetValidationResult`.
+Extended governance validation summary JSON with split distribution and leakage status.
+Added split-policy workflow tests and refreshed trainer status output for validation partition visibility.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 

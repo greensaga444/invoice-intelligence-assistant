@@ -26,6 +26,13 @@ public class TrainingGovernanceQualityGateReporterTests : IDisposable
             Issues: ["第 3 列：公司名稱為空", "第 5 列：發票日期格式無法解析"],
             GovernanceDuplicateCount: 4,
             GovernanceConflictCount: 1,
+            SplitTrainingRows: 6,
+            SplitValidationRows: 1,
+            SplitTestRows: 1,
+            SplitTrainingRatio: 0.75m,
+            SplitValidationRatio: 0.125m,
+            SplitTestRatio: 0.125m,
+            SplitLeakageGuardPassed: true,
             SummaryReportPath: string.Empty,
             RejectReportPath: string.Empty,
             ConflictReportPath: string.Empty);
@@ -51,6 +58,10 @@ public class TrainingGovernanceQualityGateReporterTests : IDisposable
         Assert.NotNull(summary);
         Assert.Equal(4, summary.DuplicateCount);
         Assert.Equal(1, summary.ConflictCount);
+        Assert.Equal(6, summary.SplitTrainingRows);
+        Assert.Equal(1, summary.SplitValidationRows);
+        Assert.Equal(1, summary.SplitTestRows);
+        Assert.True(summary.SplitLeakageGuardPassed);
 
         var rejectJson = File.ReadAllText(paths.RejectReportPath);
         var rejectReport = JsonSerializer.Deserialize<TrainingGovernanceRejectReport>(rejectJson);

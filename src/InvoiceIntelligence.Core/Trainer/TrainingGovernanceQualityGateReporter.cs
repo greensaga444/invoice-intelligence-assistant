@@ -37,6 +37,13 @@ internal sealed class TrainingGovernanceQualityGateReporter
             InvalidRows: validation.InvalidRows,
             DuplicateCount: validation.GovernanceDuplicateCount,
             ConflictCount: validation.GovernanceConflictCount,
+            SplitTrainingRows: validation.SplitTrainingRows,
+            SplitValidationRows: validation.SplitValidationRows,
+            SplitTestRows: validation.SplitTestRows,
+            SplitTrainingRatio: validation.SplitTrainingRatio,
+            SplitValidationRatio: validation.SplitValidationRatio,
+            SplitTestRatio: validation.SplitTestRatio,
+            SplitLeakageGuardPassed: validation.SplitLeakageGuardPassed,
             WarningCount: warningEntries.Count);
 
         var conflictEntries = conflicts
@@ -177,6 +184,13 @@ internal sealed record TrainingGovernanceValidationSummary(
     int InvalidRows,
     int DuplicateCount,
     int ConflictCount,
+    int SplitTrainingRows,
+    int SplitValidationRows,
+    int SplitTestRows,
+    decimal SplitTrainingRatio,
+    decimal SplitValidationRatio,
+    decimal SplitTestRatio,
+    bool SplitLeakageGuardPassed,
     int WarningCount);
 
 internal sealed record TrainingGovernanceRejectEntry(

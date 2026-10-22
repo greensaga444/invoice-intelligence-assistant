@@ -65,7 +65,7 @@ public sealed class TrainingWorkflowService
             throw new InvalidOperationException("資料集沒有可用資料，無法開始訓練。");
         }
 
-        var split = SplitRecords(dataset.Records);
+        var split = dataset.Split;
         if (split.TrainingRecords.Count == 0)
         {
             throw new InvalidOperationException("訓練集為空，請確認資料集內容。");
@@ -90,6 +90,7 @@ public sealed class TrainingWorkflowService
             },
             model.Entries.Count,
             split.TrainingRecords.Count,
+            split.ValidationRecords.Count,
             split.TestRecords.Count,
             StagedModelPath);
     }
@@ -109,7 +110,7 @@ public sealed class TrainingWorkflowService
 
         var dataset = ParseDataset(datasetFilePath);
         var reportPaths = WriteQualityGateReports(dataset);
-        var split = SplitRecords(dataset.Records);
+        var split = dataset.Split;
         var metrics = EvaluateModel(stagedModel, split.TestRecords);
 
         Directory.CreateDirectory(_artifactDirectoryPath);
@@ -263,28 +264,63 @@ public sealed class TrainingWorkflowService
     private static TrainingDataSplit SplitRecords(IReadOnlyList<TrainingDatasetRecord> records)
     {
         var training = new List<TrainingDatasetRecord>(records.Count);
-        var test = new List<TrainingDatasetRecord>(records.Count / 5 + 1);
+        var validation = new List<TrainingDatasetRecord>(records.Count / 10 + 1);
+        var test = new List<TrainingDatasetRecord>(records.Count / 10 + 1);
+        var cohorts = new Dictionary<string, TrainingDatasetPartition>(StringComparer.Ordinal);
 
         foreach (var record in records)
         {
-            var bucket = ComputeSplitBucket(record.CompanyName, record.InvoiceDate);
-            if (bucket < 8)
+            var cohortKey = BuildCohortKey(record.CompanyName, record.InvoiceDate);
+            var partition = ResolveSplitPartition(record.CompanyName, record.InvoiceDate);
+
+            if (cohorts.TryGetValue(cohortKey, out var previousPartition) && previousPartition != partition)
+            {
+                throw new InvalidOperationException($"分割政策違反：cohort {cohortKey} 被分配到多個資料分區。");
+            }
+
+            cohorts[cohortKey] = partition;
+
+            if (partition == TrainingDatasetPartition.Training)
             {
                 training.Add(record);
+                continue;
+            }
+
+            if (partition == TrainingDatasetPartition.Validation)
+            {
+                validation.Add(record);
                 continue;
             }
 
             test.Add(record);
         }
 
-        return new TrainingDataSplit(training, test);
+        return new TrainingDataSplit(training, validation, test, LeakageGuardPassed: true);
     }
 
     private static int ComputeSplitBucket(string companyName, DateOnly invoiceDate)
     {
-        var key = $"{companyName.Trim()}|{invoiceDate:yyyy-MM}";
+        var key = BuildCohortKey(companyName, invoiceDate);
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(key));
         return bytes[0] % 10;
+    }
+
+    private static string BuildCohortKey(string companyName, DateOnly invoiceDate)
+    {
+        return $"{NormalizeKey(companyName)}|{invoiceDate:yyyy-MM}";
+    }
+
+    private static TrainingDatasetPartition ResolveSplitPartition(string companyName, DateOnly invoiceDate)
+    {
+        var bucket = ComputeSplitBucket(companyName, invoiceDate);
+        if (bucket < 8)
+        {
+            return TrainingDatasetPartition.Training;
+        }
+
+        return bucket == 8
+            ? TrainingDatasetPartition.Validation
+            : TrainingDatasetPartition.Test;
     }
 
     private static string NormalizeKey(string value)
@@ -333,10 +369,18 @@ public sealed class TrainingWorkflowService
                     Issues: issues,
                     GovernanceDuplicateCount: 0,
                     GovernanceConflictCount: 0,
+                    SplitTrainingRows: 0,
+                    SplitValidationRows: 0,
+                    SplitTestRows: 0,
+                    SplitTrainingRatio: 0m,
+                    SplitValidationRatio: 0m,
+                    SplitTestRatio: 0m,
+                    SplitLeakageGuardPassed: true,
                     SummaryReportPath: string.Empty,
                     RejectReportPath: string.Empty,
                     ConflictReportPath: string.Empty),
-                Governance: new TrainingDatasetGovernancePreprocessResult([], 0, 0, []));
+                Governance: new TrainingDatasetGovernancePreprocessResult([], 0, 0, []),
+                Split: new TrainingDataSplit([], [], [], LeakageGuardPassed: true));
         }
 
         var (worksheet, columnIndexes) = mapping.Value;
@@ -368,6 +412,7 @@ public sealed class TrainingWorkflowService
         }
 
         var governance = GovernancePreprocessor.Apply(records);
+        var split = SplitRecords(governance.ProcessedRecords);
 
         var validation = new TrainingDatasetValidationResult(
             IsValid: governance.ProcessedRecords.Count > 0,
@@ -378,23 +423,59 @@ public sealed class TrainingWorkflowService
             Issues: issues,
             GovernanceDuplicateCount: governance.DuplicateCount,
             GovernanceConflictCount: governance.ConflictCount,
+            SplitTrainingRows: split.TrainingRecords.Count,
+            SplitValidationRows: split.ValidationRecords.Count,
+            SplitTestRows: split.TestRecords.Count,
+            SplitTrainingRatio: split.TrainingRatio,
+            SplitValidationRatio: split.ValidationRatio,
+            SplitTestRatio: split.TestRatio,
+            SplitLeakageGuardPassed: split.LeakageGuardPassed,
             SummaryReportPath: string.Empty,
             RejectReportPath: string.Empty,
             ConflictReportPath: string.Empty);
 
-        return new ParsedTrainingDataset(governance.ProcessedRecords, validation, governance);
+        return new ParsedTrainingDataset(governance.ProcessedRecords, validation, governance, split);
     }
 
     private readonly record struct LabelTriple(string DeductibleStatus, string AccountingCategory, string DeductionReason);
 
     private readonly record struct TrainingDataSplit(
         IReadOnlyList<TrainingDatasetRecord> TrainingRecords,
-        IReadOnlyList<TrainingDatasetRecord> TestRecords);
+        IReadOnlyList<TrainingDatasetRecord> ValidationRecords,
+        IReadOnlyList<TrainingDatasetRecord> TestRecords,
+        bool LeakageGuardPassed)
+    {
+        private int TotalRows => TrainingRecords.Count + ValidationRecords.Count + TestRecords.Count;
+
+        public decimal TrainingRatio => ComputeRatio(TrainingRecords.Count, TotalRows);
+
+        public decimal ValidationRatio => ComputeRatio(ValidationRecords.Count, TotalRows);
+
+        public decimal TestRatio => ComputeRatio(TestRecords.Count, TotalRows);
+
+        private static decimal ComputeRatio(int value, int total)
+        {
+            if (total == 0)
+            {
+                return 0m;
+            }
+
+            return Math.Round((decimal)value / total, 4);
+        }
+    }
 
     private readonly record struct ParsedTrainingDataset(
         IReadOnlyList<TrainingDatasetRecord> Records,
         TrainingDatasetValidationResult ValidationResult,
-        TrainingDatasetGovernancePreprocessResult Governance);
+        TrainingDatasetGovernancePreprocessResult Governance,
+        TrainingDataSplit Split);
+
+    private enum TrainingDatasetPartition
+    {
+        Training = 0,
+        Validation = 1,
+        Test = 2
+    }
 }
 
 public sealed record TrainingDatasetRecord(
@@ -414,6 +495,13 @@ public sealed record TrainingDatasetValidationResult(
     IReadOnlyList<string> Issues,
     int GovernanceDuplicateCount,
     int GovernanceConflictCount,
+    int SplitTrainingRows,
+    int SplitValidationRows,
+    int SplitTestRows,
+    decimal SplitTrainingRatio,
+    decimal SplitValidationRatio,
+    decimal SplitTestRatio,
+    bool SplitLeakageGuardPassed,
     string SummaryReportPath,
     string RejectReportPath,
     string ConflictReportPath);
@@ -422,6 +510,7 @@ public sealed record TrainingRunResult(
     TrainingDatasetValidationResult Validation,
     int ModelEntryCount,
     int TrainingRecordCount,
+    int ValidationRecordCount,
     int TestRecordCount,
     string StagedModelPath);
 

@@ -142,7 +142,7 @@ public partial class MainWindow : Window
             var actor = ResolveActor();
             var result = _trainingWorkflowService!.Train(datasetPath!, actor);
             TrainingStatusText.Text =
-                $"訓練完成：模型條目 {result.ModelEntryCount}，訓練集 {result.TrainingRecordCount}，測試集 {result.TestRecordCount}。\n" +
+                $"訓練完成：模型條目 {result.ModelEntryCount}，訓練集 {result.TrainingRecordCount}，驗證集 {result.ValidationRecordCount}，測試集 {result.TestRecordCount}。\n" +
                 $"staged model：{result.StagedModelPath}\n" +
                 BuildValidationIssuesSummary(result.Validation);
         }

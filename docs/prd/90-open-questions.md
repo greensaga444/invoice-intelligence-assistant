@@ -286,6 +286,7 @@ Progress:
 - GOV-IMP-03 processor governance engine implemented: knowledge-bootstrap dedup/conflict resolution with deterministic precedence and conflict audit output.
 - GOV-IMP-04 training governance preprocessor implemented: training rows deduped/conflict-resolved before model build with governance summary counts.
 - GOV-IMP-05 quality-gate reporting implemented: summary/reject/conflict JSON artifacts emitted from governance validation.
+- GOV-IMP-06 split-policy runtime alignment implemented: train/validation/test partitioning now enforces cohort leakage guard and reports distribution metrics.
 - Pending product and data-governance review/sign-off.
 
 ---
@@ -396,6 +397,7 @@ Progress:
 - GOV-IMP-03 conflict-resolution precedence baseline implemented and test-covered for governance pipeline reuse.
 - GOV-IMP-04 workflow parsing now applies deterministic training dedup/conflict preprocessing and exposes governance counts.
 - GOV-IMP-05 workflow validation now surfaces governance report paths with emitted quality-gate artifacts.
+- GOV-IMP-06 workflow split now supports train/validation/test partitioning with cohort leakage guard and deterministic distribution metrics.
 - Pending QA and data-governance review/sign-off.
 
 ---

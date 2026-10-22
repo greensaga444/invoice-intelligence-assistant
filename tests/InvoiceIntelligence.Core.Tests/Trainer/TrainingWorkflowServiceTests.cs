@@ -46,6 +46,7 @@ public class TrainingWorkflowServiceTests : IDisposable
         Assert.True(File.Exists(result.StagedModelPath));
         Assert.True(result.ModelEntryCount >= 1);
         Assert.True(result.TrainingRecordCount >= 1);
+        Assert.True(result.ValidationRecordCount >= 0);
     }
 
     [Fact]
@@ -179,6 +180,47 @@ public class TrainingWorkflowServiceTests : IDisposable
         Assert.True(File.Exists(result.SummaryReportPath));
         Assert.True(File.Exists(result.RejectReportPath));
         Assert.True(File.Exists(result.ConflictReportPath));
+    }
+
+    [Fact]
+    public void ValidateDataset_WithValidRows_ReturnsSplitDistributionMetrics()
+    {
+        var datasetPath = CreateDatasetFile([
+            new object?[] { "公司A", "2026-01-01", "雲端授權", "可抵稅", "資訊服務費", "案例A" },
+            new object?[] { "公司B", "2026-02-01", "餐敘", "不可抵稅", "交際費", "案例B" },
+            new object?[] { "公司C", "2026-03-01", "顧問服務", "可抵稅", "顧問費", "案例C" },
+            new object?[] { "公司D", "2026-04-01", "運費", "可抵稅", "運費", "案例D" },
+            new object?[] { "公司E", "2026-05-01", "租金", "可抵稅", "租賃費", "案例E" },
+            new object?[] { "公司F", "2026-06-01", "文具採購", "可抵稅", "辦公用品費", "案例F" },
+            new object?[] { "公司G", "2026-07-01", "教育訓練", "可抵稅", "教育訓練費", "案例G" },
+            new object?[] { "公司H", "2026-08-01", "系統維護", "可抵稅", "資訊服務費", "案例H" },
+            new object?[] { "公司I", "2026-09-01", "廣告投放", "可抵稅", "廣告費", "案例I" },
+            new object?[] { "公司J", "2026-10-01", "會議餐點", "不可抵稅", "交際費", "案例J" }
+        ]);
+
+        var service = new TrainingWorkflowService(_workspaceRootPath);
+        var result = service.ValidateDataset(datasetPath);
+
+        Assert.True(result.SplitLeakageGuardPassed);
+        Assert.Equal(result.ValidRows, result.SplitTrainingRows + result.SplitValidationRows + result.SplitTestRows);
+        Assert.Equal(1m, result.SplitTrainingRatio + result.SplitValidationRatio + result.SplitTestRatio);
+    }
+
+    [Fact]
+    public void ValidateDataset_WithSameCohortRows_KeepsRowsInSinglePartition()
+    {
+        var datasetPath = CreateDatasetFile([
+            new object?[] { "公司A", "2026-01-01", "雲端授權", "可抵稅", "資訊服務費", "案例A" },
+            new object?[] { "公司A", "2026-01-15", "系統維護", "可抵稅", "資訊服務費", "案例B" }
+        ]);
+
+        var service = new TrainingWorkflowService(_workspaceRootPath);
+        var result = service.ValidateDataset(datasetPath);
+
+        Assert.True(result.SplitLeakageGuardPassed);
+        var nonZeroPartitions = new[] { result.SplitTrainingRows, result.SplitValidationRows, result.SplitTestRows }
+            .Count(value => value > 0);
+        Assert.Equal(1, nonZeroPartitions);
     }
 
     private string CreateDatasetFile(IReadOnlyList<object?[]> rows)

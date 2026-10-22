@@ -154,7 +154,7 @@ This document lists all current automated tests in the repository, grouped by te
 
 ## Category E: Trainer Tests
 
-### E1. TrainingWorkflowServiceTests (9)
+### E1. TrainingWorkflowServiceTests (10)
 
 - ValidateDataset_WithRequiredColumns_ReturnsValidationSummary
 - Train_WithDataset_WritesStagedModel
@@ -165,6 +165,7 @@ This document lists all current automated tests in the repository, grouped by te
 - ValidateDataset_WithAliasHeaders_ReturnsValidationSummary
 - Evaluate_WithSameDataset_ProducesDeterministicMetrics
 - ValidateDataset_WithDuplicateAndConflictRows_ReturnsGovernanceSummaryCounts
+- ValidateDataset_WithValidRows_WritesQualityGateReportFiles
 
 ### E2. Table3Table4CanonicalMapperTests (3)
 
@@ -178,8 +179,12 @@ This document lists all current automated tests in the repository, grouped by te
 - Apply_WithCompetingLabels_ResolvesByMajority
 - Apply_WithLabelTie_UsesLexicalTieBreak
 
+### E4. TrainingGovernanceQualityGateReporterTests (1)
+
+- WriteReports_WithValidationAndConflictData_WritesSummaryRejectAndConflictFiles
+
 ## Test Inventory Summary
 
-- Test classes: 18
-- Test cases: 76
+- Test classes: 19
+- Test cases: 78
 - Primary automated test project: tests/InvoiceIntelligence.Core.Tests

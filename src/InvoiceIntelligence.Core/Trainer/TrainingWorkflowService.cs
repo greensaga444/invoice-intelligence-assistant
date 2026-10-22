@@ -14,6 +14,7 @@ public sealed class TrainingWorkflowService
 
     private static readonly Table3Table4CanonicalMapper CanonicalMapper = new();
     private static readonly TrainingDatasetGovernancePreprocessor GovernancePreprocessor = new();
+    private static readonly TrainingGovernanceQualityGateReporter QualityGateReporter = new();
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -41,7 +42,13 @@ public sealed class TrainingWorkflowService
     public TrainingDatasetValidationResult ValidateDataset(string datasetFilePath)
     {
         var dataset = ParseDataset(datasetFilePath);
-        return dataset.ValidationResult;
+        var reportPaths = WriteQualityGateReports(dataset);
+        return dataset.ValidationResult with
+        {
+            SummaryReportPath = reportPaths.SummaryReportPath,
+            RejectReportPath = reportPaths.RejectReportPath,
+            ConflictReportPath = reportPaths.ConflictReportPath
+        };
     }
 
     public TrainingRunResult Train(string datasetFilePath, string initiatedBy)
@@ -52,6 +59,7 @@ public sealed class TrainingWorkflowService
         }
 
         var dataset = ParseDataset(datasetFilePath);
+        var reportPaths = WriteQualityGateReports(dataset);
         if (dataset.Records.Count == 0)
         {
             throw new InvalidOperationException("資料集沒有可用資料，無法開始訓練。");
@@ -74,7 +82,12 @@ public sealed class TrainingWorkflowService
         File.WriteAllText(StagedModelPath, JsonSerializer.Serialize(model, JsonOptions), Encoding.UTF8);
 
         return new TrainingRunResult(
-            dataset.ValidationResult,
+            dataset.ValidationResult with
+            {
+                SummaryReportPath = reportPaths.SummaryReportPath,
+                RejectReportPath = reportPaths.RejectReportPath,
+                ConflictReportPath = reportPaths.ConflictReportPath
+            },
             model.Entries.Count,
             split.TrainingRecords.Count,
             split.TestRecords.Count,
@@ -95,13 +108,30 @@ public sealed class TrainingWorkflowService
         }
 
         var dataset = ParseDataset(datasetFilePath);
+        var reportPaths = WriteQualityGateReports(dataset);
         var split = SplitRecords(dataset.Records);
         var metrics = EvaluateModel(stagedModel, split.TestRecords);
 
         Directory.CreateDirectory(_artifactDirectoryPath);
         File.WriteAllText(EvaluationReportPath, JsonSerializer.Serialize(metrics, JsonOptions), Encoding.UTF8);
 
-        return new TrainingEvaluationResult(dataset.ValidationResult, metrics, EvaluationReportPath);
+        return new TrainingEvaluationResult(
+            dataset.ValidationResult with
+            {
+                SummaryReportPath = reportPaths.SummaryReportPath,
+                RejectReportPath = reportPaths.RejectReportPath,
+                ConflictReportPath = reportPaths.ConflictReportPath
+            },
+            metrics,
+            EvaluationReportPath);
+    }
+
+    private TrainingGovernanceReportPaths WriteQualityGateReports(ParsedTrainingDataset dataset)
+    {
+        return QualityGateReporter.WriteReports(
+            _artifactDirectoryPath,
+            dataset.ValidationResult,
+            dataset.Governance.Conflicts);
     }
 
     public TrainingPublishResult Publish(string approvedBy)
@@ -302,7 +332,11 @@ public sealed class TrainingWorkflowService
                     InvalidRows: 0,
                     Issues: issues,
                     GovernanceDuplicateCount: 0,
-                    GovernanceConflictCount: 0));
+                    GovernanceConflictCount: 0,
+                    SummaryReportPath: string.Empty,
+                    RejectReportPath: string.Empty,
+                    ConflictReportPath: string.Empty),
+                Governance: new TrainingDatasetGovernancePreprocessResult([], 0, 0, []));
         }
 
         var (worksheet, columnIndexes) = mapping.Value;
@@ -343,9 +377,12 @@ public sealed class TrainingWorkflowService
             InvalidRows: issues.Count,
             Issues: issues,
             GovernanceDuplicateCount: governance.DuplicateCount,
-            GovernanceConflictCount: governance.ConflictCount);
+            GovernanceConflictCount: governance.ConflictCount,
+            SummaryReportPath: string.Empty,
+            RejectReportPath: string.Empty,
+            ConflictReportPath: string.Empty);
 
-        return new ParsedTrainingDataset(governance.ProcessedRecords, validation);
+        return new ParsedTrainingDataset(governance.ProcessedRecords, validation, governance);
     }
 
     private readonly record struct LabelTriple(string DeductibleStatus, string AccountingCategory, string DeductionReason);
@@ -356,7 +393,8 @@ public sealed class TrainingWorkflowService
 
     private readonly record struct ParsedTrainingDataset(
         IReadOnlyList<TrainingDatasetRecord> Records,
-        TrainingDatasetValidationResult ValidationResult);
+        TrainingDatasetValidationResult ValidationResult,
+        TrainingDatasetGovernancePreprocessResult Governance);
 }
 
 public sealed record TrainingDatasetRecord(
@@ -375,7 +413,10 @@ public sealed record TrainingDatasetValidationResult(
     int InvalidRows,
     IReadOnlyList<string> Issues,
     int GovernanceDuplicateCount,
-    int GovernanceConflictCount);
+    int GovernanceConflictCount,
+    string SummaryReportPath,
+    string RejectReportPath,
+    string ConflictReportPath);
 
 public sealed record TrainingRunResult(
     TrainingDatasetValidationResult Validation,

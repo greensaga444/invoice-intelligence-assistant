@@ -165,6 +165,22 @@ public class TrainingWorkflowServiceTests : IDisposable
         Assert.Equal(1, result.ValidRows);
     }
 
+    [Fact]
+    public void ValidateDataset_WithValidRows_WritesQualityGateReportFiles()
+    {
+        var datasetPath = CreateDatasetFile([
+            new object?[] { "公司A", "2026-01-01", "雲端授權", "可抵稅", "資訊服務費", "案例A" },
+            new object?[] { "公司B", "2026-01-02", "餐敘", "不可抵稅", "交際費", "案例B" }
+        ]);
+
+        var service = new TrainingWorkflowService(_workspaceRootPath);
+        var result = service.ValidateDataset(datasetPath);
+
+        Assert.True(File.Exists(result.SummaryReportPath));
+        Assert.True(File.Exists(result.RejectReportPath));
+        Assert.True(File.Exists(result.ConflictReportPath));
+    }
+
     private string CreateDatasetFile(IReadOnlyList<object?[]> rows)
     {
         var datasetPath = Path.Combine(_workspaceRootPath, $"dataset-{Guid.NewGuid():N}.xlsx");

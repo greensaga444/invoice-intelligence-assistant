@@ -285,6 +285,7 @@ Progress:
 - GOV-IMP-02 runtime baseline implemented in trainer path: alias-based canonical mapper and deterministic normalization.
 - GOV-IMP-03 processor governance engine implemented: knowledge-bootstrap dedup/conflict resolution with deterministic precedence and conflict audit output.
 - GOV-IMP-04 training governance preprocessor implemented: training rows deduped/conflict-resolved before model build with governance summary counts.
+- GOV-IMP-05 quality-gate reporting implemented: summary/reject/conflict JSON artifacts emitted from governance validation.
 - Pending product and data-governance review/sign-off.
 
 ---
@@ -394,6 +395,7 @@ Progress:
 - GOV-IMP-02 trainer parsing now canonicalizes deductible-status variants and normalized row values before split.
 - GOV-IMP-03 conflict-resolution precedence baseline implemented and test-covered for governance pipeline reuse.
 - GOV-IMP-04 workflow parsing now applies deterministic training dedup/conflict preprocessing and exposes governance counts.
+- GOV-IMP-05 workflow validation now surfaces governance report paths with emitted quality-gate artifacts.
 - Pending QA and data-governance review/sign-off.
 
 ---

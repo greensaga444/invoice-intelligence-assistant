@@ -13,9 +13,9 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: GOV-IMP-04 training dataset governance preprocessor
+Work Item Name: GOV-IMP-05 quality-gate validator and reporting
 
-Description: Implement training dataset governance preprocessor with deterministic dedup/conflict resolution and workflow-visible governance counts.
+Description: Implement governance quality-gate reporter with summary/reject/conflict JSON outputs and workflow-level report-path surfacing.
 
 ---
 
@@ -250,10 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-Implemented `TrainingDatasetGovernancePreprocessor` for deterministic exact-dedup and conflict resolution on canonical training rows.
-Integrated preprocessing into `TrainingWorkflowService` parse flow before split/model build.
-Extended dataset validation output with governance duplicate/conflict summary counts.
-Added focused preprocessor tests and workflow summary-count coverage.
+Implemented `TrainingGovernanceQualityGateReporter` to emit summary/reject/conflict JSON artifacts.
+Integrated quality-gate report emission into `TrainingWorkflowService` validation/train/evaluate parsing flow.
+Extended `TrainingDatasetValidationResult` to expose generated report paths.
+Added reporter and workflow tests for report generation and path surfacing.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 

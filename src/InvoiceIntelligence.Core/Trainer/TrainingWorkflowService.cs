@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -13,16 +12,7 @@ public sealed class TrainingWorkflowService
     private const string EvaluationReportFileName = "evaluation-report.json";
     private const string PublishMetadataFileName = "publish-metadata.json";
 
-    private static readonly IReadOnlyDictionary<TrainingColumnKind, string[]> HeaderAliases =
-        new Dictionary<TrainingColumnKind, string[]>
-        {
-            [TrainingColumnKind.CompanyName] = ["公司名稱", "公司", "客戶名稱", "營業人名稱"],
-            [TrainingColumnKind.InvoiceDate] = ["發票日期", "日期", "憑證日期"],
-            [TrainingColumnKind.ItemName] = ["品名", "品項", "摘要", "內容"],
-            [TrainingColumnKind.DeductibleStatus] = ["可抵稅", "AI_可抵稅", "是否可抵稅"],
-            [TrainingColumnKind.AccountingCategory] = ["建議科目", "AI_建議科目", "科目"],
-            [TrainingColumnKind.DeductionReason] = ["判定原因", "AI_判定原因", "原因"]
-        };
+    private static readonly Table3Table4CanonicalMapper CanonicalMapper = new();
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -297,7 +287,7 @@ public sealed class TrainingWorkflowService
         var issues = new List<string>();
         var records = new List<TrainingDatasetRecord>();
 
-        var mapping = ResolveWorksheetAndColumns(workbook);
+        var mapping = CanonicalMapper.ResolveWorksheetAndColumns(workbook);
         if (mapping is null)
         {
             issues.Add("找不到符合欄位需求的工作表。需要欄位：公司名稱、發票日期、品名、可抵稅、建議科目、判定原因。");
@@ -318,63 +308,26 @@ public sealed class TrainingWorkflowService
 
         for (var rowNumber = 2; rowNumber <= lastRowNumber; rowNumber++)
         {
-            var companyName = GetCellValue(worksheet, rowNumber, columnIndexes[TrainingColumnKind.CompanyName]);
-            var invoiceDateText = GetCellValue(worksheet, rowNumber, columnIndexes[TrainingColumnKind.InvoiceDate]);
-            var itemName = GetCellValue(worksheet, rowNumber, columnIndexes[TrainingColumnKind.ItemName]);
-            var deductibleStatus = GetCellValue(worksheet, rowNumber, columnIndexes[TrainingColumnKind.DeductibleStatus]);
-            var accountingCategory = GetCellValue(worksheet, rowNumber, columnIndexes[TrainingColumnKind.AccountingCategory]);
-            var deductionReason = GetCellValue(worksheet, rowNumber, columnIndexes[TrainingColumnKind.DeductionReason]);
-
-            var values = new[] { companyName, invoiceDateText, itemName, deductibleStatus, accountingCategory, deductionReason };
-            if (values.All(string.IsNullOrWhiteSpace))
+            var parsedRow = CanonicalMapper.ParseRow(worksheet, rowNumber, columnIndexes);
+            if (parsedRow.IsEmptyRow)
             {
                 continue;
             }
 
-            var rowIssues = new List<string>();
-            if (string.IsNullOrWhiteSpace(companyName))
+            if (parsedRow.Issues.Count > 0)
             {
-                rowIssues.Add("公司名稱為空");
-            }
-
-            if (string.IsNullOrWhiteSpace(itemName))
-            {
-                rowIssues.Add("品名為空");
-            }
-
-            if (string.IsNullOrWhiteSpace(deductibleStatus))
-            {
-                rowIssues.Add("可抵稅標籤為空");
-            }
-
-            if (string.IsNullOrWhiteSpace(accountingCategory))
-            {
-                rowIssues.Add("建議科目為空");
-            }
-
-            if (string.IsNullOrWhiteSpace(deductionReason))
-            {
-                rowIssues.Add("判定原因為空");
-            }
-
-            if (!TryParseDate(invoiceDateText, out var invoiceDate))
-            {
-                rowIssues.Add("發票日期格式無法解析");
-            }
-
-            if (rowIssues.Count > 0)
-            {
-                issues.Add($"第 {rowNumber} 列：{string.Join("、", rowIssues)}");
+                issues.Add($"第 {rowNumber} 列：{string.Join("、", parsedRow.Issues)}");
                 continue;
             }
 
+            var row = parsedRow.Row!;
             records.Add(new TrainingDatasetRecord(
-                CompanyName: companyName.Trim(),
-                InvoiceDate: invoiceDate,
-                ItemName: itemName.Trim(),
-                DeductibleStatus: deductibleStatus.Trim(),
-                AccountingCategory: accountingCategory.Trim(),
-                DeductionReason: deductionReason.Trim()));
+                CompanyName: row.CompanyName,
+                InvoiceDate: row.InvoiceDate,
+                ItemName: row.ItemName,
+                DeductibleStatus: row.DeductibleStatus,
+                AccountingCategory: row.AccountingCategory,
+                DeductionReason: row.DeductionReason));
         }
 
         var validation = new TrainingDatasetValidationResult(
@@ -386,104 +339,6 @@ public sealed class TrainingWorkflowService
             Issues: issues);
 
         return new ParsedTrainingDataset(records, validation);
-    }
-
-    private static bool TryParseDate(string input, out DateOnly result)
-    {
-        var text = input.Trim();
-        if (DateOnly.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out result))
-        {
-            return true;
-        }
-
-        if (DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dateTime))
-        {
-            result = DateOnly.FromDateTime(dateTime);
-            return true;
-        }
-
-        if (double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var serialDate))
-        {
-            try
-            {
-                result = DateOnly.FromDateTime(DateTime.FromOADate(serialDate));
-                return true;
-            }
-            catch (ArgumentException)
-            {
-                // Fall through to return false.
-            }
-        }
-
-        result = default;
-        return false;
-    }
-
-    private static (IXLWorksheet Worksheet, Dictionary<TrainingColumnKind, int> Columns)? ResolveWorksheetAndColumns(XLWorkbook workbook)
-    {
-        foreach (var worksheet in workbook.Worksheets)
-        {
-            var map = BuildColumnIndexMap(worksheet);
-            if (map is not null)
-            {
-                return (worksheet, map);
-            }
-        }
-
-        return null;
-    }
-
-    private static Dictionary<TrainingColumnKind, int>? BuildColumnIndexMap(IXLWorksheet worksheet)
-    {
-        var headerRow = worksheet.Row(1);
-        var lastColumnNumber = headerRow.LastCellUsed()?.Address.ColumnNumber ?? 0;
-        if (lastColumnNumber == 0)
-        {
-            return null;
-        }
-
-        var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        for (var column = 1; column <= lastColumnNumber; column++)
-        {
-            var normalizedHeader = headerRow.Cell(column).GetString().Trim();
-            if (string.IsNullOrWhiteSpace(normalizedHeader) || headers.ContainsKey(normalizedHeader))
-            {
-                continue;
-            }
-
-            headers[normalizedHeader] = column;
-        }
-
-        var result = new Dictionary<TrainingColumnKind, int>();
-        foreach (var pair in HeaderAliases)
-        {
-            var matchedColumn = pair.Value
-                .Select(alias => headers.TryGetValue(alias, out var column) ? column : 0)
-                .FirstOrDefault(column => column > 0);
-            if (matchedColumn == 0)
-            {
-                return null;
-            }
-
-            result[pair.Key] = matchedColumn;
-        }
-
-        return result;
-    }
-
-    private static string GetCellValue(IXLWorksheet worksheet, int rowNumber, int columnNumber)
-    {
-        return worksheet.Cell(rowNumber, columnNumber).GetValue<string>();
-    }
-
-    private enum TrainingColumnKind
-    {
-        CompanyName,
-        InvoiceDate,
-        ItemName,
-        DeductibleStatus,
-        AccountingCategory,
-        DeductionReason
     }
 
     private readonly record struct LabelTriple(string DeductibleStatus, string AccountingCategory, string DeductionReason);

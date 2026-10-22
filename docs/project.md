@@ -198,6 +198,7 @@ Constraints / Non-Functional Requirements:
 | 11 | Q-023 non-CLI training workflow UI | Users can complete dataset selection, validation, training, evaluation, and publish steps from a guided in-product UI without command-line usage. | P1 | FULL | 6,7 | DONE |
 | 12 | Q-013 processing volume validation | System has executable evidence for 150-customer and 15,000-30,000 invoice scale, including baseline test gate and production-like validation report. | P1 | LIGHT | 7 | IN PROGRESS |
 | 13 | Q-016 and Q-021 governance-spec framework | Canonical Table3/Table4 mapping, dedup/conflict policy, and split-policy governance are defined and traceable for knowledge bootstrap and training datasets. | P1 | FULL | 6,11 | DONE |
+| 14 | GOV-IMP-02 canonical mapper and normalizer | Trainer dataset parsing resolves governed aliases and normalization rules into deterministic canonical rows with test coverage. | P1 | LIGHT | 13 | DONE |
 
 Definition of Done: one line describing a distinct user-visible outcome; no two rows should share it.
 Track values: FULL (full pipeline) / LIGHT (skip PLAN)
@@ -216,6 +217,7 @@ Status values: TODO / IN PROGRESS / DONE / BLOCKED
 - [x] M5: Non-CLI training workflow complete (guided dataset validation, training, evaluation, and publish flow)
 - [ ] M6: Q-013 processing volume validation complete (150 customers and 15,000-30,000 records evidenced with production-like run data)
 - [x] M7: Q-016/Q-021 governance specification baseline published (mapping, dedup/conflict, and split-policy framework)
+- [x] M8: GOV-IMP-02 canonical mapper/normalizer runtime baseline complete (alias mapping + normalization + tests)
 
 ---
 

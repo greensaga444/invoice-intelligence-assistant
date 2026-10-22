@@ -145,8 +145,27 @@ This document lists all current automated tests in the repository, grouped by te
 
 - Q-013 can be marked resolved only after production-like run evidence is attached and reviewed.
 
+## Category E: Trainer Tests
+
+### E1. TrainingWorkflowServiceTests (8)
+
+- ValidateDataset_WithRequiredColumns_ReturnsValidationSummary
+- Train_WithDataset_WritesStagedModel
+- Evaluate_WithoutStagedModel_ThrowsInvalidOperationException
+- Evaluate_WhenStagedModelIsCorrupted_ThrowsJsonException
+- Publish_AfterTrain_CopiesPublishedModel
+- ValidateDataset_WhenFileDoesNotExist_ThrowsFileNotFoundException
+- ValidateDataset_WithAliasHeaders_ReturnsValidationSummary
+- Evaluate_WithSameDataset_ProducesDeterministicMetrics
+
+### E2. Table3Table4CanonicalMapperTests (3)
+
+- ResolveWorksheetAndColumns_WithAliasHeaders_ReturnsColumnMapping
+- ParseRow_WithWhitespaceAndVariantLabels_NormalizesToCanonicalValues
+- ParseRow_WithUnknownDeductibleStatus_ReturnsGovernanceVocabularyIssue
+
 ## Test Inventory Summary
 
-- Test classes: 15
-- Test cases: 65
+- Test classes: 16
+- Test cases: 68
 - Primary automated test project: tests/InvoiceIntelligence.Core.Tests

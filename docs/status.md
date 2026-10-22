@@ -13,15 +13,15 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: Q-016 and Q-021 governance-spec framework
+Work Item Name: GOV-IMP-02 canonical mapper and normalizer
 
-Description: Define governance specifications for Table3/Table4 mapping, dedup/conflict handling, and train/validation/test split policy for knowledge bootstrap and training datasets.
+Description: Implement trainer runtime canonical mapper/normalizer for Table3/Table4 alias mapping, string normalization, and deductible-status canonicalization.
 
 ---
 
 ## Track
 
-FULL
+LIGHT
 
 Tracks:
 
@@ -250,10 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-Published GOV-IMP-01 governance contract artifacts under docs/config/governance (policy JSON + changelog + usage notes).
-Linked Q-016/Q-021 open-question progress to the governance artifact for traceability.
-Completed verification gates (`dotnet test` and `dotnet format --verify-no-changes`) with green results.
-Updated roadmap milestone and work item state to reflect baseline governance-spec completion.
+Implemented dedicated Table3/Table4 canonical mapper component in trainer core with governed alias resolution.
+Refactored `TrainingWorkflowService` dataset parsing to consume mapper-driven canonical rows.
+Added focused mapper tests for alias mapping, whitespace normalization, and deductible-status vocabulary checks.
+Updated roadmap/workitem/open-question/testing/README docs for GOV-IMP-02 delivery traceability.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 

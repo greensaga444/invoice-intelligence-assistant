@@ -425,7 +425,12 @@ Required decisions:
 
 Status:
 
-- Open (requires architecture, QA, and operations decision)
+- In Progress
+
+Progress:
+
+- Release-gate work item draft started for Q-022 with focus on offline metrics schema, deterministic pass/fail evaluator, and rollback trigger workflow.
+- Pending threshold values and sign-off ownership confirmation across architecture, QA, and operations.
 
 ---
 

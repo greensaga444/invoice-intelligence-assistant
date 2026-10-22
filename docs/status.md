@@ -13,9 +13,9 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: GOV-IMP-08 end-to-end governance verification and traceability updates
+Work Item Name: Q-022 release-gate specification and decision flow
 
-Description: Deliver governance end-to-end verification coverage and finalize PRD/open-question/RTM traceability closure for Q-016 and Q-021.
+Description: Define release-gate metrics schema, deterministic pass/fail evaluator, and rollback trigger workflow for trained-model runtime switch decisions.
 
 ---
 
@@ -40,7 +40,7 @@ Optional check (only if unsure): use FULL when any of these is true:
 
 ## Current Stage
 
-VERIFICATION
+PLAN
 
 Available Stages (depends on Track):
 
@@ -229,31 +229,31 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ### IMPLEMENTATION
 
-- [x] Code Implemented
-- [x] Tests Added/Updated
+- [ ] Code Implemented
+- [ ] Tests Added/Updated
 
 ### VERIFICATION
 
-- [x] Work Item Tested
-- [x] Definition of Done Verified
-- [x] Format / Lint Checked (if the project defines a formatter or linter)
-- [x] CI Passed — run locally if a CI config exists (required if project.md Delivery Policy sets CI Required = yes)
+- [ ] Work Item Tested
+- [ ] Definition of Done Verified
+- [ ] Format / Lint Checked (if the project defines a formatter or linter)
+- [ ] CI Passed — run locally if a CI config exists (required if project.md Delivery Policy sets CI Required = yes)
 
 ### DELIVERY
 
-- [x] project.md progress updated (Roadmap/Milestones)
-- [x] Docs/README updated
-- [x] Delivery commit + push completed
-- [x] PR opened/updated (if required)
+- [ ] project.md progress updated (Roadmap/Milestones)
+- [ ] Docs/README updated
+- [ ] Delivery commit + push completed
+- [ ] PR opened/updated (if required)
 
 ---
 
 ## Current Task
 
-Added `GovernanceEndToEndVerificationTests` to validate full governance behavior across validate/train/evaluate flows.
-Verified deterministic outputs for dedup/conflict counts, split metrics, and quality-gate artifact generation.
-Updated PRD RTM with governance slice-to-evidence mapping and closed Q-016/Q-021 as resolved.
-Aligned roadmap, README, testing catalog, and work-item docs with governance closure outcomes.
+Created Q-022 release-gate work item draft with required metrics schema fields and validation constraints.
+Defined deterministic pass/fail evaluator outputs (PASS/WARN/FAIL/BLOCK) and precedence rules.
+Drafted rollback trigger categories and recovery sequence with role ownership checkpoints.
+Linked roadmap and open-question status to this new planning work item.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 
@@ -261,7 +261,7 @@ Aligned roadmap, README, testing catalog, and work-item docs with governance clo
 
 ## Next Action
 
-Run auto completed: implementation, verification, and delivery finished; branch changes landed to main and cleanup completed.
+Review and confirm numeric thresholds, observation window, and release-approval artifact format with stakeholders.
 
 ---
 

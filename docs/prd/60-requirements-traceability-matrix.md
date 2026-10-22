@@ -117,6 +117,20 @@ This matrix ensures that every requirement can be validated and that every accep
 
 ---
 
+# Governance Specification Traceability (Q-016 / Q-021)
+
+| Governance Requirement | Implementation Slice | Verification Evidence |
+|----------|----------|----------|
+| Canonical Table3/Table4 mapping and normalization | GOV-IMP-02 | `Table3Table4CanonicalMapperTests` |
+| Deterministic knowledge dedup/conflict precedence | GOV-IMP-03 | `KnowledgeBootstrapGovernanceEngineTests` |
+| Deterministic training dedup/conflict preprocessing | GOV-IMP-04 | `TrainingDatasetGovernancePreprocessorTests` |
+| Quality-gate summary/reject/conflict reporting | GOV-IMP-05 | `TrainingGovernanceQualityGateReporterTests` |
+| Train/validation/test split-policy runtime alignment + cohort leakage guard | GOV-IMP-06 | `TrainingWorkflowServiceTests` split-policy cases |
+| Governance policy approval metadata and version enforcement | GOV-IMP-07 | `TrainingWorkflowServiceTests` policy-approval rejection cases |
+| End-to-end governance verification and document traceability | GOV-IMP-08 | `GovernanceEndToEndVerificationTests` + PRD/open-question/RTM updates |
+
+---
+
 # MVP Exit Criteria
 
 The MVP release is considered complete when all items below are satisfied.

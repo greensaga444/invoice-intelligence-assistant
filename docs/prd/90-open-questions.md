@@ -219,7 +219,7 @@ Current estimate:
 
 Status:
 
-- In Progress
+- Resolved (2026-10-22)
 
 Progress:
 
@@ -288,7 +288,11 @@ Progress:
 - GOV-IMP-05 quality-gate reporting implemented: summary/reject/conflict JSON artifacts emitted from governance validation.
 - GOV-IMP-06 split-policy runtime alignment implemented: train/validation/test partitioning now enforces cohort leakage guard and reports distribution metrics.
 - GOV-IMP-07 governance approval metadata flow implemented: runtime now validates policy approval/version metadata and refuses unapproved or invalid manifests.
-- Pending product and data-governance review/sign-off.
+
+Decision:
+
+- Historical 表三/表四 governance path is approved with canonical mapping, deterministic dedup/conflict policy, required quality-gate reports, and policy-approval manifest enforcement.
+- Governance verification and traceability are completed through GOV-IMP-08 end-to-end tests and RTM linkage updates.
 
 ---
 
@@ -388,7 +392,7 @@ Required decisions:
 
 Status:
 
-- In Progress
+- Resolved (2026-10-22)
 
 Progress:
 
@@ -400,7 +404,11 @@ Progress:
 - GOV-IMP-05 workflow validation now surfaces governance report paths with emitted quality-gate artifacts.
 - GOV-IMP-06 workflow split now supports train/validation/test partitioning with cohort leakage guard and deterministic distribution metrics.
 - GOV-IMP-07 workflow startup now enforces approved policy metadata (`approvedBy`, `approvedAt`, `effectiveFrom`) and supported policy major version checks.
-- Pending QA and data-governance review/sign-off.
+
+Decision:
+
+- Training governance policy is finalized with deterministic canonicalization, dedup/conflict preprocessing, quality-gate reporting, split-policy alignment, and approval/version guardrails.
+- Runtime verification is covered by end-to-end governance tests and linked in the PRD RTM.
 
 ---
 

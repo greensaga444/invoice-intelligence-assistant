@@ -204,6 +204,7 @@ Constraints / Non-Functional Requirements:
 | 17 | GOV-IMP-05 quality-gate validator and reporting | Governance validation summary, reject details, and conflict reports are emitted as deterministic local artifacts. | P1 | LIGHT | 14,16 | DONE |
 | 18 | GOV-IMP-06 split-policy runtime alignment | Train/validation/test partitioning enforces cohort leakage guard and emits deterministic distribution metrics. | P1 | LIGHT | 14,16 | DONE |
 | 19 | GOV-IMP-07 governance approval metadata flow | Runtime validates governance policy approval/version metadata and blocks unapproved or invalid policy manifests with actionable errors. | P1 | LIGHT | 13 | DONE |
+| 20 | GOV-IMP-08 end-to-end governance verification and traceability updates | Governance pipeline has end-to-end verification coverage and Q-016/Q-021 traceability documents are updated to resolved state. | P1 | LIGHT | 15,16,17,18,19 | DONE |
 
 Definition of Done: one line describing a distinct user-visible outcome; no two rows should share it.
 Track values: FULL (full pipeline) / LIGHT (skip PLAN)
@@ -228,6 +229,7 @@ Status values: TODO / IN PROGRESS / DONE / BLOCKED
 - [x] M11: GOV-IMP-05 quality-gate reporting baseline complete (summary/reject/conflict JSON reports + tests)
 - [x] M12: GOV-IMP-06 split-policy runtime alignment baseline complete (train/validation/test partition + cohort leakage guard + distribution metrics)
 - [x] M13: GOV-IMP-07 governance approval metadata baseline complete (approvedBy/approvedAt/effectiveFrom manifest + runtime validation checks)
+- [x] M14: GOV-IMP-08 governance end-to-end verification complete (integration test coverage + PRD/open-question/RTM traceability closure)
 
 ---
 

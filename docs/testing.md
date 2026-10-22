@@ -187,8 +187,12 @@ This document lists all current automated tests in the repository, grouped by te
 
 - WriteReports_WithValidationAndConflictData_WritesSummaryRejectAndConflictFiles
 
+### E5. GovernanceEndToEndVerificationTests (1)
+
+- TrainAndEvaluate_WithGovernancePolicyAndDataset_ProducesDeterministicGovernanceArtifacts
+
 ## Test Inventory Summary
 
-- Test classes: 19
-- Test cases: 82
+- Test classes: 20
+- Test cases: 83
 - Primary automated test project: tests/InvoiceIntelligence.Core.Tests

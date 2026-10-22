@@ -13,9 +13,9 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: GOV-IMP-07 governance approval metadata flow
+Work Item Name: GOV-IMP-08 end-to-end governance verification and traceability updates
 
-Description: Implement runtime governance policy approval/version validation with actionable error handling for unapproved or invalid manifests.
+Description: Deliver governance end-to-end verification coverage and finalize PRD/open-question/RTM traceability closure for Q-016 and Q-021.
 
 ---
 
@@ -250,10 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-Implemented `TrainingGovernancePolicyApprovalLoader` for policy status, version, and approval-metadata validation.
-Integrated policy approval check into `TrainingWorkflowService` initialization to block invalid manifests.
-Updated governance policy artifact/README/changelog to include approved metadata enforcement behavior.
-Added workflow tests covering draft-policy rejection and unsupported-version rejection.
+Added `GovernanceEndToEndVerificationTests` to validate full governance behavior across validate/train/evaluate flows.
+Verified deterministic outputs for dedup/conflict counts, split metrics, and quality-gate artifact generation.
+Updated PRD RTM with governance slice-to-evidence mapping and closed Q-016/Q-021 as resolved.
+Aligned roadmap, README, testing catalog, and work-item docs with governance closure outcomes.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 

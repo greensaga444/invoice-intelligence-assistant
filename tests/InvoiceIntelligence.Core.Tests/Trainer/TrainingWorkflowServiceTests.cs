@@ -147,6 +147,24 @@ public class TrainingWorkflowServiceTests : IDisposable
         Assert.Equal(first.Metrics.DeductionReasonAccuracy, second.Metrics.DeductionReasonAccuracy);
     }
 
+    [Fact]
+    public void ValidateDataset_WithDuplicateAndConflictRows_ReturnsGovernanceSummaryCounts()
+    {
+        var datasetPath = CreateDatasetFile([
+            new object?[] { "公司A", "2026-01-01", "文具採購", "可抵稅", "辦公用品費", "案例A" },
+            new object?[] { " 公司A ", "2026-01-01", " 文具採購 ", "可抵稅", "辦公用品費", "案例A" },
+            new object?[] { "公司A", "2026-01-01", "文具採購", "不可抵稅", "交際費", "案例B" }
+        ]);
+
+        var service = new TrainingWorkflowService(_workspaceRootPath);
+        var result = service.ValidateDataset(datasetPath);
+
+        Assert.True(result.IsValid);
+        Assert.Equal(1, result.GovernanceDuplicateCount);
+        Assert.Equal(1, result.GovernanceConflictCount);
+        Assert.Equal(1, result.ValidRows);
+    }
+
     private string CreateDatasetFile(IReadOnlyList<object?[]> rows)
     {
         var datasetPath = Path.Combine(_workspaceRootPath, $"dataset-{Guid.NewGuid():N}.xlsx");

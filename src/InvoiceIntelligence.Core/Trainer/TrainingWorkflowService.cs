@@ -13,6 +13,7 @@ public sealed class TrainingWorkflowService
     private const string PublishMetadataFileName = "publish-metadata.json";
 
     private static readonly Table3Table4CanonicalMapper CanonicalMapper = new();
+    private static readonly TrainingDatasetGovernancePreprocessor GovernancePreprocessor = new();
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -299,7 +300,9 @@ public sealed class TrainingWorkflowService
                     TotalDataRows: 0,
                     ValidRows: 0,
                     InvalidRows: 0,
-                    Issues: issues));
+                    Issues: issues,
+                    GovernanceDuplicateCount: 0,
+                    GovernanceConflictCount: 0));
         }
 
         var (worksheet, columnIndexes) = mapping.Value;
@@ -330,15 +333,19 @@ public sealed class TrainingWorkflowService
                 DeductionReason: row.DeductionReason));
         }
 
+        var governance = GovernancePreprocessor.Apply(records);
+
         var validation = new TrainingDatasetValidationResult(
-            IsValid: records.Count > 0,
+            IsValid: governance.ProcessedRecords.Count > 0,
             WorksheetName: worksheet.Name,
             TotalDataRows: totalDataRows,
-            ValidRows: records.Count,
+            ValidRows: governance.ProcessedRecords.Count,
             InvalidRows: issues.Count,
-            Issues: issues);
+            Issues: issues,
+            GovernanceDuplicateCount: governance.DuplicateCount,
+            GovernanceConflictCount: governance.ConflictCount);
 
-        return new ParsedTrainingDataset(records, validation);
+        return new ParsedTrainingDataset(governance.ProcessedRecords, validation);
     }
 
     private readonly record struct LabelTriple(string DeductibleStatus, string AccountingCategory, string DeductionReason);
@@ -366,7 +373,9 @@ public sealed record TrainingDatasetValidationResult(
     int TotalDataRows,
     int ValidRows,
     int InvalidRows,
-    IReadOnlyList<string> Issues);
+    IReadOnlyList<string> Issues,
+    int GovernanceDuplicateCount,
+    int GovernanceConflictCount);
 
 public sealed record TrainingRunResult(
     TrainingDatasetValidationResult Validation,

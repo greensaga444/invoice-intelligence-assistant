@@ -13,9 +13,9 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: GOV-IMP-03 knowledge bootstrap dedup/conflict engine
+Work Item Name: GOV-IMP-04 training dataset governance preprocessor
 
-Description: Implement knowledge bootstrap governance engine with deterministic dedup/conflict precedence and conflict audit outputs.
+Description: Implement training dataset governance preprocessor with deterministic dedup/conflict resolution and workflow-visible governance counts.
 
 ---
 
@@ -250,10 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-Implemented `KnowledgeBootstrapGovernanceEngine` with normalized dedup fingerprint and conflict identity grouping.
-Added deterministic precedence (source priority, business date, majority/lexical tie-break) for winner selection.
-Added structured conflict audit output for competing labels and selected decision path.
-Added focused unit tests for duplicate handling, source/date precedence, and conflict reporting.
+Implemented `TrainingDatasetGovernancePreprocessor` for deterministic exact-dedup and conflict resolution on canonical training rows.
+Integrated preprocessing into `TrainingWorkflowService` parse flow before split/model build.
+Extended dataset validation output with governance duplicate/conflict summary counts.
+Added focused preprocessor tests and workflow summary-count coverage.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 

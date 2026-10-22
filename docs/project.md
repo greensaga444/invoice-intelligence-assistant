@@ -200,6 +200,7 @@ Constraints / Non-Functional Requirements:
 | 13 | Q-016 and Q-021 governance-spec framework | Canonical Table3/Table4 mapping, dedup/conflict policy, and split-policy governance are defined and traceable for knowledge bootstrap and training datasets. | P1 | FULL | 6,11 | DONE |
 | 14 | GOV-IMP-02 canonical mapper and normalizer | Trainer dataset parsing resolves governed aliases and normalization rules into deterministic canonical rows with test coverage. | P1 | LIGHT | 13 | DONE |
 | 15 | GOV-IMP-03 knowledge bootstrap dedup/conflict engine | Knowledge bootstrap candidates are resolved by governance precedence with deterministic deduplication and conflict audit outputs. | P1 | LIGHT | 13,14 | DONE |
+| 16 | GOV-IMP-04 training dataset governance preprocessor | Training dataset rows are deduplicated/conflict-resolved deterministically before model build with traceable governance counts. | P1 | LIGHT | 13,14 | DONE |
 
 Definition of Done: one line describing a distinct user-visible outcome; no two rows should share it.
 Track values: FULL (full pipeline) / LIGHT (skip PLAN)
@@ -220,6 +221,7 @@ Status values: TODO / IN PROGRESS / DONE / BLOCKED
 - [x] M7: Q-016/Q-021 governance specification baseline published (mapping, dedup/conflict, and split-policy framework)
 - [x] M8: GOV-IMP-02 canonical mapper/normalizer runtime baseline complete (alias mapping + normalization + tests)
 - [x] M9: GOV-IMP-03 knowledge bootstrap governance engine baseline complete (dedup/conflict precedence + audit output + tests)
+- [x] M10: GOV-IMP-04 training governance preprocessor baseline complete (dedup/conflict preprocessing + test coverage)
 
 ---
 

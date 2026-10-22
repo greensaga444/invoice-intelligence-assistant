@@ -1,169 +1,184 @@
 # 發票智慧助理
 
-以在地部署為優先的 Windows 桌面解決方案，用於發票下載與 AI 輔助會計分析。
+以 Windows 在地部署為優先的桌面解決方案，提供發票下載、AI 輔助會計判定、人工覆核分流，以及訓練/治理流程。
 
-## 產品概述
+> 事實來源：以 `src/` 程式碼、`scripts/` 腳本、`config/` 設定範本為準。
 
-發票智慧助理協助會計團隊在本地基礎設施內，自動化處理大量發票作業流程。
+## 專案概述
 
-核心成果：
+此解決方案包含 4 個 WPF 應用程式與 1 個共用核心函式庫：
 
-- 匯入客戶清單與日期區間。
-- 以批次模式下載發票。
-- 套用分層式 AI 決策流程。
-- 匯出強化後的 Excel 結果供後續會計作業使用。
-- 將核准的人工回饋寫入知識庫。
+- **InvoiceLauncher**：整合式主控台，集中設定與模組啟動協調。
+- **InvoiceDownloader**：客戶清單匯入、MOF 驗證、批次下載發票至 Folder A。
+- **InvoiceAiProcessor**：規則/快取/RAG/本地 LLM 判定管線，輸出到 Folder B / Folder C。
+- **InvoiceTrainer**：人工回饋寫回知識庫 + 資料集驗證/訓練/評估/發布流程（UI 操作，無需 CLI）。
+- **InvoiceIntelligence.Core**：共用設定、下載器、處理器、訓練器與治理邏輯。
 
-## 架構
+## 儲存庫結構
 
-系統由兩個可獨立執行的模組組成。
+```text
+invoice-intelligence-assistant/
+|- src/
+|  |- InvoiceLauncher/
+|  |- InvoiceDownloader/
+|  |- InvoiceAiProcessor/
+|  |- InvoiceTrainer/
+|  |- InvoiceAppBootstrapper/
+|  `- InvoiceIntelligence.Core/
+|- tests/InvoiceIntelligence.Core.Tests/
+|- scripts/
+|- config/
+`- docs/
+```
 
-### 模組 A：發票下載器
+## 執行架構
 
-- 匯入客戶清單 Excel。
-- 讀取統編、公司名稱與日期區間。
-- 與 MOF 服務進行驗證。
-- 批次下載發票檔案。
-- 將原始檔案匯出到原始發票資料夾（Folder A）。
+### 端到端流程
 
-### 模組 B：發票 AI 處理器
+1. Downloader 從 `config/company-list.xlsx` 匯入客戶資料。
+2. 使用者完成 MOF 認證。
+3. Downloader 依客戶輸出 `.xlsx` 到 **Folder A**，並產生批次 `download-log-*.log`。
+4. Processor 讀取 Folder A `.xlsx`，依序執行：
+   - 規則引擎
+   - 記憶體案例快取
+   - 向量 RAG 檢索
+   - 本地啟發式 LLM 補判
+5. Processor 輸出：
+   - **Folder B**（可直接使用）
+   - **Folder C**（低信心/人工覆核）
+6. Trainer 支援：
+   - 將人工核准回饋寫入本地知識庫
+   - 模型驗證/訓練/評估/發布
 
-- 從原始發票資料夾（Folder A）讀取原始檔案。
-- 優先執行規則引擎。
-- 透過案例快取重用歷史判定。
-- 執行 RAG 檢索取得脈絡案例。
-- 對未解決紀錄使用本地 LLM 推理。
-- 將強化檔案匯出到 AI 分析結果資料夾（Folder B）。
+### 全模組流程圖
 
-決策流程：
+```mermaid
+flowchart TB
+    subgraph LA[InvoiceLauncher]
+        direction LR
+        A[主控台]
+        B[設定管理<br/>config/downloader.ini + config/processor.ini]
+        C[啟動 Downloader]
+        D[啟動 Processor]
+        E[啟動 Trainer]
+        A --> B
+        A --> C
+        A --> D
+        A --> E
+    end
 
-客戶清單 -> 發票下載器 -> 原始發票資料夾 -> 規則引擎 -> 案例快取 -> RAG -> LLM -> AI 分析結果資料夾 -> 人工知識回饋
+    subgraph DW[InvoiceDownloader]
+        direction LR
+        G[MOF 驗證]
+        H[批次下載]
+        I[Folder A<br/>原始發票 .xlsx + download-log]
+        G --> H --> I
+    end
 
-## 技術堆疊
+    subgraph PR[InvoiceAiProcessor]
+        direction LR
+        J[Rule Engine]
+        K[Case Cache]
+        L2[Vector RAG]
+        M[Local Heuristic LLM]
+        N[Folder B<br/>高信心輸出]
+        O[Folder C<br/>低信心人工覆核]
+        J --> K --> L2 --> M
+        M --> N
+        M --> O
+    end
 
-桌面端：
+    subgraph TR[InvoiceTrainer]
+        direction LR
+        P[手動核准回饋]
+        Q[data/knowledge/knowledge-cases.json]
+        R[資料集驗證]
+        S[模型訓練]
+        T[模型評估]
+        U[模型發布]
+        V[build/training/*]
+        P --> Q
+        R --> S --> T --> U --> V
+    end
 
-- C#
-- .NET 8
-- WPF
+    F[輸入資料<br/>config/company-list.xlsx] --> G
+    C --> G
+    I --> J
+    D --> J
+    O --> P
+    O --> R
+    N --> R
+    E --> P
+    E --> R
+```
 
-AI 與檢索：
+### 部署執行目錄
 
-- Ollama
-- Qwen3 8B
-- BGE-M3
-- Qdrant
+發佈腳本會產生啟動包裝程式，並將實際執行檔移入 `libs/`。
 
-設定與資料：
+```text
+InvoiceIntelligence/
+|- InvoiceLauncher.exe
+|- libs/
+|- downloader/
+|  |- InvoiceDownloader.exe
+|  `- libs/
+|- processor/
+|  |- InvoiceAiProcessor.exe
+|  `- libs/
+|- trainer/
+|  |- InvoiceTrainer.exe
+|  `- libs/
+`- config/
+   |- downloader.ini
+   `- processor.ini
+```
 
-- INI 設定檔
-- 以 Excel 為主的輸入與輸出
-- 本地檔案系統資料夾
+`InvoiceAppBootstrapper` 會啟動對應 `libs\<AppName>.exe`。
 
-## 產品範圍
+## 環境需求
 
-包含：
+- **作業系統**：Windows（桌面目標為 `net8.0-windows`）。
+- **.NET SDK**：
+  - 建置與發佈需 SDK 8+。
+  - 執行測試目前需 SDK 9+（測試專案目標 `net9.0-windows`）。
+- PowerShell 5.1+。
 
-- 客戶清單匯入
-- 發票下載
-- 本地 AI 分析
-- 強化版 Excel 匯出
-- 命名規則設定
-- 人工知識回饋
+## 開發快速開始
 
-不包含：
-
-- ERP 整合
-- 行動應用程式
-- 公有雲部署
-- 未經核准的自動學習
-- 多租戶 SaaS
-
-## 非功能性目標
-
-- 支援 Windows 10 與 Windows 11
-- 啟動時間低於 5 秒
-- 每批支援 150 家客戶公司
-- 每次執行可處理 15,000 至 30,000 筆發票
-- 檔案產生成功率高於 99%
-- 不呼叫外部 AI 推理服務
-
-## 在地化政策
-
-- 開發與技術文件：英文
-- 使用者介面、輸出內容與訊息：繁體中文
-
-## 儲存庫文件
-
-- 產品需求索引：docs/prd/00-index.md
-- 主 PRD：docs/prd/01-master-prd.md
-- 專案定義與路線圖：docs/project.md
-- 分支執行流程：docs/status.md
-- 測試目錄與測項清單：docs/testing.md
-- 資料治理政策合約（Q-016/Q-021）：docs/config/governance/
-- 模型切換 release-gate 政策合約（Q-022）：docs/config/release-gate/
-- 程式風格基線與語言附錄：docs/style/
-
-## 目前可執行骨架
-
-- 解決方案檔：InvoiceIntelligenceAssistant.slnx
-- 應用程式：src/InvoiceLauncher、src/InvoiceDownloader、src/InvoiceAiProcessor、src/InvoiceTrainer
-- 共用核心：src/InvoiceIntelligence.Core
-- 設定檔範本：config/downloader.ini、config/processor.ini
-- 主控台（InvoiceLauncher）提供統一設定視窗：可集中編輯根目錄 config 下的 downloader.ini 與 processor.ini，並共用單一「命名規則」同步套用至 Downloader 與 Processor。
-- 主控台設定視窗可調整輸出分流關鍵欄位：invoiceFileSuffix、allowanceFileSuffix、invoiceOutputLabel、allowanceOutputLabel。
-- 主控台已新增 Trainer 入口：可直接啟動 Trainer 模組。
-- 子模組（Downloader / Processor）獨立執行時不提供設定 UI。
-- Downloader 已支援客戶清單 Excel 匯入、MOF 驗證，以及批次下載原始發票 Excel 至原始發票資料夾（Folder A）並輸出下載記錄。
-- AI Processor 已支援原始發票資料夾（Folder A）原始發票讀取、分階段 AI 決策流程（Rule Engine -> Case Cache -> RAG -> LLM），並可將保留原始欄位且附加 AI 欄位的強化 Excel 匯出至 AI 分析結果資料夾（Folder B）。
-- AI Processor 已支援低信心人工覆核流程：可設定信心門檻，低於門檻的公司來源群組（同檔名基底，`-invoice` / `-allowance` 視為同組）會匯出至人工覆核資料夾（Folder C），待人工覆核後可再複製回 AI 分析結果資料夾（Folder B）。
-- AI Trainer 已支援手動知識回饋：可勾選人工核准紀錄並更新本地知識庫，且後續執行會將已核准案例載入 RAG 檢索。
-- AI Processor 目前使用本地向量相似度檢索（Vector RAG baseline）進行參考案例排序，維持離線執行且不依賴外部 AI API。
-- AI Trainer 已支援免 CLI 訓練流程 UI：可在應用程式內完成資料集驗證、訓練、評估與發布模型（發布人自動取用目前使用者，無需手動輸入）。
-- AI Trainer 訓練資料解析已導入 Table3/Table4 canonical mapper：可依治理別名欄位對應並執行字串正規化與可抵稅標籤標準化。
-- AI Core 已新增知識 bootstrap 治理引擎：可對候選資料執行 dedup/conflict 決策並輸出衝突稽核資訊。
-- AI Trainer 已新增訓練資料治理預處理：可在訓練前執行 deterministic dedup/conflict 決策並回報治理統計。
-- AI Trainer 已新增治理品質報告輸出：可產生 validation summary、reject report、conflict report 三種 JSON 稽核檔。
-- AI Trainer 已完成 split-policy runtime 對齊：可輸出 train/validation/test 三分區統計並套用同 cohort 泄漏防護。
-- AI Trainer 已新增治理政策核准檢查：僅接受已核准且版本受支援的 governance policy manifest，避免未核准規則進入訓練流程。
-- AI Core 已補齊治理端到端驗證：以整體測試覆蓋 mapping、dedup/conflict、quality-gate、split-policy 與政策核准檢查，並完成 Q-016/Q-021 traceability 收斂。
-- AI Core 已新增模型 release-gate evaluator：可依固定閾值輸出 PASS/WARN/FAIL/BLOCK，並提供 rollback trigger 決策訊號。
-- Q-013 處理量驗證已完成 production-like 證據附檔：涵蓋 150 客戶與 30,000 筆資料情境之執行結果與機器規格紀錄。
-- 目前版本已完成在地化與品質閘道：使用者可見訊息與輸出欄位維持繁體中文，且已加入離線 AI 驗證與目標規模效能測試。
-
-## 開發與交付快速路徑
-
-### PowerShell 前置（僅當前視窗）
-
-若遇到 `.ps1` 無法執行，先在同一個 PowerShell 視窗執行：
+### 1) 環境自檢
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-```
-
-### 1) 開發環境自檢（Git Clone 後第一步）
-
-使用下列腳本檢查機器是否具備可建置條件（.NET SDK + restore/build）：
-
-```powershell
 .\scripts\check-developer-environment.ps1
 ```
 
-常用參數：
-
-- `-Configuration Release|Debug`
-
-### 2) 本機驗證（開發者）
+可選：
 
 ```powershell
-dotnet build InvoiceIntelligenceAssistant.slnx -v minimal
-dotnet test InvoiceIntelligenceAssistant.slnx -v minimal
-dotnet format InvoiceIntelligenceAssistant.slnx --verify-no-changes
+.\scripts\check-developer-environment.ps1 -Configuration Debug
 ```
 
-## 模組化部署指南（可只交付單一模組）
+### 2) 還原 / 建置 / 測試
 
-### 3) 一鍵打包腳本
+```powershell
+dotnet restore .\InvoiceIntelligenceAssistant.slnx -v minimal
+dotnet build .\InvoiceIntelligenceAssistant.slnx -c Release --no-restore -v minimal
+dotnet test .\tests\InvoiceIntelligence.Core.Tests\InvoiceIntelligence.Core.Tests.csproj -c Release -v minimal
+```
+
+### 3) 由原始碼執行
+
+```powershell
+dotnet run --project .\src\InvoiceLauncher\InvoiceLauncher.csproj
+dotnet run --project .\src\InvoiceDownloader\InvoiceDownloader.csproj
+dotnet run --project .\src\InvoiceAiProcessor\InvoiceAiProcessor.csproj
+dotnet run --project .\src\InvoiceTrainer\InvoiceTrainer.csproj
+```
+
+## 打包與部署
+
+### 發佈腳本
 
 ```powershell
 .\scripts\publish-downloader.ps1
@@ -172,197 +187,160 @@ dotnet format InvoiceIntelligenceAssistant.slnx --verify-no-changes
 .\scripts\publish-all.ps1
 ```
 
-常見用法：
-
-```powershell
-.\scripts\publish-downloader.ps1 -Runtime win-x64 -Configuration Release
-.\scripts\publish-processor.ps1 -Runtime win-x64 -Configuration Release
-.\scripts\publish-trainer.ps1 -Runtime win-x64 -Configuration Release
-.\scripts\publish-all.ps1 -Runtime win-x64 -Configuration Release
-.\scripts\publish-all.ps1 -Runtime win-x64 -Configuration Release -SelfContained
-```
-
-說明：
-
-- publish 腳本在打包前會自動執行 `scripts/check-developer-environment.ps1` 作為建置環境閘道。
-- 若確定目前機器已完成驗證，可加上 `-SkipDeveloperEnvironmentCheck` 跳過（不建議於正式交付流程使用）。
-
 常用參數：
 
-- `-Runtime win-x64|win-x86|win-arm64`：目標 Windows RID。
-- `-Configuration Release|Debug`：建置組態。
-- `-SelfContained`：改為 self-contained 打包（相容舊版行為，不需客戶端預先安裝 .NET Runtime）。
-- `-FrameworkDependent`：維持舊參數相容；目前預設即為 framework-dependent。不可與 `-SelfContained` 同時使用。
-- `-SkipDeveloperEnvironmentCheck`：略過建置前 `check-developer-environment.ps1` 檢查。
-- `-OutputPath`（publish-downloader / publish-processor / publish-trainer）：指定輸出根路徑（預設 `build/deploy/InvoiceIntelligence`）。
-- `-DeployRoot`（publish-all）：指定輸出根路徑（預設 `build/deploy`，整包在 `build/deploy/InvoiceIntelligence`）。
-- `-SkipZip`（publish-all）：僅產出資料夾，不建立 zip。
+- `-Configuration Release|Debug`
+- `-Runtime win-x64|win-x86|win-arm64`
+- `-SelfContained`（否則為 framework-dependent）
+- `-SkipDeveloperEnvironmentCheck`
+- `-OutputPath`（單模組）/ `-DeployRoot`（`publish-all.ps1`）
+- `-SkipZip`（僅 `publish-all.ps1`）
 
-輸出與預設：
-
-- 三個 publish 腳本預設輸出皆在 `build/deploy/InvoiceIntelligence`。
-- 預設為 framework-dependent 打包。
-- 若要改為 self-contained（舊行為），請加上 `-SelfContained`。
-
-### 4) 客戶端環境檢查（check-customer-environment.ps1）
-
-`check-customer-environment.ps1` 用於在「全新客戶主機」檢查執行環境是否就緒。
-此腳本為主機前置檢查，不負責驗證交付包內的 exe/dll 檔案結構。
-
-檢查內容：
-
-- 作業系統是否為 Windows。
-- 作業系統架構是否符合目標 RID（`win-x64|win-x86|win-arm64`）。
-- PowerShell 版本是否為 5.1 以上。
-- 若為 framework-dependent 打包，會檢查 `dotnet` 與所需 shared runtime 是否已安裝（`Microsoft.NETCore.App`、`Microsoft.WindowsDesktop.App`）。
-- 若為 self-contained 打包，可略過 shared runtime 需求檢查。
-
-參數：
-
-- `-Profile all|downloader|processor|trainer`：指定檢查範圍，預設為 `all`。
-- `-PublishMode framework-dependent|self-contained`：指定交付模式，預設 `framework-dependent`。
-- `-Runtime win-x64|win-x86|win-arm64`：指定客戶端目標 RID，預設 `win-x64`。
-- `-RequiredRuntimeVersion <major.minor.patch>`：framework-dependent 模式下的最低 Runtime 版本，預設 `8.0.0`。
-- `-SkipDotnetRuntimeCheck`：略過 .NET Runtime 檢查。
-
-範例：
+### 客戶端環境檢查
 
 ```powershell
-# framework-dependent 交付（預設）
-.\scripts\check-customer-environment.ps1 -PublishMode framework-dependent -Runtime win-x64 -RequiredRuntimeVersion 8.0.0 -Profile all
-
-# self-contained 交付（不要求 shared runtime）
-.\scripts\check-customer-environment.ps1 -PublishMode self-contained -Runtime win-x64 -Profile all
-
-# 若在客戶端部署資料夾中執行
-.\check-customer-environment.ps1 -PublishMode framework-dependent -Runtime win-x64 -Profile all
+.\scripts\check-customer-environment.ps1 -Profile all -PublishMode framework-dependent -Runtime win-x64 -RequiredRuntimeVersion 8.0.0
 ```
 
 回傳碼：
 
-- `0`：Environment status = READY
-- `1`：Environment status = NOT READY
+- `0`：可部署
+- `1`：不可部署
 
-### 部署資料夾結構
+## 設定檔說明
 
-整合部署（Downloader + Processor + Trainer + 主控台）：
+主要設定檔：
 
-```text
-InvoiceIntelligence/
-|-- InvoiceLauncher.exe
-|-- libs/
-|-- downloader/
-|   `-- libs/
-|-- processor/
-|   `-- libs/
-|-- trainer/
-|   `-- libs/
-`-- config/
-    |-- downloader.ini
-    `-- processor.ini
-```
+- `config/downloader.ini`
+- `config/processor.ini`
 
-只部署 Downloader：
+### `downloader.ini`
 
-```text
-InvoiceIntelligence/
-|-- downloader/
-|   `-- libs/
-`-- config/
-    `-- downloader.ini
-```
+| 區段 | 欄位 | 是否必填 | 預設值 | 說明 |
+|---|---|---|---|---|
+| `module` | `name` | 是 | — | 通常為 `InvoiceDownloader` |
+| `paths` | `folderA` | 是 | — | 原始輸出資料夾 |
+| `paths` | `folderB` | 是 | — | 保留/相容用途路徑 |
+| `input` | `customerListFile` | 否 | `config\company-list.xlsx` | 客戶清單工作簿 |
+| `output` | `fileNamingRule` | 是 | — | 至少需包含一個 placeholder |
+| `output` | `invoiceFileSuffix` | 否 | `invoice` | 僅允許英數、`-`、`_` |
+| `output` | `allowanceFileSuffix` | 否 | `allowance` | 僅允許英數、`-`、`_` |
+| `mof` | `account` | 是 | — | MOF 帳號 |
+| `mof` | `officialApiBaseUrl` | 否* | 官方 MOF URL | 當明確設定 `invoiceDownloadMode=official` 時必填 |
+| `mof` | `appId` | 條件式 | 回退到 `appKey` | 若空值則使用 `appKey` |
+| `mof` | `appKey` | 是 | — | 同時可作為 appId 回退值 |
+| `mof` | `passwordEncrypted` | 否 | 空字串 | Windows DPAPI 加密密碼 |
+| `mof` | `invoiceDownloadMode` | 否 | `official` | 目前僅支援 `official` |
 
-只部署 Processor：
+### `processor.ini`
 
-```text
-InvoiceIntelligence/
-|-- processor/
-|   `-- libs/
-`-- config/
-    `-- processor.ini
-```
+| 區段 | 欄位 | 是否必填 | 預設值 | 說明 |
+|---|---|---|---|---|
+| `module` | `name` | 是 | — | 通常為 `InvoiceAiProcessor` |
+| `paths` | `folderA` | 是 | — | 輸入資料夾（僅讀 `.xlsx`） |
+| `paths` | `folderB` | 是 | — | AI 輸出資料夾 |
+| `paths` | `folderC` | 否 | `data\folder-c-review` | 人工覆核資料夾 |
+| `output` | `fileNamingRule` | 是 | — | 使用命名 placeholder |
+| `output` | `invoiceOutputLabel` | 否 | `SalesInvoiceDetail-T3` | 輸出檔名尾碼 |
+| `output` | `allowanceOutputLabel` | 否 | `PurchaseVoucherDetail-T4` | 輸出檔名尾碼 |
+| `output` | `invoiceFileSuffix` | 否 | `invoice` | 來源檔分類尾碼 |
+| `output` | `allowanceFileSuffix` | 否 | `allowance` | 來源檔分類尾碼 |
+| `review` | `confidenceThreshold` | 否 | `0.80` | 0 到 1 之間小數 |
+| `knowledge` | `repositoryFile` | 否 | `data\knowledge\knowledge-cases.json` | 本地知識庫檔案 |
 
-- 每個可執行模組（主控台、Downloader、Processor、Trainer）根目錄保留啟動用 `*.exe` 包裝器；實際執行檔與所有 `.dll` 皆位於 `libs/`。
+### 命名規則 Placeholder
 
-### 部署流程 0：主控台整合部署（推薦）
+允許的 placeholder：
 
-步驟：
+- `{taxId}`
+- `{companyName}`
+- `{dateFrom}`
+- `{dateTo}`
+- `{timestamp}`
 
-1. 執行 `scripts/publish-all.ps1`。
-2. 交付 `build/deploy/InvoiceIntelligence` 整個資料夾給客戶端。
-3. 客戶端直接執行 `build/deploy/InvoiceIntelligence/InvoiceLauncher.exe`。
-4. 在主控台使用「設定」集中管理 `config/downloader.ini` 與 `config/processor.ini`。
-5. 如需執行完整流程，在主控台按「執行完整流程」（先啟動 Downloader，關閉後可接續啟動 Processor）。
-6. 如需獨立執行單一模組，請進入對應子資料夾：
-	`build/deploy/InvoiceIntelligence/downloader/InvoiceDownloader.exe`、`build/deploy/InvoiceIntelligence/processor/InvoiceAiProcessor.exe` 或 `build/deploy/InvoiceIntelligence/trainer/InvoiceTrainer.exe`。
-	若要使用訓練流程，請由主控台點選「開啟 Trainer」啟動 Trainer 模組。
-7. 子模組獨立執行時不提供設定 UI。
+至少需包含一個 placeholder。
 
-流程：
+## 核心工作流程
 
-```mermaid
-flowchart LR
-		A[InvoiceLauncher.exe] --> B[downloader 子資料夾]
-		A --> C[processor 子資料夾]
-		A --> D[trainer 子資料夾]
-		B --> E[InvoiceDownloader.exe]
-		C --> F[InvoiceAiProcessor.exe]
-		D --> G[InvoiceTrainer.exe]
-```
+### 下載流程
 
-### 部署流程 A：只部署 Downloader（模組 A）
+1. 匯入客戶清單（`.xlsx`）。
+2. 驗證 MOF 工作階段。
+3. 執行批次下載。
+4. 在 Folder A 產生每客戶輸出檔與 `download-log-*.log`。
 
-步驟：
+### 處理流程
 
-1. 執行 `scripts/publish-downloader.ps1`。
-2. 交付 `build/deploy/InvoiceIntelligence` 整個資料夾給客戶端（包含 `downloader` 與 `config`）。
-3. 確認 `config/downloader.ini` 參數（folderA=原始發票資料夾、folderB=AI 分析結果資料夾、mof.account、mof.appId、mof.appKey、mof.passwordEncrypted）。
-4. 設定 `mof.officialApiBaseUrl`（下載模式固定為 `official`）。
-5. 客戶端執行 `downloader/InvoiceDownloader.exe`。
-6. 驗證是否成功輸出檔案到原始發票資料夾（Folder A），並產生下載紀錄 `.log`。
-	- official 模式：每個客戶同時產生 2 個 `.xlsx`（`-invoice` 與 `-allowance`）。
-7. 此模式不提供設定 UI，請直接編輯 `config/downloader.ini`。
+1. 讀取 Folder A `.xlsx`。
+2. 每筆資料依序經過 rule engine -> case cache -> vector RAG -> local heuristic LLM。
+3. 依來源檔群組與信心門檻進行分流。
+4. 高信心輸出到 Folder B，低信心群組輸出到 Folder C。
 
-流程：
+### 訓練流程
 
-```mermaid
-flowchart LR
-		A[客戶清單 Excel] --> B[InvoiceDownloader.exe]
-		B --> C[原始發票資料夾原始檔]
-		B --> D[下載紀錄 log]
-```
+1. **手動知識回饋分頁**：勾選核准資料並寫回知識庫。
+2. **訓練流程分頁**：
+   - 選擇資料集 `.xlsx`
+   - 驗證資料集
+   - 訓練模型（`build/training/staged-model.json`）
+   - 評估模型（`build/training/evaluation-report.json`）
+   - 發布模型（`build/training/published-model.json` + `publish-metadata.json`）
 
-### 部署流程 B：只部署 AI Processor（模組 B）
+資料集驗證需具備以下欄位（或其別名）：
 
-步驟：
+- 公司名稱
+- 發票日期
+- 品名
+- 可抵稅標籤
+- 建議科目
+- 判定原因
 
-1. 執行 `scripts/publish-processor.ps1`。
-2. 交付 `build/deploy/InvoiceIntelligence` 整個資料夾給客戶端（包含 `processor` 與 `config`）。
-3. 確認 `config/processor.ini` 參數（folderA=原始發票資料夾、folderB=AI 分析結果資料夾、output.fileNamingRule、knowledge.repositoryFile）。
-4. 將待分析原始檔放入原始發票資料夾（Folder A）。
-5. 客戶端執行 `processor/InvoiceAiProcessor.exe`。
-6. 驗證 AI 分析結果資料夾（Folder B）是否產生強化 Excel，並可選擇執行人工回饋更新知識庫。
-7. 此模式不提供設定 UI，請直接編輯 `config/processor.ini`。
+治理品質報告輸出位置：
 
-流程：
+- `build/training/quality-gates/validation-summary.json`
+- `build/training/quality-gates/reject-report.json`
+- `build/training/quality-gates/conflict-report.json`
 
-```mermaid
-flowchart LR
-		A[原始發票資料夾原始檔] --> B[InvoiceAiProcessor.exe]
-		B --> C[Rule Engine]
-		C --> D[Case Cache]
-		D --> E[RAG]
-		E --> F[LLM]
-		F --> G[AI 分析結果資料夾強化 Excel]
-		G --> H[人工核准回饋]
-		H --> I[knowledge-cases.json]
-```
+## 公開 API 與擴充點
 
-### 模組相依與格式注意事項
+本儲存庫目前**不提供** HTTP/REST API。
 
-- Processor 目前只會讀取原始發票資料夾（Folder A）下的 `.xlsx` 檔案。
-- Downloader 固定使用 official 模式，並輸出 `.xlsx`。
-- Downloader 會分別輸出進銷項與折讓兩個檔案（檔名尾碼為 `-invoice`、`-allowance`）。
-- 若要將 Downloader 輸出直接餵給 Processor，請確保原始發票資料夾（Folder A）內容符合 Processor 期望的 `.xlsx` 欄位格式。
+主要擴充點為 `src/InvoiceIntelligence.Core` 的介面：
 
-兩個桌面模組會在啟動時讀取對應 INI 設定並驗證命名規則占位符；MOF 官方 API 憑證（appId/appKey/password）僅適用於 Downloader。
+- `ICustomerListImporter`
+- `IMofAuthenticator`
+- `IMofOfficialInvoiceApiClient`
+- `IBatchInvoiceDownloader`
+- `IOfficialInvoiceExporter`
+- `IRuleEngine`
+- `ICaseCache`
+- `IRagRetriever`
+- `ILocalLlmAnalyzer`
+- `IKnowledgeCaseRepository`
+- `IModuleConfigurationLoader`
+
+## 環境變數
+
+應用模組執行不依賴自訂環境變數。
+
+PowerShell 腳本僅讀取標準系統環境變數：
+
+- `OS`
+- `PROCESSOR_ARCHITECTURE`
+- `COMPUTERNAME`
+
+## CI 與容器化狀態
+
+依目前儲存庫掃描結果：
+
+- 未找到 Dockerfile。
+- `.github/workflows` 下未找到 GitHub Actions 工作流程。
+
+## 相關文件
+
+- PRD 索引：`docs/prd/00-index.md`
+- 主 PRD：`docs/prd/01-master-prd.md`
+- 專案定義：`docs/project.md`
+- 測試文件：`docs/testing.md`
+- 治理政策設定：`docs/config/governance/`
+- release gate 設定：`docs/config/release-gate/`

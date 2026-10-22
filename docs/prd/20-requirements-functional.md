@@ -27,6 +27,7 @@
 - **FR-017**: The decision pipeline shall attempt case-cache resolution using vendor tax ID + item name + rounded net amount key.
 - **FR-018**: The decision pipeline shall run local vector-style retrieval against built-in and approved knowledge cases when unresolved.
 - **FR-019**: The local analyzer shall return structured decision output (`DeductibleStatus`, `DeductionReason`, `AccountingCategory`, `ConfidenceScore`).
+  - See open question `Q-004` in `docs/prd/90-open-questions.md` for local heuristic vs local model runtime decision.
 - **FR-020**: The pipeline shall return per-record source stage and aggregate stage summary counters.
 - **FR-021**: Review partitioning shall route an entire source-group to Folder C if any record confidence is below configured threshold.
 - **FR-022**: Export shall generate unique output files in Folder B/Folder C according to naming rule and output labels.

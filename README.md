@@ -128,6 +128,7 @@ AI 與檢索：
 - AI Trainer 已新增治理政策核准檢查：僅接受已核准且版本受支援的 governance policy manifest，避免未核准規則進入訓練流程。
 - AI Core 已補齊治理端到端驗證：以整體測試覆蓋 mapping、dedup/conflict、quality-gate、split-policy 與政策核准檢查，並完成 Q-016/Q-021 traceability 收斂。
 - AI Core 已新增模型 release-gate evaluator：可依固定閾值輸出 PASS/WARN/FAIL/BLOCK，並提供 rollback trigger 決策訊號。
+- Q-013 處理量驗證已完成 production-like 證據附檔：涵蓋 150 客戶與 30,000 筆資料情境之執行結果與機器規格紀錄。
 - 目前版本已完成在地化與品質閘道：使用者可見訊息與輸出欄位維持繁體中文，且已加入離線 AI 驗證與目標規模效能測試。
 
 ## 開發與交付快速路徑

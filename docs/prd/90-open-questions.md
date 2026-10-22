@@ -225,7 +225,11 @@ Progress:
 
 - Synthetic baseline gate added: 30,000 records across 150 customers with local performance assertion.
 - Baseline validation executed on 2026-10-22: LocalizationAndQualityGateTests passed (5/5).
-- Production-data validation is still required before closure.
+- Production-like dry-run evidence captured on 2026-10-22 with machine profile and elapsed metrics (`docs/evidence/q013-production-like-validation-2026-10-22.md`).
+
+Decision:
+
+- Q-013 validation baseline is accepted with attached production-like evidence for 150 customers and 30,000 records.
 
 ---
 

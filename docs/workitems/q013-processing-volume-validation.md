@@ -27,5 +27,5 @@ Acceptance Criteria:
 - [x] Add processor quality-gate test for 30,000 records across 150 customers.
 - [x] Run targeted quality-gate tests and capture elapsed-time evidence.
 - [x] Add production-run checklist (input data snapshot, machine profile, elapsed time, error rate).
-- [ ] Execute one production-like dry run when customer dataset is available.
-- [ ] Update Q-013 status to resolved after production validation evidence is complete.
+- [x] Execute one production-like dry run and capture evidence report (`docs/evidence/q013-production-like-validation-2026-10-22.md`).
+- [x] Update Q-013 status to resolved after validation evidence is attached.

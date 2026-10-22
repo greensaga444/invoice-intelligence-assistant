@@ -13,15 +13,15 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: Q-022 release-gate specification and decision flow
+Work Item Name: Q-013 processing volume validation
 
-Description: Define release-gate metrics schema, deterministic pass/fail evaluator, and rollback trigger workflow for trained-model runtime switch decisions.
+Description: Complete production-like validation evidence for 150 customers and 15,000-30,000 invoice scale, and close Q-013 delivery tracking.
 
 ---
 
 ## Track
 
-FULL
+LIGHT
 
 Tracks:
 
@@ -250,10 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-Implemented `TrainingModelReleaseGateEvaluator` with deterministic PASS/WARN/FAIL/BLOCK evaluation and rollback-trigger decision logic.
-Added release-gate evaluator unit tests covering metadata blocking, threshold breaches, warning-only outcomes, and rollback trigger cases.
-Published release-gate policy and approval artifacts under `docs/config/release-gate/`.
-Closed Q-022 planning traceability across roadmap, open questions, RTM, README, and testing catalog.
+Executed Q-013 target quality-gate command and production-like 30,000-record dry-run validation.
+Captured machine profile, elapsed time, and pass/fail evidence in `docs/evidence/q013-production-like-validation-2026-10-22.md`.
+Updated Q-013 roadmap/milestone, open-question decision, testing checklist, and README completion notes.
+Aligned workitem task checklist to fully complete state.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 

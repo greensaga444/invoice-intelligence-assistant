@@ -151,6 +151,7 @@ This document lists all current automated tests in the repository, grouped by te
 | Output success rate | Successful output files divided by expected files |
 
 - Q-013 can be marked resolved only after production-like run evidence is attached and reviewed.
+- Evidence report (2026-10-22): `docs/evidence/q013-production-like-validation-2026-10-22.md`.
 
 ## Category E: Trainer Tests
 

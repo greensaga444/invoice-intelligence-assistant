@@ -283,6 +283,7 @@ Progress:
 - Governance-spec draft started (mapping matrix, dedup/conflict policy, quality gates).
 - Initial governance contract artifact published: `docs/config/governance/table3-table4-governance-policy.v1.json` (v1.0.0 draft).
 - GOV-IMP-02 runtime baseline implemented in trainer path: alias-based canonical mapper and deterministic normalization.
+- GOV-IMP-03 processor governance engine implemented: knowledge-bootstrap dedup/conflict resolution with deterministic precedence and conflict audit output.
 - Pending product and data-governance review/sign-off.
 
 ---
@@ -390,6 +391,7 @@ Progress:
 - Governance-spec draft includes deterministic split-policy framework by company and time window.
 - Split-policy contract captured in `docs/config/governance/table3-table4-governance-policy.v1.json` (v1.0.0 draft).
 - GOV-IMP-02 trainer parsing now canonicalizes deductible-status variants and normalized row values before split.
+- GOV-IMP-03 conflict-resolution precedence baseline implemented and test-covered for governance pipeline reuse.
 - Pending QA and data-governance review/sign-off.
 
 ---

@@ -108,6 +108,13 @@ This document lists all current automated tests in the repository, grouped by te
 - SaveApprovedResults_DuplicateRows_AreSkipped
 - ApplyApprovedResults_NoSelection_DoesNotWriteKnowledgeRepository
 
+### C5. KnowledgeBootstrapGovernanceEngineTests (4)
+
+- Resolve_WithDuplicateFingerprint_ReturnsSingleAcceptedRowAndDuplicateCount
+- Resolve_WithDifferentSources_PrefersManualApprovedFeedback
+- Resolve_WithSameSource_PrefersNewestInvoiceDate
+- Resolve_WithCompetingLabels_GeneratesConflictAudit
+
 ## Category D: Integration and Quality-Gate Tests
 
 ### D1. Downloader Integration Tests
@@ -166,6 +173,6 @@ This document lists all current automated tests in the repository, grouped by te
 
 ## Test Inventory Summary
 
-- Test classes: 16
-- Test cases: 68
+- Test classes: 17
+- Test cases: 72
 - Primary automated test project: tests/InvoiceIntelligence.Core.Tests

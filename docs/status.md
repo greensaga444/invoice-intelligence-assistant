@@ -13,15 +13,15 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: GOV-IMP-02 canonical mapper and normalizer
+Work Item Name: GOV-IMP-03 knowledge bootstrap dedup/conflict engine
 
-Description: Implement trainer runtime canonical mapper/normalizer for Table3/Table4 alias mapping, string normalization, and deductible-status canonicalization.
+Description: Implement knowledge bootstrap governance engine with deterministic dedup/conflict precedence and conflict audit outputs.
 
 ---
 
 ## Track
 
-LIGHT
+FULL
 
 Tracks:
 
@@ -250,10 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-Implemented dedicated Table3/Table4 canonical mapper component in trainer core with governed alias resolution.
-Refactored `TrainingWorkflowService` dataset parsing to consume mapper-driven canonical rows.
-Added focused mapper tests for alias mapping, whitespace normalization, and deductible-status vocabulary checks.
-Updated roadmap/workitem/open-question/testing/README docs for GOV-IMP-02 delivery traceability.
+Implemented `KnowledgeBootstrapGovernanceEngine` with normalized dedup fingerprint and conflict identity grouping.
+Added deterministic precedence (source priority, business date, majority/lexical tie-break) for winner selection.
+Added structured conflict audit output for competing labels and selected decision path.
+Added focused unit tests for duplicate handling, source/date precedence, and conflict reporting.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 

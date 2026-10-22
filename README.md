@@ -120,6 +120,7 @@ AI 與檢索：
 - AI Processor 目前使用本地向量相似度檢索（Vector RAG baseline）進行參考案例排序，維持離線執行且不依賴外部 AI API。
 - AI Trainer 已支援免 CLI 訓練流程 UI：可在應用程式內完成資料集驗證、訓練、評估與發布模型（發布人自動取用目前使用者，無需手動輸入）。
 - AI Trainer 訓練資料解析已導入 Table3/Table4 canonical mapper：可依治理別名欄位對應並執行字串正規化與可抵稅標籤標準化。
+- AI Core 已新增知識 bootstrap 治理引擎：可對候選資料執行 dedup/conflict 決策並輸出衝突稽核資訊。
 - 目前版本已完成在地化與品質閘道：使用者可見訊息與輸出欄位維持繁體中文，且已加入離線 AI 驗證與目標規模效能測試。
 
 ## 開發與交付快速路徑

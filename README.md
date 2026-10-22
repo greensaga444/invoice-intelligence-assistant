@@ -124,6 +124,7 @@ AI 與檢索：
 - AI Trainer 已新增訓練資料治理預處理：可在訓練前執行 deterministic dedup/conflict 決策並回報治理統計。
 - AI Trainer 已新增治理品質報告輸出：可產生 validation summary、reject report、conflict report 三種 JSON 稽核檔。
 - AI Trainer 已完成 split-policy runtime 對齊：可輸出 train/validation/test 三分區統計並套用同 cohort 泄漏防護。
+- AI Trainer 已新增治理政策核准檢查：僅接受已核准且版本受支援的 governance policy manifest，避免未核准規則進入訓練流程。
 - 目前版本已完成在地化與品質閘道：使用者可見訊息與輸出欄位維持繁體中文，且已加入離線 AI 驗證與目標規模效能測試。
 
 ## 開發與交付快速路徑

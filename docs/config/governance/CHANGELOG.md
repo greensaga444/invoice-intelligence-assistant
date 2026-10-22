@@ -1,5 +1,10 @@
 # Governance Policy Changelog
 
+## 1.0.1 - 2026-10-22
+
+- Marked policy status as `approved` and populated `approvedBy`, `approvedAt`, and `effectiveFrom` metadata.
+- Declared runtime enforcement expectation for policy approval/version validation flow.
+
 ## 1.0.0 - 2026-10-22
 
 - Added initial governance policy artifact for Q-016 and Q-021.

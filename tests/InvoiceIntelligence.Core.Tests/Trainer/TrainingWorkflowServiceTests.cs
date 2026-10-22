@@ -11,6 +11,7 @@ public class TrainingWorkflowServiceTests : IDisposable
     {
         _workspaceRootPath = Path.Combine(Path.GetTempPath(), "training-workflow-tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_workspaceRootPath);
+        WriteGovernancePolicyFile();
     }
 
     [Fact]
@@ -99,6 +100,26 @@ public class TrainingWorkflowServiceTests : IDisposable
         var missingPath = Path.Combine(_workspaceRootPath, "missing-dataset.xlsx");
 
         Assert.Throws<FileNotFoundException>(() => service.ValidateDataset(missingPath));
+    }
+
+    [Fact]
+    public void CreateService_WithDraftGovernancePolicy_ThrowsInvalidOperationException()
+    {
+        WriteGovernancePolicyFile(status: "draft", approvedBy: null, approvedAt: null);
+
+        var exception = Assert.Throws<InvalidOperationException>(() => new TrainingWorkflowService(_workspaceRootPath));
+
+        Assert.Contains("治理政策未核准", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CreateService_WithUnsupportedGovernancePolicyVersion_ThrowsInvalidOperationException()
+    {
+        WriteGovernancePolicyFile(version: "2.0.0");
+
+        var exception = Assert.Throws<InvalidOperationException>(() => new TrainingWorkflowService(_workspaceRootPath));
+
+        Assert.Contains("治理政策版本不受支援", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -274,6 +295,35 @@ public class TrainingWorkflowServiceTests : IDisposable
 
         workbook.SaveAs(datasetPath);
         return datasetPath;
+    }
+
+    private void WriteGovernancePolicyFile(
+        string status = "approved",
+        string version = "1.0.0",
+        string? approvedBy = "governance-owner",
+        string? approvedAt = "2020-01-01T00:00:00Z",
+        string? effectiveFrom = "2020-01-01")
+    {
+        var governanceDirectory = Path.Combine(_workspaceRootPath, "docs", "config", "governance");
+        Directory.CreateDirectory(governanceDirectory);
+
+        var approvedByJson = approvedBy is null ? "null" : $"\"{approvedBy}\"";
+        var approvedAtJson = approvedAt is null ? "null" : $"\"{approvedAt}\"";
+        var effectiveFromJson = effectiveFrom is null ? "null" : $"\"{effectiveFrom}\"";
+        var content = $$"""
+{
+  "policyId": "table3-table4-governance",
+  "version": "{{version}}",
+  "status": "{{status}}",
+  "effectiveFrom": {{effectiveFromJson}},
+  "approvedBy": {{approvedByJson}},
+  "approvedAt": {{approvedAtJson}}
+}
+""";
+
+        File.WriteAllText(
+            Path.Combine(governanceDirectory, "table3-table4-governance-policy.v1.json"),
+            content);
     }
 
     public void Dispose()

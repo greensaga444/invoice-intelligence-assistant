@@ -154,7 +154,7 @@ This document lists all current automated tests in the repository, grouped by te
 
 ## Category E: Trainer Tests
 
-### E1. TrainingWorkflowServiceTests (12)
+### E1. TrainingWorkflowServiceTests (14)
 
 - ValidateDataset_WithRequiredColumns_ReturnsValidationSummary
 - Train_WithDataset_WritesStagedModel
@@ -162,6 +162,8 @@ This document lists all current automated tests in the repository, grouped by te
 - Evaluate_WhenStagedModelIsCorrupted_ThrowsJsonException
 - Publish_AfterTrain_CopiesPublishedModel
 - ValidateDataset_WhenFileDoesNotExist_ThrowsFileNotFoundException
+- CreateService_WithDraftGovernancePolicy_ThrowsInvalidOperationException
+- CreateService_WithUnsupportedGovernancePolicyVersion_ThrowsInvalidOperationException
 - ValidateDataset_WithAliasHeaders_ReturnsValidationSummary
 - Evaluate_WithSameDataset_ProducesDeterministicMetrics
 - ValidateDataset_WithDuplicateAndConflictRows_ReturnsGovernanceSummaryCounts
@@ -188,5 +190,5 @@ This document lists all current automated tests in the repository, grouped by te
 ## Test Inventory Summary
 
 - Test classes: 19
-- Test cases: 80
+- Test cases: 82
 - Primary automated test project: tests/InvoiceIntelligence.Core.Tests

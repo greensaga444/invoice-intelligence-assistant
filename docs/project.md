@@ -203,6 +203,7 @@ Constraints / Non-Functional Requirements:
 | 16 | GOV-IMP-04 training dataset governance preprocessor | Training dataset rows are deduplicated/conflict-resolved deterministically before model build with traceable governance counts. | P1 | LIGHT | 13,14 | DONE |
 | 17 | GOV-IMP-05 quality-gate validator and reporting | Governance validation summary, reject details, and conflict reports are emitted as deterministic local artifacts. | P1 | LIGHT | 14,16 | DONE |
 | 18 | GOV-IMP-06 split-policy runtime alignment | Train/validation/test partitioning enforces cohort leakage guard and emits deterministic distribution metrics. | P1 | LIGHT | 14,16 | DONE |
+| 19 | GOV-IMP-07 governance approval metadata flow | Runtime validates governance policy approval/version metadata and blocks unapproved or invalid policy manifests with actionable errors. | P1 | LIGHT | 13 | DONE |
 
 Definition of Done: one line describing a distinct user-visible outcome; no two rows should share it.
 Track values: FULL (full pipeline) / LIGHT (skip PLAN)
@@ -226,6 +227,7 @@ Status values: TODO / IN PROGRESS / DONE / BLOCKED
 - [x] M10: GOV-IMP-04 training governance preprocessor baseline complete (dedup/conflict preprocessing + test coverage)
 - [x] M11: GOV-IMP-05 quality-gate reporting baseline complete (summary/reject/conflict JSON reports + tests)
 - [x] M12: GOV-IMP-06 split-policy runtime alignment baseline complete (train/validation/test partition + cohort leakage guard + distribution metrics)
+- [x] M13: GOV-IMP-07 governance approval metadata baseline complete (approvedBy/approvedAt/effectiveFrom manifest + runtime validation checks)
 
 ---
 

@@ -287,6 +287,7 @@ Progress:
 - GOV-IMP-04 training governance preprocessor implemented: training rows deduped/conflict-resolved before model build with governance summary counts.
 - GOV-IMP-05 quality-gate reporting implemented: summary/reject/conflict JSON artifacts emitted from governance validation.
 - GOV-IMP-06 split-policy runtime alignment implemented: train/validation/test partitioning now enforces cohort leakage guard and reports distribution metrics.
+- GOV-IMP-07 governance approval metadata flow implemented: runtime now validates policy approval/version metadata and refuses unapproved or invalid manifests.
 - Pending product and data-governance review/sign-off.
 
 ---
@@ -398,6 +399,7 @@ Progress:
 - GOV-IMP-04 workflow parsing now applies deterministic training dedup/conflict preprocessing and exposes governance counts.
 - GOV-IMP-05 workflow validation now surfaces governance report paths with emitted quality-gate artifacts.
 - GOV-IMP-06 workflow split now supports train/validation/test partitioning with cohort leakage guard and deterministic distribution metrics.
+- GOV-IMP-07 workflow startup now enforces approved policy metadata (`approvedBy`, `approvedAt`, `effectiveFrom`) and supported policy major version checks.
 - Pending QA and data-governance review/sign-off.
 
 ---

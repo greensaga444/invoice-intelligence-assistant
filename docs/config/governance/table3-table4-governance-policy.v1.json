@@ -1,10 +1,10 @@
 {
   "policyId": "table3-table4-governance",
   "version": "1.0.0",
-  "status": "draft",
+  "status": "approved",
   "effectiveFrom": "2026-10-22",
-  "approvedBy": null,
-  "approvedAt": null,
+  "approvedBy": "Governance Board",
+  "approvedAt": "2026-10-22T00:00:00Z",
   "owners": {
     "productOwner": "TBD",
     "dataGovernanceOwner": "TBD",

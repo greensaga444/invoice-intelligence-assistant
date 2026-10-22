@@ -10,5 +10,5 @@ This directory stores versioned governance contracts for Q-016 and Q-021.
 ## Consumption Guidance
 
 - Treat policy JSON as the source of truth for implementation slices GOV-IMP-02 and beyond.
-- Runtime behavior should default safely when policy values are missing or invalid.
+- Runtime training workflow must refuse unapproved or invalid policy manifests with actionable errors.
 - Every policy update must append an entry in CHANGELOG.md.

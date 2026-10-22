@@ -15,6 +15,7 @@ public sealed class TrainingWorkflowService
     private static readonly Table3Table4CanonicalMapper CanonicalMapper = new();
     private static readonly TrainingDatasetGovernancePreprocessor GovernancePreprocessor = new();
     private static readonly TrainingGovernanceQualityGateReporter QualityGateReporter = new();
+    private static readonly TrainingGovernancePolicyApprovalLoader GovernancePolicyApprovalLoader = new();
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -29,6 +30,14 @@ public sealed class TrainingWorkflowService
         {
             throw new ArgumentException("Workspace root path is required.", nameof(workspaceRootPath));
         }
+
+        var governancePolicyPath = Path.Combine(
+            workspaceRootPath,
+            "docs",
+            "config",
+            "governance",
+            "table3-table4-governance-policy.v1.json");
+        _ = GovernancePolicyApprovalLoader.LoadApprovedManifest(governancePolicyPath);
 
         _artifactDirectoryPath = Path.Combine(workspaceRootPath, "build", "training");
     }

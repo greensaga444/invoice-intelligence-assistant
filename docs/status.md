@@ -13,9 +13,9 @@ See the resolved project file for Project Name, Repository, and Tech Stack.
 
 ## Current Work Item
 
-Work Item Name: GOV-IMP-06 split-policy runtime alignment
+Work Item Name: GOV-IMP-07 governance approval metadata flow
 
-Description: Implement train/validation/test split runtime alignment with cohort leakage guard and deterministic distribution metrics.
+Description: Implement runtime governance policy approval/version validation with actionable error handling for unapproved or invalid manifests.
 
 ---
 
@@ -250,10 +250,10 @@ Delivery done definition: delivery updates are committed and landed per policy (
 
 ## Current Task
 
-Implemented three-way split-policy runtime (`train/validation/test`) in `TrainingWorkflowService`.
-Added cohort leakage guard and surfaced split counts/ratios in `TrainingDatasetValidationResult`.
-Extended governance validation summary JSON with split distribution and leakage status.
-Added split-policy workflow tests and refreshed trainer status output for validation partition visibility.
+Implemented `TrainingGovernancePolicyApprovalLoader` for policy status, version, and approval-metadata validation.
+Integrated policy approval check into `TrainingWorkflowService` initialization to block invalid manifests.
+Updated governance policy artifact/README/changelog to include approved metadata enforcement behavior.
+Added workflow tests covering draft-policy rejection and unsupported-version rejection.
 
 > Keep this to 3-4 lines. Detail belongs in `<workflow-dir>/workitems/<name>.md` (`docs/` in target projects and this template repo), not here.
 

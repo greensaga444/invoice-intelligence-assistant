@@ -1,237 +1,223 @@
 # User Flows
 
-## Overview
+## UF-001 Launcher Full Flow Coordination
 
-This document describes the primary user and system workflows for Invoice Intelligence Assistant.
+**Preconditions**
 
-The product consists of two independent executable modules:
+- Packaged module executables are available.
+- `config/downloader.ini` and `config/processor.ini` are present.
 
-1. Invoice Downloader
-2. Invoice AI Processor
+**Main flow**
 
-Both modules can be executed independently.
+1. User opens launcher.
+2. Launcher validates module readiness and displays statuses.
+3. User clicks "執行完整流程".
+4. Launcher starts Downloader and waits for exit.
+5. Launcher prompts user whether to continue to Processor.
+6. If confirmed, launcher starts Processor and waits for exit.
+7. Launcher writes execution logs in the UI.
 
----
+**Alternate flows**
 
-# UF-001 Customer List Import
+- Missing executable/config: launcher blocks operation and shows warning dialog.
+- User declines Processor continuation: full flow ends after Downloader.
 
-## Preconditions
+**Postconditions**
 
-- Customer List Excel exists.
-- Required columns exist.
-
-Required columns:
-
-- Tax ID
-- Company Name
-- Date Range
-
-## Main Flow
-
-1. User launches Invoice Downloader.
-2. User selects Customer List Excel file.
-3. System validates required columns.
-4. System loads customer records.
-5. System prepares download queue.
-
-## Alternate Flow
-
-### UF-001-A1 Missing Required Columns
-
-1. System detects missing column.
-2. System displays validation error.
-3. Import process stops.
-
-## Postconditions
-
-- Customer records loaded successfully.
+- Downloader has completed.
+- Processor has either completed or been explicitly skipped by user.
 
 ---
 
-# UF-002 MOF Authentication
+## UF-002 Settings Update from Launcher
 
-## Preconditions
+**Preconditions**
 
-- Customer records loaded.
-- MOF credentials configured.
+- Launcher is running.
 
-## Main Flow
+**Main flow**
 
-1. System loads MOF configuration.
-2. System authenticates using:
-   - Username
-   - Password
-   - API Key
-3. Authentication succeeds.
-4. Download session established.
+1. User opens settings dialog.
+2. User updates folder paths, naming rules, suffixes, review threshold, MOF fields, and knowledge path.
+3. System validates required fields and threshold format.
+4. System encrypts MOF password and writes `downloader.ini`.
+5. System writes processor-linked settings into `processor.ini`.
+6. System confirms save and instructs restart of already running modules.
 
-## Alternate Flow
+**Alternate flow**
 
-### UF-002-A1 Authentication Failure
+- Validation failure: save is rejected with field-level message.
 
-1. Authentication fails.
-2. Error logged.
-3. User notified.
+**Postconditions**
 
-## Postconditions
-
-- Authenticated session established.
+- Both INI files are synchronized with the submitted settings.
 
 ---
 
-# UF-003 Batch Invoice Download
+## UF-003 Customer List Import
 
-## Preconditions
+**Preconditions**
 
-- Authentication successful.
+- Downloader configuration is loaded.
+- User has an `.xlsx` customer list file.
 
-## Main Flow
+**Main flow**
 
-1. System processes customer queue.
-2. System downloads invoice data.
-3. System generates raw invoice Excel.
-4. System saves files into Folder A.
+1. User selects customer list file.
+2. Downloader validates required columns by aliases (`Tax ID/統編`, `Company Name/公司名稱`, `Date Range/日期區間`).
+3. Downloader validates row values and parses date ranges.
+4. Valid records are loaded into grid and queued for batch flow.
 
-## Output
+**Alternate flow**
 
-Example:
+- Missing/invalid schema or row data: import fails with explicit message.
 
-```text
-Folder A
+**Postconditions**
 
-12345678_ABC_2026-01~2026-03.xlsx
-```
-
-## Postconditions
-
-- Invoice files available in Folder A.
+- In-memory customer list is available for authentication/download steps.
 
 ---
 
-# UF-004 AI Processing
+## UF-004 Downloader Authentication and Session Gate
 
-## Preconditions
+**Preconditions**
 
-- Invoice files exist in Folder A.
+- Customer list is already imported.
+- MOF credentials are configured.
 
-## Main Flow
+**Main flow**
 
-1. User launches Invoice AI Processor.
-2. System scans Folder A.
-3. System loads invoice files.
-4. System prepares invoice records.
+1. User enters password (or uses decrypted configured password).
+2. Downloader validates credentials via local authenticator.
+3. On success, downloader stores session token + expiry and enables batch download.
 
-## Postconditions
+**Alternate flow**
 
-- Records ready for analysis.
+- Invalid account/key/password: authentication fails and batch button remains disabled.
 
----
+**Postconditions**
 
-# UF-005 Rule Engine Processing
-
-## Main Flow
-
-1. System evaluates configured rules.
-2. Matching records are classified immediately.
-3. Results stored.
-
-## Postconditions
-
-- Matching records resolved without AI.
+- Active session state is available for batch download within validity window.
 
 ---
 
-# UF-006 Case Cache Lookup
+## UF-005 Official Batch Download to Folder A
 
-## Main Flow
+**Preconditions**
 
-1. System searches historical cache.
-2. Exact matches identified.
-3. Existing decisions reused.
+- Active session exists.
+- At least one customer is loaded.
 
-## Postconditions
+**Main flow**
 
-- Duplicate analysis avoided.
+1. Downloader builds per-customer official query requests.
+2. Batch downloader executes enabled invoice/allowance scopes with retry handling.
+3. Records are deduplicated and exported as official workbook files.
+4. One log file summarizes customer-level success/failure and output paths.
 
----
+**Postconditions**
 
-# UF-007 RAG Retrieval
-
-## Main Flow
-
-1. System creates embeddings.
-2. System queries Qdrant.
-3. Similar historical examples retrieved.
-4. Retrieved examples attached to context.
-
-## Postconditions
-
-- Context prepared for LLM.
+- Folder A contains generated workbook files and batch log.
 
 ---
 
-# UF-008 LLM Analysis
+## UF-006 Processor Decision Pipeline
 
-## Main Flow
+**Preconditions**
 
-1. System sends context to Qwen.
-2. Qwen determines:
-   - Deductible status
-   - Reason
-   - Accounting category
-   - Confidence score
-3. Structured result returned.
+- Folder A has supported workbook files.
 
-## Postconditions
+**Main flow**
 
-- AI decision generated.
+1. Processor reads records from Folder A (legacy or official schema).
+2. For each record, processor attempts resolution in order:
+   1. Rule engine
+   2. Case cache
+   3. Vector retriever + local analyzer
+3. Processor records decision source and confidence.
+4. Processor reports progress and summary counts in UI.
 
----
+**Postconditions**
 
-# UF-009 Export Processed Excel
-
-## Main Flow
-
-1. Original invoice data preserved.
-2. AI columns appended.
-3. Naming rule applied.
-4. Excel exported to Folder B.
-
-## Added Columns
-
-- AI_可抵稅
-- AI_判定原因
-- AI_建議科目
-- AI_信心度
-- AI_參考案例
-
-## Output
-
-```text
-Folder B
-
-12345678_ABC_2026-01~2026-03.xlsx
-```
+- A complete decision set is produced for all parsed records.
 
 ---
 
-# UF-010 Manual Knowledge Feedback
+## UF-007 Review Partition and Folder B/C Export
 
-## Preconditions
+**Preconditions**
 
-- User has reviewed results.
+- Decision results are available.
 
-## Main Flow
+**Main flow**
 
-1. User selects approved records.
-2. User clicks Update Knowledge Base.
-3. Records added to knowledge repository.
-4. Vector index updated.
+1. Processor groups results by source-file base name (with invoice/allowance suffix normalization).
+2. If any record in a group is below confidence threshold, entire group routes to Folder C.
+3. Otherwise group routes to Folder B.
+4. Exporter writes typed Table-3/Table-4 workbooks with configured naming and collision-safe output paths.
 
-## Important Rule
+**Postconditions**
 
-System shall never automatically learn without explicit user approval.
+- Folder B contains ready files; Folder C contains manual-review groups.
 
-## Postconditions
+---
 
-- Knowledge base updated.
+## UF-008 Manual Knowledge Feedback
+
+**Preconditions**
+
+- Trainer has decision rows loaded.
+- Knowledge repository service is initialized.
+
+**Main flow**
+
+1. User checks approved rows in "手動知識回饋" tab.
+2. User clicks "更新知識庫".
+3. Service writes non-duplicate approved decisions into local JSON repository.
+4. UI reports added/skipped counts and repository path.
+
+**Postconditions**
+
+- Approved knowledge becomes available for future retrieval.
+
+---
+
+## UF-009 Non-CLI Training Lifecycle
+
+**Preconditions**
+
+- Governance policy manifest is approved and valid.
+- User has a training dataset `.xlsx`.
+
+**Main flow**
+
+1. User selects dataset file.
+2. User runs validation to check schema, vocabulary, and row quality.
+3. User runs training to write staged model.
+4. User runs evaluation to write evaluation metrics report.
+5. User runs publish to write published model and publish metadata.
+
+**Postconditions**
+
+- Training artifacts exist under `build/training/`.
+
+---
+
+## UF-010 Governance Quality-Gate Reporting
+
+**Preconditions**
+
+- Dataset validation has executed.
+
+**Main flow**
+
+1. Service computes duplicate/conflict and split metrics.
+2. Service writes:
+   - `validation-summary.json`
+   - `reject-report.json`
+   - `conflict-report.json`
+3. UI surfaces validation summary and issue preview.
+
+**Postconditions**
+
+- Governance evidence artifacts are available for audit/review.

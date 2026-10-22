@@ -5,139 +5,65 @@
 ### Document Information
 
 | Item | Value |
-|----------|----------|
+|---|---|
 | Product Name | Invoice Intelligence Assistant |
-| Version | 1.0 |
-| Status | Draft |
+| Version | 2.0 |
+| Status | Synced with implementation |
 | Owner | Davis Chen |
-| Target Platform | Windows Desktop Application |
-| Last Updated | 2026-10-12 |
+| Target Platform | Windows desktop (.NET / WPF) |
+| Last Updated | 2026-10-22 |
+
+---
+
+## Read Order
+
+1. `01-master-prd.md` — executive-level product baseline
+2. `10-scope-and-goals.md` — in-scope boundaries and measurable outcomes
+3. `20-requirements-functional.md` — implementation-aligned FR catalog
+4. `30-requirements-nonfunctional.md` — measurable quality, security, and runtime constraints
+5. `40-user-flows.md` — concrete operator workflows
+6. `50-acceptance-criteria.md` — verifiable AC + FR/UF mapping
+7. `90-open-questions.md` — active unresolved gaps only
+8. `60-requirements-traceability-matrix.md` — supplemental historical matrix
 
 ---
 
 ## Product Summary
 
-Invoice Intelligence Assistant is a Windows desktop application designed for accounting firms and bookkeeping service providers.
+Invoice Intelligence Assistant is a local-first Windows solution that coordinates four WPF apps:
 
-The system automates:
+- `InvoiceLauncher` (control center)
+- `InvoiceDownloader` (customer import + official MOF fetch)
+- `InvoiceAiProcessor` (rule/cache/RAG/local-heuristic decision pipeline)
+- `InvoiceTrainer` (manual feedback + non-CLI training lifecycle)
 
-- Customer list import
-- Invoice download from Ministry of Finance services
-- AI-assisted invoice analysis
-- Tax deduction determination
-- Accounting category recommendation
-- Excel generation
-- Manual knowledge feedback
-
-The solution uses local AI technologies and keeps all customer data inside the company environment.
+The current implementation uses local processing for AI inference and local files for operational artifacts (`config/`, `data/`, `build/training/`).
 
 ---
 
-## Core Architecture
+## Architecture Snapshot
 
-Customer List
-
-↓
-
-Invoice Downloader
-
-↓
-
-Folder A (Raw Invoice Files)
-
-↓
-
-Invoice AI Processor
-
-- Rule Engine
-- Case Cache
-- RAG Engine
-- LLM
-
-↓
-
-Folder B (Processed Results)
-
-↓
-
-Manual Knowledge Feedback
-
-↓
-
-Knowledge Base Update
+`Customer List (.xlsx)`  
+→ `Downloader (MOF official API batch + Folder A export + batch log)`  
+→ `Processor (Rule → Case Cache → Vector RAG → Local Heuristic Analyzer)`  
+→ `Folder B (ready output) / Folder C (manual review)`  
+→ `Trainer (approved feedback to knowledge repo + validate/train/evaluate/publish artifacts)`
 
 ---
 
-## Technology Stack
+## ID Scheme and Stability Rules
 
-### Desktop Application
+- Functional requirements: `FR-###`
+- Non-functional requirements: `NFR-###`
+- User flows: `UF-###`
+- Acceptance criteria: `AC-###`
+- Open questions: `Q-###`
 
-- C#
-- .NET 8
-- WPF
-
-### AI Components
-
-- Ollama
-- Qwen3 8B
-- BGE-M3
-- Qdrant
-
-### Configuration
-
-- INI Files
-
----
-
-## Documentation Structure
-
-- 01-master-prd.md
-- 10-scope-and-goals.md
-- 20-requirements-functional.md
-- 30-requirements-nonfunctional.md
-- 40-user-flows.md
-- 50-acceptance-criteria.md
-- 90-open-questions.md
+IDs are unique and stable across PRD updates. New items append new IDs; existing IDs keep their meaning.
 
 ---
 
 ## Language Policy
 
-### Development Documents
-
-PRD and technical documents shall be maintained in English.
-
-### End User Deliverables
-
-The following must be Traditional Chinese:
-
-- User Interface
-- Error Messages
-- AI Outputs
-- User Manuals
-- Operation Manuals
-- Customer Documents
-
----
-
-## Requirement ID Scheme
-
-Functional Requirements:
-
-- FR-001 and above
-
-Non-Functional Requirements:
-
-- NFR-001 and above
-
-User Flows:
-
-- UF-001 and above
-
-Acceptance Criteria:
-
-- AC-001 and above
-
-Open Questions:
-
-- Q-001 and above
+- PRD and technical documents: English.
+- End-user UI strings and business output fields: Traditional Chinese.

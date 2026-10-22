@@ -2,234 +2,66 @@
 
 ## Purpose
 
-This document provides traceability between:
-
-- Functional Requirements (FR)
-- Non-Functional Requirements (NFR)
-- User Flows (UF)
-- Acceptance Criteria (AC)
-
-This matrix ensures that every requirement can be validated and that every acceptance criterion has a corresponding business requirement.
+This supplemental matrix mirrors the synchronized PRD set and provides quick FR/UF/AC/NFR cross-reference.
 
 ---
 
-# Functional Requirements ↔ Acceptance Criteria Mapping
+## Functional Requirement Coverage
 
-| Requirement ID | Requirement Summary | Acceptance Criteria |
-|----------|----------|----------|
-| FR-001 | Import Customer List Excel | AC-001 |
-| FR-002 | Read Tax ID | AC-001 |
-| FR-003 | Read Company Name | AC-001 |
-| FR-004 | Read Date Range | AC-001 |
-| FR-005 | Configure MOF Account | AC-002 |
-| FR-006 | Configure API Credentials | AC-002 |
-| FR-007 | Download Invoice Data | AC-003 |
-| FR-008 | Batch Invoice Download | AC-003 |
-| FR-009 | Export Raw Invoice Files to Folder A | AC-004 |
-| FR-010 | Support INI Configuration | AC-010 |
-| FR-011 | Support Naming Rules | AC-010 |
-| FR-012 | Validate Naming Placeholders | AC-011 |
-| FR-013 | Read Invoice Files From Folder A | AC-012 |
-| FR-014 | Execute Rule Engine | AC-005 |
-| FR-015 | Execute Case Cache Lookup | AC-006 |
-| FR-016 | Execute RAG Retrieval | AC-007 |
-| FR-017 | Execute LLM Analysis | AC-008 |
-| FR-018 | Generate Deductible Status | AC-008 |
-| FR-019 | Generate Deduction Reason | AC-008 |
-| FR-020 | Generate Accounting Category Recommendation | AC-008 |
-| FR-021 | Generate Confidence Score | AC-008 |
-| FR-022 | Generate Enhanced Excel Files | AC-012 |
-| FR-023 | Preserve Original Data | AC-013 |
-| FR-024 | Append AI Generated Columns | AC-009 |
-| FR-025 | Export Files To Folder B | AC-012 |
-| FR-026 | Manual Knowledge Feedback | AC-014 |
-| FR-027 | Update Knowledge Base After Approval | AC-014 |
-| FR-028 | Traditional Chinese User Interface | AC-016 |
-| FR-029 | Traditional Chinese AI Output | AC-017 |
-| FR-030 | Traditional Chinese Excel Columns | AC-009 |
-
----
-
-# Non-Functional Requirements ↔ Validation Mapping
-
-| NFR ID | Requirement | Validation Method |
-|----------|----------|----------|
-| NFR-001 | Windows 10 Support | Installation Test |
-| NFR-002 | Windows 11 Support | Installation Test |
-| NFR-003 | Support 15,000–30,000 Invoice Records | Performance Test |
-| NFR-004 | Support 150 Customer Companies Per Batch | Performance Test |
-| NFR-005 | Application Startup Time < 5 Seconds | Benchmark Test |
-| NFR-006 | Data Remains Within Local Environment | Security Audit |
-| NFR-007 | No External AI Service Used | Architecture Review |
-| NFR-008 | Secure Credential Storage | Security Audit |
-| NFR-009 | Configurable Business Rules | Functional Validation |
-| NFR-010 | Configurable Naming Rules | Functional Validation |
-| NFR-011 | Configurable AI Settings | Functional Validation |
-| NFR-012 | Success Rate > 99% | User Acceptance Test |
-| NFR-013 | Error Logging Available | Functional Validation |
-| NFR-014 | Preserve Source Data Integrity | Integration Test |
-| NFR-015 | Traditional Chinese User Interface | Localization Validation |
-| NFR-016 | Traditional Chinese AI Output | Localization Validation |
-| NFR-017 | Traditional Chinese Excel Columns | Localization Validation |
-| NFR-018 | Traditional Chinese User Documentation | Documentation Review |
+| FR | Flow(s) | Acceptance |
+|---|---|---|
+| FR-001 | UF-001 | AC-001 |
+| FR-002 | UF-001 | AC-002 |
+| FR-003 | UF-001 | AC-003 |
+| FR-004 | UF-002 | AC-004 |
+| FR-005 | UF-002 | AC-005 |
+| FR-006 | UF-003 | AC-006 |
+| FR-007 | UF-003 | AC-007 |
+| FR-008 | UF-003 | AC-008 |
+| FR-009 | UF-004 | AC-009 |
+| FR-010 | UF-004, UF-005 | AC-010 |
+| FR-011 | UF-005 | AC-011 |
+| FR-012 | UF-005 | AC-012 |
+| FR-013 | UF-005 | AC-013 |
+| FR-014 | UF-005 | AC-014 |
+| FR-015 | UF-006 | AC-015 |
+| FR-016 | UF-006 | AC-016 |
+| FR-017 | UF-006 | AC-017 |
+| FR-018 | UF-006 | AC-018 |
+| FR-019 | UF-006 | AC-019 |
+| FR-020 | UF-006 | AC-020 |
+| FR-021 | UF-007 | AC-021 |
+| FR-022 | UF-007 | AC-022 |
+| FR-023 | UF-007 | AC-023 |
+| FR-024 | UF-006, UF-007 | AC-024 |
+| FR-025 | UF-008 | AC-025 |
+| FR-026 | UF-008 | AC-026 |
+| FR-027 | UF-009 | AC-027 |
+| FR-028 | UF-009 | AC-028 |
+| FR-029 | UF-010 | AC-029 |
+| FR-030 | UF-010 | AC-030 |
+| FR-031 | UF-009 | AC-031 |
+| FR-032 | UF-009 | AC-032 |
 
 ---
 
-# User Flow ↔ Functional Requirement Mapping
+## Non-Functional Requirement Validation Map
 
-| User Flow | Description | Functional Requirements |
-|----------|----------|----------|
-| UF-001 | Customer List Import | FR-001, FR-002, FR-003, FR-004 |
-| UF-002 | MOF Authentication | FR-005, FR-006 |
-| UF-003 | Batch Invoice Download | FR-007, FR-008, FR-009 |
-| UF-004 | Invoice Loading | FR-013 |
-| UF-005 | Rule Engine Processing | FR-014 |
-| UF-006 | Case Cache Lookup | FR-015 |
-| UF-007 | RAG Retrieval | FR-016 |
-| UF-008 | LLM Analysis | FR-017, FR-018, FR-019, FR-020, FR-021 |
-| UF-009 | Processed Excel Export | FR-022, FR-023, FR-024, FR-025 |
-| UF-010 | Manual Knowledge Feedback | FR-026, FR-027 |
-
----
-
-# End-to-End Business Capability Coverage
-
-| Business Capability | Acceptance Criteria |
-|----------|----------|
-| Customer Import | AC-001 |
-| MOF Authentication | AC-002 |
-| Invoice Download | AC-003 |
-| Folder A Generation | AC-004 |
-| Rule Engine Execution | AC-005 |
-| Case Cache Reuse | AC-006 |
-| RAG Retrieval | AC-007 |
-| LLM Analysis | AC-008 |
-| AI Output Columns | AC-009 |
-| Naming Rule Execution | AC-010 |
-| Placeholder Validation | AC-011 |
-| Folder B Generation | AC-012 |
-| Original Data Preservation | AC-013 |
-| Manual Knowledge Feedback | AC-014 |
-| No Automatic Learning | AC-015 |
-| Traditional Chinese User Interface | AC-016 |
-| Traditional Chinese AI Output | AC-017 |
-| Offline Local AI Execution | AC-018 |
-
----
-
-# Governance Specification Traceability (Q-016 / Q-021)
-
-| Governance Requirement | Implementation Slice | Verification Evidence |
-|----------|----------|----------|
-| Canonical Table3/Table4 mapping and normalization | GOV-IMP-02 | `Table3Table4CanonicalMapperTests` |
-| Deterministic knowledge dedup/conflict precedence | GOV-IMP-03 | `KnowledgeBootstrapGovernanceEngineTests` |
-| Deterministic training dedup/conflict preprocessing | GOV-IMP-04 | `TrainingDatasetGovernancePreprocessorTests` |
-| Quality-gate summary/reject/conflict reporting | GOV-IMP-05 | `TrainingGovernanceQualityGateReporterTests` |
-| Train/validation/test split-policy runtime alignment + cohort leakage guard | GOV-IMP-06 | `TrainingWorkflowServiceTests` split-policy cases |
-| Governance policy approval metadata and version enforcement | GOV-IMP-07 | `TrainingWorkflowServiceTests` policy-approval rejection cases |
-| End-to-end governance verification and document traceability | GOV-IMP-08 | `GovernanceEndToEndVerificationTests` + PRD/open-question/RTM updates |
-
----
-
-# Release Gate Traceability (Q-022)
-
-| Release-Gate Requirement | Implementation Output | Verification Evidence |
-|----------|----------|----------|
-| Metrics schema and field constraints for offline model evaluation | `docs/config/release-gate/model-release-gate-policy.v1.json` | `TrainingModelReleaseGateEvaluatorTests` metadata/blocking cases |
-| Deterministic evaluator outputs and precedence (BLOCK > FAIL > WARN > PASS) | `TrainingModelReleaseGateEvaluator` | `TrainingModelReleaseGateEvaluatorTests` gate-result precedence and threshold cases |
-| Rollback trigger thresholds and decision flow | `TrainingModelRollbackThresholdProfile` + release-gate policy artifact | `TrainingModelReleaseGateEvaluatorTests` rollback decision cases |
-| Release approval and audit evidence contract | `docs/config/release-gate/release-approval-template.md` | Q-022 work item acceptance checks + open-question decision closure |
-
----
-
-# MVP Exit Criteria
-
-The MVP release is considered complete when all items below are satisfied.
-
-## Functional Requirements
-
-- [ ] Customer List Import Completed
-- [ ] MOF Authentication Completed
-- [ ] Invoice Download Completed
-- [ ] Folder A Export Completed
-- [ ] Rule Engine Completed
-- [ ] Case Cache Completed
-- [ ] RAG Retrieval Completed
-- [ ] LLM Analysis Completed
-- [ ] Folder B Export Completed
-- [ ] Naming Rule Engine Completed
-- [ ] Manual Knowledge Feedback Completed
-
----
-
-## AI Components
-
-- [ ] Ollama Installed
-- [ ] Qwen3 8B Operational
-- [ ] BGE-M3 Operational
-- [ ] Qdrant Operational
-- [ ] Local AI Processing Verified
-
----
-
-## Localization
-
-- [ ] Traditional Chinese User Interface
-- [ ] Traditional Chinese AI Outputs
-- [ ] Traditional Chinese Excel Columns
-- [ ] Traditional Chinese User Documentation
-
----
-
-## Security
-
-- [ ] No External AI Calls
-- [ ] Credentials Stored Securely
-- [ ] Customer Data Remains Local
-
----
-
-## Performance
-
-- [ ] Support 150 Customer Companies
-- [ ] Support 15,000–30,000 Invoice Records
-- [ ] Startup Time Less Than 5 Seconds
-- [ ] Success Rate Greater Than 99%
-
----
-
-## Acceptance Criteria
-
-All acceptance criteria must pass:
-
-- [ ] AC-001
-- [ ] AC-002
-- [ ] AC-003
-- [ ] AC-004
-- [ ] AC-005
-- [ ] AC-006
-- [ ] AC-007
-- [ ] AC-008
-- [ ] AC-009
-- [ ] AC-010
-- [ ] AC-011
-- [ ] AC-012
-- [ ] AC-013
-- [ ] AC-014
-- [ ] AC-015
-- [ ] AC-016
-- [ ] AC-017
-- [ ] AC-018
-
----
-
-# Release Recommendation
-
-The product may proceed to User Acceptance Testing (UAT) only after:
-
-1. All High Priority Functional Requirements are implemented.
-2. All Acceptance Criteria pass.
-3. Localization validation passes.
-4. Local AI execution is verified.
-5. Security review is completed.
-6. Customer data remains fully local.
+| NFR | Validation evidence |
+|---|---|
+| NFR-001 | Runtime target in app csproj files (`net8.0-windows`) |
+| NFR-002 | Core/test target split in csproj files (`net8.0` / `net9.0-windows`) |
+| NFR-003 | `LocalizationAndQualityGateTests` scale scenarios |
+| NFR-004 | Processor UI progress + summary count behavior |
+| NFR-005 | `LocalizationAndQualityGateTests` external AI invocation pattern guard |
+| NFR-006 | `MofPasswordProtector` + config writer behavior + tests |
+| NFR-007 | `TrainingGovernancePolicyApprovalLoader` + workflow tests |
+| NFR-008 | Batch downloader orchestration tests and integration test |
+| NFR-009 | `OutputFileNameHelperTests` |
+| NFR-010 | Importer/config/reader failure-path tests |
+| NFR-011 | Export ordering logic + exporter tests |
+| NFR-012 | Governance preprocessing and bootstrap tests |
+| NFR-013 | Split-policy leakage guard tests |
+| NFR-014 | XAML/UI strings + localization tests |
+| NFR-015 | `LocalHeuristicLlmAnalyzerTests` |
+| NFR-016 | Training artifact generation tests |

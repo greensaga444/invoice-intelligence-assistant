@@ -205,7 +205,7 @@ Constraints / Non-Functional Requirements:
 | 18 | GOV-IMP-06 split-policy runtime alignment | Train/validation/test partitioning enforces cohort leakage guard and emits deterministic distribution metrics. | P1 | LIGHT | 14,16 | DONE |
 | 19 | GOV-IMP-07 governance approval metadata flow | Runtime validates governance policy approval/version metadata and blocks unapproved or invalid policy manifests with actionable errors. | P1 | LIGHT | 13 | DONE |
 | 20 | GOV-IMP-08 end-to-end governance verification and traceability updates | Governance pipeline has end-to-end verification coverage and Q-016/Q-021 traceability documents are updated to resolved state. | P1 | LIGHT | 15,16,17,18,19 | DONE |
-| 21 | Q-022 release-gate specification and decision flow | Trained-model release gate defines metrics schema, deterministic pass/fail evaluator, rollback triggers, and sign-off workflow before runtime switch. | P1 | FULL | 11,20 | IN PROGRESS |
+| 21 | Q-022 release-gate specification and decision flow | Trained-model release gate defines metrics schema, deterministic pass/fail evaluator, rollback triggers, and sign-off workflow before runtime switch. | P1 | FULL | 11,20 | DONE |
 
 Definition of Done: one line describing a distinct user-visible outcome; no two rows should share it.
 Track values: FULL (full pipeline) / LIGHT (skip PLAN)
@@ -231,7 +231,7 @@ Status values: TODO / IN PROGRESS / DONE / BLOCKED
 - [x] M12: GOV-IMP-06 split-policy runtime alignment baseline complete (train/validation/test partition + cohort leakage guard + distribution metrics)
 - [x] M13: GOV-IMP-07 governance approval metadata baseline complete (approvedBy/approvedAt/effectiveFrom manifest + runtime validation checks)
 - [x] M14: GOV-IMP-08 governance end-to-end verification complete (integration test coverage + PRD/open-question/RTM traceability closure)
-- [ ] M15: Q-022 release-gate specification complete (metrics schema + pass/fail evaluator + rollback trigger workflow + owner sign-off)
+- [x] M15: Q-022 release-gate specification complete (metrics schema + pass/fail evaluator + rollback trigger workflow + owner sign-off)
 
 ---
 

@@ -1,0 +1,153 @@
+{
+  "policyId": "model-release-gate",
+  "version": "1.0.0",
+  "status": "approved",
+  "effectiveFrom": "2026-10-22",
+  "approvedBy": "Architecture-QA-Operations Board",
+  "approvedAt": "2026-10-22T00:00:00Z",
+  "owners": {
+    "architectureOwner": "Architecture Lead",
+    "qaOwner": "QA Lead",
+    "operationsOwner": "Operations Lead",
+    "productOwner": "Product Owner"
+  },
+  "metricsSchema": {
+    "identity": [
+      "modelVersion",
+      "trainingDatasetVersion",
+      "governancePolicyVersion",
+      "releaseCandidateId"
+    ],
+    "evaluationScope": [
+      "datasetType",
+      "evaluationWindowStart",
+      "evaluationWindowEnd",
+      "totalSamples",
+      "coveredSamples"
+    ],
+    "qualityMetrics": [
+      "deductibleStatusAccuracy",
+      "accountingCategoryMacroF1",
+      "deductionReasonQualityScore",
+      "confidenceCalibrationError"
+    ],
+    "stabilityMetrics": [
+      "driftDeltaVsBaseline",
+      "unresolvedRate",
+      "manualReviewRate"
+    ],
+    "operationalMetrics": [
+      "evaluationDurationMs",
+      "inferenceLatencyP95Ms",
+      "nonDeductibleFalsePositiveRate"
+    ],
+    "constraints": {
+      "rateRange": "all rate metrics in [0, 1]",
+      "totalSamples": "> 0",
+      "coveredSamples": "<= totalSamples",
+      "window": "evaluationWindowStart <= evaluationWindowEnd"
+    }
+  },
+  "evaluator": {
+    "version": "v1.0.0",
+    "results": [
+      "PASS",
+      "WARN",
+      "FAIL",
+      "BLOCK"
+    ],
+    "precedence": [
+      "BLOCK",
+      "FAIL",
+      "WARN",
+      "PASS"
+    ],
+    "thresholdProfile": {
+      "minimumSamples": 2000,
+      "minimumCoverageRate": 0.9,
+      "warning": {
+        "minimumDeductibleStatusAccuracy": 0.96,
+        "minimumAccountingCategoryMacroF1": 0.91,
+        "minimumDeductionReasonQualityScore": 0.88,
+        "maximumConfidenceCalibrationError": 0.1,
+        "maximumUnresolvedRate": 0.06,
+        "maximumManualReviewRate": 0.14,
+        "maximumDriftDeltaVsBaseline": 0.08,
+        "maximumEvaluationDurationMs": 600000,
+        "maximumInferenceLatencyP95Ms": 1200,
+        "maximumDeductibleStatusAccuracyDrop": 0.015,
+        "maximumAccountingCategoryMacroF1Drop": 0.02,
+        "maximumDeductionReasonQualityScoreDrop": 0.02,
+        "maximumInferenceLatencyIncreaseRatio": 0.15
+      },
+      "failure": {
+        "minimumDeductibleStatusAccuracy": 0.94,
+        "minimumAccountingCategoryMacroF1": 0.88,
+        "minimumDeductionReasonQualityScore": 0.85,
+        "maximumConfidenceCalibrationError": 0.12,
+        "maximumUnresolvedRate": 0.1,
+        "maximumManualReviewRate": 0.18,
+        "maximumDriftDeltaVsBaseline": 0.12,
+        "maximumEvaluationDurationMs": 900000,
+        "maximumInferenceLatencyP95Ms": 1500,
+        "maximumDeductibleStatusAccuracyDrop": 0.03,
+        "maximumAccountingCategoryMacroF1Drop": 0.04,
+        "maximumDeductionReasonQualityScoreDrop": 0.05,
+        "maximumInferenceLatencyIncreaseRatio": 0.3
+      }
+    }
+  },
+  "shadowRun": {
+    "minimumBusinessDays": 10,
+    "minimumRecords": 5000,
+    "comparisonScope": "same customer mix and invoice type distribution as baseline",
+    "requiredOutputs": [
+      "shadow metrics summary",
+      "baseline delta report",
+      "manual review sample audit"
+    ]
+  },
+  "rollback": {
+    "triggers": {
+      "qualityRegression": {
+        "maximumDeductibleStatusAccuracyDrop": 0.03,
+        "maximumAccountingCategoryMacroF1Drop": 0.04,
+        "maximumDeductionReasonQualityScoreDrop": 0.05
+      },
+      "safety": {
+        "maximumNonDeductibleFalsePositiveRate": 0.03
+      },
+      "stability": {
+        "maximumInferenceLatencyP95Ms": 1800,
+        "maximumManualReviewRate": 0.2
+      }
+    },
+    "procedure": [
+      "Create rollback incident record",
+      "Operations on-call confirms trigger and notifies owners",
+      "Switch runtime to previous approved model or baseline pipeline",
+      "Attach trigger metrics and timestamps to incident",
+      "Require fresh release-gate evaluation before re-release"
+    ]
+  },
+  "approvalWorkflow": {
+    "requiredApprovals": [
+      "qaOwner",
+      "architectureOwner",
+      "operationsOwner",
+      "productOwner"
+    ],
+    "decisionArtifact": {
+      "requiredFields": [
+        "gateResult",
+        "blockedRules",
+        "breachedRules",
+        "warningRules",
+        "summaryReason",
+        "evaluatedAtUtc",
+        "approvedBy",
+        "approvedAtUtc"
+      ]
+    }
+  }
+}

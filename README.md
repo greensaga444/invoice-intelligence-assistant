@@ -101,6 +101,7 @@ AI 與檢索：
 - 分支執行流程：docs/status.md
 - 測試目錄與測項清單：docs/testing.md
 - 資料治理政策合約（Q-016/Q-021）：docs/config/governance/
+- 模型切換 release-gate 政策合約（Q-022）：docs/config/release-gate/
 - 程式風格基線與語言附錄：docs/style/
 
 ## 目前可執行骨架
@@ -126,6 +127,7 @@ AI 與檢索：
 - AI Trainer 已完成 split-policy runtime 對齊：可輸出 train/validation/test 三分區統計並套用同 cohort 泄漏防護。
 - AI Trainer 已新增治理政策核准檢查：僅接受已核准且版本受支援的 governance policy manifest，避免未核准規則進入訓練流程。
 - AI Core 已補齊治理端到端驗證：以整體測試覆蓋 mapping、dedup/conflict、quality-gate、split-policy 與政策核准檢查，並完成 Q-016/Q-021 traceability 收斂。
+- AI Core 已新增模型 release-gate evaluator：可依固定閾值輸出 PASS/WARN/FAIL/BLOCK，並提供 rollback trigger 決策訊號。
 - 目前版本已完成在地化與品質閘道：使用者可見訊息與輸出欄位維持繁體中文，且已加入離線 AI 驗證與目標規模效能測試。
 
 ## 開發與交付快速路徑

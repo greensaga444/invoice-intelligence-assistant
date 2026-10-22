@@ -191,8 +191,17 @@ This document lists all current automated tests in the repository, grouped by te
 
 - TrainAndEvaluate_WithGovernancePolicyAndDataset_ProducesDeterministicGovernanceArtifacts
 
+### E6. TrainingModelReleaseGateEvaluatorTests (6)
+
+- Evaluate_WithMissingMetadata_ReturnsBlock
+- Evaluate_WithFailThresholdBreach_ReturnsFail
+- Evaluate_WithWarningOnly_ReturnsWarn
+- Evaluate_WithHealthyMetrics_ReturnsPass
+- EvaluateRollback_WithQualityAndSafetyRegression_ReturnsRollback
+- EvaluateRollback_WithHealthyProductionMetrics_ReturnsNoRollback
+
 ## Test Inventory Summary
 
-- Test classes: 20
-- Test cases: 83
+- Test classes: 21
+- Test cases: 89
 - Primary automated test project: tests/InvoiceIntelligence.Core.Tests

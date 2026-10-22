@@ -26,7 +26,7 @@ Acceptance Criteria:
 - Decision artifact schema is defined with evaluator inputs, computed result, trigger reasons, and approval metadata.
 - Q-022 progress is linked to this work item in open-question tracking.
 
-## Metrics Schema Draft (v0.1)
+## Metrics Schema Baseline (v1.0)
 
 Required dimensions:
 - Model identity: modelVersion, trainingDatasetVersion, governancePolicyVersion, releaseCandidateId
@@ -41,7 +41,7 @@ Field-level constraints:
 - coveredSamples must be <= totalSamples.
 - Version fields are non-empty and immutable for one evaluation run.
 
-## Pass/Fail Evaluator Draft (v0.1)
+## Pass/Fail Evaluator Baseline (v1.0)
 
 Gate outputs:
 - PASS: all required thresholds met and no blocker flags.
@@ -68,7 +68,7 @@ Evaluator outputs:
 - summaryReason
 - evaluatedAtUtc
 
-## Rollback Trigger Flow Draft (v0.1)
+## Rollback Trigger Flow Baseline (v1.0)
 
 Trigger categories:
 - Quality regression trigger: key production metrics regress beyond rollback threshold versus baseline.
@@ -88,13 +88,64 @@ Ownership checkpoints:
 - Operations owner confirms rollback readiness and execution path.
 - Product owner grants release approval for runtime switch.
 
+## Concrete Decision Values (v1.0)
+
+Threshold profile:
+- Minimum sample size: 2000
+- Minimum coverage rate: 0.90
+- Warning thresholds:
+	- Deductible status accuracy < 0.96
+	- Accounting category macro F1 < 0.91
+	- Deduction reason quality score < 0.88
+	- Confidence calibration error > 0.10
+	- Unresolved rate > 0.06
+	- Manual review rate > 0.14
+	- Drift delta vs baseline > 0.08
+	- Evaluation duration > 600000 ms
+	- Inference latency p95 > 1200 ms
+- Failure thresholds:
+	- Deductible status accuracy < 0.94
+	- Accounting category macro F1 < 0.88
+	- Deduction reason quality score < 0.85
+	- Confidence calibration error > 0.12
+	- Unresolved rate > 0.10
+	- Manual review rate > 0.18
+	- Drift delta vs baseline > 0.12
+	- Evaluation duration > 900000 ms
+	- Inference latency p95 > 1500 ms
+
+Shadow-run window:
+- Minimum business days: 10
+- Minimum record count: 5000
+- Required comparison outputs:
+	- shadow metrics summary
+	- baseline delta report
+	- manual review sample audit
+
+Rollback trigger thresholds:
+- Quality regression:
+	- Deductible status accuracy drop > 0.03
+	- Accounting category macro F1 drop > 0.04
+	- Deduction reason quality score drop > 0.05
+- Safety:
+	- Non-deductible false positive rate > 0.03
+- Stability:
+	- Inference latency p95 > 1800 ms
+	- Manual review rate > 0.20
+
+Approval artifact contract:
+- Policy artifact: `docs/config/release-gate/model-release-gate-policy.v1.json`
+- Approval template: `docs/config/release-gate/release-approval-template.md`
+- Runtime evaluator implementation: `TrainingModelReleaseGateEvaluator`
+- Required approvers: QA owner, Architecture owner, Operations owner, Product owner
+
 ## Tasks
 
 - [x] Create Q-022 release-gate work item skeleton.
 - [x] Draft metrics schema (required fields and constraints).
 - [x] Draft deterministic pass/fail evaluator states and precedence.
 - [x] Draft rollback trigger categories and rollback sequence.
-- [ ] Define concrete numeric threshold profile with stakeholders.
-- [ ] Define production observation window and shadow-run duration.
-- [ ] Define release approval form and audit artifact template.
-- [ ] Link final decision values back into Q-022 and RTM once approved.
+- [x] Define concrete numeric threshold profile with deterministic default values.
+- [x] Define production observation window and shadow-run duration.
+- [x] Define release approval form and audit artifact template.
+- [x] Link final decision values back into Q-022 and RTM.

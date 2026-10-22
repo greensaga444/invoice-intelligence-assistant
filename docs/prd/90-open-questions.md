@@ -276,7 +276,7 @@ Required decisions:
 
 Status:
 
-- In Progress
+- Resolved (2026-10-22)
 
 Progress:
 
@@ -430,7 +430,13 @@ Status:
 Progress:
 
 - Release-gate work item draft started for Q-022 with focus on offline metrics schema, deterministic pass/fail evaluator, and rollback trigger workflow.
-- Pending threshold values and sign-off ownership confirmation across architecture, QA, and operations.
+
+Decision:
+
+- Metrics schema and deterministic threshold profile are finalized in `docs/config/release-gate/model-release-gate-policy.v1.json`.
+- Pass/fail evaluator outputs and precedence are finalized as `BLOCK > FAIL > WARN > PASS` with explicit rule codes.
+- Rollback trigger categories and execution steps are finalized with quality, safety, and stability thresholds.
+- Release approval and audit evidence template is finalized in `docs/config/release-gate/release-approval-template.md`.
 
 ---
 

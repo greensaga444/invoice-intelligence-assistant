@@ -131,6 +131,17 @@ This matrix ensures that every requirement can be validated and that every accep
 
 ---
 
+# Release Gate Traceability (Q-022)
+
+| Release-Gate Requirement | Implementation Output | Verification Evidence |
+|----------|----------|----------|
+| Metrics schema and field constraints for offline model evaluation | `docs/config/release-gate/model-release-gate-policy.v1.json` | `TrainingModelReleaseGateEvaluatorTests` metadata/blocking cases |
+| Deterministic evaluator outputs and precedence (BLOCK > FAIL > WARN > PASS) | `TrainingModelReleaseGateEvaluator` | `TrainingModelReleaseGateEvaluatorTests` gate-result precedence and threshold cases |
+| Rollback trigger thresholds and decision flow | `TrainingModelRollbackThresholdProfile` + release-gate policy artifact | `TrainingModelReleaseGateEvaluatorTests` rollback decision cases |
+| Release approval and audit evidence contract | `docs/config/release-gate/release-approval-template.md` | Q-022 work item acceptance checks + open-question decision closure |
+
+---
+
 # MVP Exit Criteria
 
 The MVP release is considered complete when all items below are satisfied.
